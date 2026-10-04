@@ -1,0 +1,29 @@
+PODS:
+  - citizen_sdk (1.0.0):
+    - Flutter
+    - FlutterMacOS
+  - flutter_lite_camera (0.0.1):
+    - FlutterMacOS
+  - FlutterMacOS (1.0.0)
+
+DEPENDENCIES:
+  - citizen_sdk (from `Flutter/ephemeral/.symlinks/plugins/citizen_sdk/darwin`)
+  - flutter_lite_camera (from `Flutter/ephemeral/.symlinks/plugins/flutter_lite_camera/macos`)
+  - FlutterMacOS (from `Flutter/ephemeral`)
+
+EXTERNAL SOURCES:
+  citizen_sdk:
+    :path: Flutter/ephemeral/.symlinks/plugins/citizen_sdk/darwin
+  flutter_lite_camera:
+    :path: Flutter/ephemeral/.symlinks/plugins/flutter_lite_camera/macos
+  FlutterMacOS:
+    :path: Flutter/ephemeral
+
+SPEC CHECKSUMS:
+  citizen_sdk: 997372d28fb8e4328b78c2869865b5784bbd6e0d
+  flutter_lite_camera: 0a91cbcebca420a0e62955fbcdd7d030cc5da322
+  FlutterMacOS: d0db08ddef1a9af05a5ec4b724367152bb0500b1
+
+PODFILE CHECKSUM: 2a4aceda8e85cc47fee80e160c027e4544fa7138
+
+COCOAPODS: 1.17.0

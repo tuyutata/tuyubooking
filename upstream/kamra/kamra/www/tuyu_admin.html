@@ -1,0 +1,37 @@
+{% extends "templates/web.html" %}
+
+{% block page_content %}
+<main style="max-width: 42rem; margin: 12vh auto; padding: 2rem; text-align: center">
+  <h1>{{ _("Opening merchant management") }}</h1>
+  <p id="status">{{ _("Verifying the one-time administrator assertion...") }}</p>
+</main>
+<script>
+(() => {
+  const status = document.getElementById("status");
+  const assertion = new URLSearchParams(location.hash.slice(1)).get("assertion");
+  const target = new URLSearchParams(location.hash.slice(1)).get("target") || "kamra";
+  history.replaceState(null, "", location.pathname);
+  if (!assertion) {
+    status.textContent = {{ _("Administrator assertion is missing.") | tojson }};
+    return;
+  }
+  fetch("/api/method/kamra.tuyu_admin_bridge.consume", {
+    method: "POST",
+    credentials: "same-origin",
+    headers: {
+      "Content-Type": "application/json",
+      "X-Frappe-CSRF-Token": frappe.csrf_token,
+    },
+    body: JSON.stringify({ assertion, target }),
+  })
+    .then((response) => {
+      if (!response.ok) throw new Error("assertion rejected");
+      return response.json();
+    })
+    .then((payload) => location.replace(payload.message.redirect_to))
+    .catch(() => {
+      status.textContent = {{ _("The administrator assertion expired or was already used.") | tojson }};
+    });
+})();
+</script>
+{% endblock %}

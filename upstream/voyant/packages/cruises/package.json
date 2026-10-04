@@ -1,0 +1,168 @@
+{
+  "name": "@voyantjs/cruises",
+  "version": "0.104.1",
+  "license": "Apache-2.0",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./schema": "./src/schema.ts",
+    "./validation": "./src/validation.ts",
+    "./routes": "./src/routes.ts",
+    "./public-routes": "./src/routes-public.ts",
+    "./booking-extension": "./src/booking-extension.ts",
+    "./adapters": "./src/adapters/index.ts",
+    "./catalog-policy": "./src/catalog-policy.ts",
+    "./catalog-policy-cabins": "./src/catalog-policy-cabins.ts",
+    "./service-catalog-plane": "./src/service-catalog-plane.ts",
+    "./service-catalog-plane-cabins": "./src/service-catalog-plane-cabins.ts",
+    "./content-shape": "./src/content-shape.ts",
+    "./service-content": "./src/service-content.ts",
+    "./service-external-refresh": "./src/service-external-refresh.ts",
+    "./service-content-synthesizer": "./src/service-content-synthesizer.ts",
+    "./routes-content": "./src/routes-content.ts",
+    "./draft-shape": "./src/draft-shape.ts",
+    "./booking-engine": "./src/booking-engine/index.ts",
+    "./service-pricing": "./src/service-pricing.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "lint": "biome check src/",
+    "test": "vitest run",
+    "build": "tsc -p tsconfig.json",
+    "clean": "rm -rf dist tsconfig.tsbuildinfo",
+    "prepack": "pnpm run build"
+  },
+  "dependencies": {
+    "@voyantjs/bookings": "workspace:*",
+    "@voyantjs/core": "workspace:*",
+    "@voyantjs/db": "workspace:*",
+    "@voyantjs/hono": "workspace:*",
+    "@voyantjs/catalog": "workspace:*",
+    "@voyantjs/cruises-contracts": "workspace:*",
+    "drizzle-orm": "^0.45.2",
+    "hono": "^4.12.10",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@voyantjs/voyant-test-utils": "workspace:*",
+    "@voyantjs/voyant-typescript-config": "workspace:*",
+    "typescript": "^6.0.2",
+    "vitest": "^4.0.0"
+  },
+  "files": [
+    "dist"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "import": "./dist/index.js",
+        "default": "./dist/index.js"
+      },
+      "./schema": {
+        "types": "./dist/schema.d.ts",
+        "import": "./dist/schema.js",
+        "default": "./dist/schema.js"
+      },
+      "./validation": {
+        "types": "./dist/validation.d.ts",
+        "import": "./dist/validation.js",
+        "default": "./dist/validation.js"
+      },
+      "./routes": {
+        "types": "./dist/routes.d.ts",
+        "import": "./dist/routes.js",
+        "default": "./dist/routes.js"
+      },
+      "./public-routes": {
+        "types": "./dist/routes-public.d.ts",
+        "import": "./dist/routes-public.js",
+        "default": "./dist/routes-public.js"
+      },
+      "./booking-extension": {
+        "types": "./dist/booking-extension.d.ts",
+        "import": "./dist/booking-extension.js",
+        "default": "./dist/booking-extension.js"
+      },
+      "./adapters": {
+        "types": "./dist/adapters/index.d.ts",
+        "import": "./dist/adapters/index.js",
+        "default": "./dist/adapters/index.js"
+      },
+      "./catalog-policy": {
+        "types": "./dist/catalog-policy.d.ts",
+        "import": "./dist/catalog-policy.js",
+        "default": "./dist/catalog-policy.js"
+      },
+      "./catalog-policy-cabins": {
+        "types": "./dist/catalog-policy-cabins.d.ts",
+        "import": "./dist/catalog-policy-cabins.js",
+        "default": "./dist/catalog-policy-cabins.js"
+      },
+      "./service-catalog-plane": {
+        "types": "./dist/service-catalog-plane.d.ts",
+        "import": "./dist/service-catalog-plane.js",
+        "default": "./dist/service-catalog-plane.js"
+      },
+      "./service-catalog-plane-cabins": {
+        "types": "./dist/service-catalog-plane-cabins.d.ts",
+        "import": "./dist/service-catalog-plane-cabins.js",
+        "default": "./dist/service-catalog-plane-cabins.js"
+      },
+      "./content-shape": {
+        "types": "./dist/content-shape.d.ts",
+        "import": "./dist/content-shape.js",
+        "default": "./dist/content-shape.js"
+      },
+      "./service-content": {
+        "types": "./dist/service-content.d.ts",
+        "import": "./dist/service-content.js",
+        "default": "./dist/service-content.js"
+      },
+      "./service-external-refresh": {
+        "types": "./dist/service-external-refresh.d.ts",
+        "import": "./dist/service-external-refresh.js",
+        "default": "./dist/service-external-refresh.js"
+      },
+      "./service-content-synthesizer": {
+        "types": "./dist/service-content-synthesizer.d.ts",
+        "import": "./dist/service-content-synthesizer.js",
+        "default": "./dist/service-content-synthesizer.js"
+      },
+      "./routes-content": {
+        "types": "./dist/routes-content.d.ts",
+        "import": "./dist/routes-content.js",
+        "default": "./dist/routes-content.js"
+      },
+      "./draft-shape": {
+        "types": "./dist/draft-shape.d.ts",
+        "import": "./dist/draft-shape.js",
+        "default": "./dist/draft-shape.js"
+      },
+      "./booking-engine": {
+        "types": "./dist/booking-engine/index.d.ts",
+        "import": "./dist/booking-engine/index.js",
+        "default": "./dist/booking-engine/index.js"
+      },
+      "./service-pricing": {
+        "types": "./dist/service-pricing.d.ts",
+        "import": "./dist/service-pricing.js",
+        "default": "./dist/service-pricing.js"
+      }
+    },
+    "main": "./dist/index.js",
+    "types": "./dist/index.d.ts"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/voyantjs/voyant.git",
+    "directory": "packages/cruises"
+  },
+  "voyant": {
+    "schema": "./schema",
+    "requiresSchemas": [
+      "@voyantjs/db"
+    ]
+  }
+}

@@ -1,0 +1,8 @@
+#include "../../Flutter/Flutter-Release.xcconfig"
+#include "Warnings.xcconfig"
+
+// TuyuBooking macOS releases target Apple Silicon only. Keeping a single
+// architecture also avoids Flutter 3.44 passing multiple values to lipo's
+// single-architecture verification command.
+ARCHS = arm64
+ONLY_ACTIVE_ARCH = YES

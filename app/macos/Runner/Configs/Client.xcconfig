@@ -1,0 +1,5 @@
+// TuyuBooking employee client installation product.
+TUYU_BOOKING_PRODUCT_NAME = TuyuBooking Client
+TUYU_BOOKING_BUNDLE_IDENTIFIER = com.tuyulove.tuyubooking.client
+// 本地化名称由 InfoPlist.xcstrings 提供；未本地化名称与物理包名匹配。
+TUYU_BOOKING_DISPLAY_NAME = $(TUYU_BOOKING_PRODUCT_NAME)

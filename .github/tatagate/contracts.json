@@ -1,0 +1,57 @@
+{
+  "schema": 1,
+  "repository": "tuyubooking",
+  "workflows": [
+    "tuyubooking.client-android.ci",
+    "tuyubooking.client-android.release",
+    "tuyubooking.client-ios.ci",
+    "tuyubooking.client-ios.release",
+    "tuyubooking.client-macos.ci",
+    "tuyubooking.client-macos.release",
+    "tuyubooking.client-windows.ci",
+    "tuyubooking.client-windows.release",
+    "tuyubooking.host-linux-amd.ci",
+    "tuyubooking.host-linux-amd.release",
+    "tuyubooking.host-linux-arm.ci",
+    "tuyubooking.host-linux-arm.release",
+    "tuyubooking.host-macos.ci",
+    "tuyubooking.host-macos.release",
+    "tuyubooking.host-windows.ci",
+    "tuyubooking.host-windows.release"
+  ],
+  "node_tests": [
+    "app/scripts/project.test.mjs",
+    "scripts/client/ci/android/client-android/test.mjs",
+    "scripts/client/ci/ios/client-ios/test.mjs",
+    "scripts/client/ci/macos/client-macos/test.mjs",
+    "scripts/client/ci/windows/client-windows/test.mjs",
+    "scripts/client/release/android/client-android/test.mjs",
+    "scripts/client/release/ios/client-ios/test.mjs",
+    "scripts/client/release/macos/client-macos/test.mjs",
+    "scripts/client/release/windows/client-windows/test.mjs",
+    "scripts/host/ci/linux-amd/host-linux-amd/test.mjs",
+    "scripts/host/ci/linux-arm/host-linux-arm/test.mjs",
+    "scripts/host/ci/macos/host-macos/test.mjs",
+    "scripts/host/ci/windows/host-windows/test.mjs",
+    "scripts/host/release/linux-amd/host-linux-amd/test.mjs",
+    "scripts/host/release/linux-arm/host-linux-arm/test.mjs",
+    "scripts/host/release/macos/host-macos/test.mjs",
+    "scripts/host/release/windows/host-windows/test.mjs",
+    "scripts/macos/postgres-dependencies.test.mjs",
+    "scripts/macos/postgres-runtime.test.mjs",
+    "scripts/host/postgres-runtime.test.mjs"
+  ],
+  "checks": [
+    "repository-contracts"
+  ],
+  "tools": {
+    "node": "25.2.1",
+    "actionlint": "1.7.12",
+    "rust": null
+  },
+  "platform_forbidden_values": [
+    "macOS ARM64",
+    "macos-arm64",
+    "macos_arm64"
+  ]
+}

@@ -1,0 +1,109 @@
+name: CI
+
+on:
+  pull_request:
+    branches:
+      - main
+      - develop
+  push:
+    branches:
+      - main
+      - develop
+
+# Cancel in-flight runs only for PR pushes (`pull_request` events). Pushes to
+# main/develop always run to completion: each merged commit is a state we may
+# need to bisect or reproduce later, and the changesets-bot's "chore: release
+# packages" auto-merge pattern lands a follow-up commit within seconds — under
+# the previous `cancel-in-progress: true` rule that follow-up reliably
+# cancelled the bot commit's CI before it could finish, leaving a red X on
+# main with no useful signal. Splitting the group by event keeps PR-side
+# cancellation (still useful — when you push to a PR, the previous run is
+# obsolete) while letting push-side runs complete.
+concurrency:
+  group: ci-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+# Two jobs run in parallel. `checks` covers everything that only needs source
+# (lint/typecheck/test/architecture/i18n); `build` covers everything that
+# needs fresh dist (turbo build → package exports → publish tarballs). They
+# share the same setup; both rely on the pnpm + turbo remote caches to make
+# the duplicated install/build effectively free on warm caches.
+#
+# NOTE: branch protection rules need to require both `CI / checks` and
+# `CI / build` (the previous single `verify` job no longer exists).
+
+jobs:
+  checks:
+    name: checks
+    runs-on: ubuntu-latest
+    env:
+      HUSKY: 0
+      NODE_OPTIONS: --max-old-space-size=8192
+      TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+      TURBO_TEAM: ${{ vars.TURBO_TEAM }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Typecheck
+        run: NODE_OPTIONS=--max-old-space-size=8192 pnpm turbo run typecheck --continue --concurrency=4 --ui=stream --log-order=stream
+
+      - name: Test
+        run: pnpm turbo run test --continue --ui=stream --log-order=stream
+
+      - name: Architecture checks
+        run: pnpm verify:architecture
+
+      - name: i18n checks
+        run: pnpm i18n:check
+
+  build:
+    name: build
+    runs-on: ubuntu-latest
+    env:
+      HUSKY: 0
+      TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+      TURBO_TEAM: ${{ vars.TURBO_TEAM }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Build
+        run: pnpm turbo build --ui=stream --log-order=stream
+
+      - name: Package export checks
+        run: pnpm verify:package-exports
+
+      - name: Publish tarball checks
+        # The preceding `Build` step already produced fresh dist via turbo
+        # (with remote cache); reuse it instead of clean-building each
+        # public package a second time inside the verifier.
+        env:
+          VOYANT_PACK_REUSE_DIST: "1"
+        run: pnpm verify:publish-tarballs

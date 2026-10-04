@@ -1,0 +1,1338 @@
+import {
+  type BookingConfirmedEvent,
+  bookingGroupsService,
+  bookingsService,
+} from "@voyantjs/bookings"
+import {
+  type BookingDraftMismatch,
+  type PricingAssignmentUnit,
+  verifyBookingDraft,
+} from "@voyantjs/bookings/pricing-assignment"
+import type { Booking, BookingGroupMember, BookingTraveler } from "@voyantjs/bookings/schema"
+import { bookingItems, bookingItemTravelers, bookingTravelers } from "@voyantjs/bookings/schema"
+import { bookingStatusSchema } from "@voyantjs/bookings/validation"
+import { eq, sql } from "drizzle-orm"
+import type { PostgresJsDatabase } from "drizzle-orm/postgres-js"
+import { z } from "zod"
+
+import type {
+  BookingPaymentSchedule,
+  Invoice,
+  Payment,
+  Voucher,
+  VoucherRedemption,
+} from "./schema.js"
+import { bookingPaymentSchedules, vouchers } from "./schema.js"
+import { type FinanceServiceRuntime, financeService, toRows } from "./service.js"
+import { financeDocumentsService, type InvoiceDocumentGenerator } from "./service-documents.js"
+import { VoucherServiceError, vouchersService } from "./service-vouchers.js"
+import {
+  paymentMethodSchema,
+  paymentScheduleStatusSchema,
+  paymentScheduleTypeSchema,
+} from "./validation-shared.js"
+
+// ---------- validation ----------
+
+const travelerInputSchema = z.object({
+  clientTravelerKey: z.string().min(1).max(255).optional().nullable(),
+  firstName: z.string().min(1).max(255),
+  lastName: z.string().min(1).max(255),
+  email: z.string().email().optional().nullable(),
+  phone: z.string().max(50).optional().nullable(),
+  personId: z.string().optional().nullable(),
+  participantType: z.enum(["traveler", "occupant", "other"]).default("traveler"),
+  travelerCategory: z.enum(["adult", "child", "infant", "senior", "other"]).optional().nullable(),
+  preferredLanguage: z.string().max(35).optional().nullable(),
+  specialRequests: z.string().optional().nullable(),
+  /**
+   * Deprecated compatibility alias for the traveler's pricing-tier option
+   * unit. Accepted by the input schema for wire compatibility but not
+   * persisted; item-line travelerKeys are the supported traveler-to-item
+   * linkage.
+   */
+  roomUnitId: z.string().optional().nullable(),
+  isPrimary: z.boolean().optional().nullable(),
+  notes: z.string().optional().nullable(),
+})
+
+const paymentScheduleInputSchema = z.object({
+  scheduleType: paymentScheduleTypeSchema.default("balance"),
+  status: paymentScheduleStatusSchema.default("pending"),
+  dueDate: z.string().min(1),
+  currency: z.string().min(3).max(3),
+  amountCents: z.number().int().min(0),
+  notes: z.string().optional().nullable(),
+})
+
+const documentGenerationInputSchema = z
+  .object({
+    contractDocument: z.boolean().default(false),
+    invoiceDocument: z.boolean().default(false),
+    /**
+     * Kind of invoice to issue when `invoiceDocument` is true. Defaults
+     * to a final `invoice`; pass `proforma` for the placeholder used in
+     * pre-payment flows (operator dashboard's "Generate proforma"
+     * shortcut on the new-booking dialog).
+     */
+    invoiceType: z.enum(["invoice", "proforma"]).default("invoice"),
+  })
+  .default({ contractDocument: false, invoiceDocument: false, invoiceType: "invoice" })
+
+const itemLineInputSchema = z.object({
+  /**
+   * Stable client-side key (e.g. `unit:optu_adult`). Server stamps
+   * this into `booking_items.metadata.bookingCreateLineKey` so the
+   * post-insert pass can look up the row and link it to travelers
+   * via `booking_item_travelers`. See voyantjs/voyant#1267.
+   */
+  clientLineKey: z.string().min(1).max(255).optional().nullable(),
+  optionUnitId: z.string().min(1),
+  quantity: z.number().int().min(1),
+  title: z.string().min(1).max(255).optional().nullable(),
+  description: z.string().max(5000).optional().nullable(),
+  unitSellAmountCents: z.number().int().min(0).optional().nullable(),
+  totalSellAmountCents: z.number().int().min(0).optional().nullable(),
+  /**
+   * Stable traveler keys this item applies to. Server inserts one
+   * `booking_item_travelers` row per traveler.
+   */
+  travelerKeys: z.array(z.string().min(1).max(255)).optional().nullable(),
+  /**
+   * Deprecated position-based traveler links. Removal target: next
+   * booking-create wire-format major.
+   */
+  travelerIndexes: z.array(z.number().int().min(0)).optional().nullable(),
+})
+
+const extraLineInputSchema = z.object({
+  clientLineKey: z.string().min(1).max(255).optional().nullable(),
+  productExtraId: z.string().min(1),
+  optionExtraConfigId: z.string().min(1).optional().nullable(),
+  name: z.string().min(1).max(255),
+  description: z.string().max(5000).optional().nullable(),
+  pricingMode: z.string().max(50).optional().nullable(),
+  pricedPerPerson: z.boolean().optional().nullable(),
+  quantity: z.number().int().min(1),
+  sellCurrency: z.string().length(3),
+  unitSellAmountCents: z.number().int().min(0).optional().nullable(),
+  totalSellAmountCents: z.number().int().min(0).optional().nullable(),
+  travelerKeys: z.array(z.string().min(1).max(255)).optional().nullable(),
+  travelerIndexes: z.array(z.number().int().min(0)).optional().nullable(),
+})
+
+const voucherRedemptionInputSchema = z.object({
+  voucherId: z.string().min(1),
+  amountCents: z.number().int().min(1),
+})
+
+const groupJoinSchema = z.object({
+  action: z.literal("join"),
+  groupId: z.string().min(1),
+  role: z.enum(["primary", "shared"]).default("shared"),
+})
+
+const groupCreateSchema = z.object({
+  action: z.literal("create"),
+  kind: z.enum(["shared_room", "other"]).default("shared_room"),
+  label: z.string().max(255).optional().nullable(),
+  optionUnitId: z.string().optional().nullable(),
+  /**
+   * When true (the default), the freshly-created booking becomes the group's
+   * primary booking. Operators creating a dual-booking can set this false and
+   * supply a different primaryBookingId — not wired in this slice, but the
+   * field is reserved.
+   */
+  makeBookingPrimary: z.boolean().default(true),
+})
+
+const groupMembershipInputSchema = z.discriminatedUnion("action", [
+  groupJoinSchema,
+  groupCreateSchema,
+])
+
+const placeholderEmails = new Set([
+  "noreply@example.com",
+  "tbd@example.com",
+  "traveler@example.com",
+])
+
+function requirePriceOverrideReason(
+  value: {
+    catalogSellAmountCents?: number | null
+    confirmedSellAmountCents?: number | null
+    priceOverrideReason?: string | null
+  },
+  ctx: z.RefinementCtx,
+) {
+  if (value.confirmedSellAmountCents == null) return
+  if (value.catalogSellAmountCents === value.confirmedSellAmountCents) return
+  if (value.priceOverrideReason) return
+
+  ctx.addIssue({
+    code: z.ZodIssueCode.custom,
+    path: ["priceOverrideReason"],
+    message:
+      "A price override reason is required when the confirmed total differs from catalog pricing",
+  })
+}
+
+function requireCompleteBookingParty(
+  value: {
+    personId?: string | null
+    organizationId?: string | null
+    contactFirstName?: string | null
+    contactLastName?: string | null
+    contactEmail?: string | null
+    contactPhone?: string | null
+    travelers?: Array<{
+      firstName: string
+      lastName: string
+      email?: string | null
+      personId?: string | null
+    }>
+  },
+  ctx: z.RefinementCtx,
+) {
+  if (!value.personId && !value.organizationId) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["personId"],
+      message: "Select a billing person or organization",
+    })
+  }
+
+  if (value.personId) {
+    if (!value.contactFirstName?.trim() || !value.contactLastName?.trim()) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["contactFirstName"],
+        message: "Billing person requires first and last name",
+      })
+    }
+    const hasRealEmail = isRealEmail(value.contactEmail)
+    const hasPhone = Boolean(value.contactPhone?.trim())
+
+    if (value.contactEmail && !hasRealEmail) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["contactEmail"],
+        message: "Billing email cannot be a placeholder address",
+      })
+    }
+    if (!hasRealEmail && !hasPhone) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["contactEmail"],
+        message: "Billing person requires an email or phone number",
+      })
+    }
+  } else if (value.contactEmail && !isRealEmail(value.contactEmail)) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["contactEmail"],
+      message: "Billing email cannot be a placeholder address",
+    })
+  }
+
+  if (!value.travelers || value.travelers.length === 0) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["travelers"],
+      message: "Add at least one traveler",
+    })
+  }
+
+  value.travelers?.forEach((traveler, index) => {
+    if (!traveler.personId && (!traveler.firstName.trim() || !traveler.lastName.trim())) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["travelers", index],
+        message: "Traveler requires a name or person record",
+      })
+    }
+    if (traveler.email && !isRealEmail(traveler.email)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["travelers", index, "email"],
+        message: "Traveler email cannot be a placeholder address",
+      })
+    }
+  })
+}
+
+function findDuplicateClientTravelerKeys(
+  travelers: readonly { clientTravelerKey?: string | null }[] | null | undefined,
+): string[] {
+  const seen = new Set<string>()
+  const duplicates = new Set<string>()
+  for (const traveler of travelers ?? []) {
+    const key = traveler.clientTravelerKey?.trim()
+    if (!key) continue
+    if (seen.has(key)) duplicates.add(key)
+    else seen.add(key)
+  }
+  return [...duplicates]
+}
+
+function requireUniqueClientTravelerKeys(
+  value: { travelers?: Array<{ clientTravelerKey?: string | null }> },
+  ctx: z.RefinementCtx,
+) {
+  for (const duplicateKey of findDuplicateClientTravelerKeys(value.travelers)) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["travelers"],
+      message: `Duplicate clientTravelerKey: ${duplicateKey}`,
+    })
+  }
+}
+
+function requireKnownTravelerKeys(
+  value: {
+    travelers?: Array<{ clientTravelerKey?: string | null }>
+    itemLines?: Array<{ travelerKeys?: string[] | null }>
+    extraLines?: Array<{ travelerKeys?: string[] | null }>
+  },
+  ctx: z.RefinementCtx,
+) {
+  const knownKeys = new Set(
+    (value.travelers ?? [])
+      .map((traveler) => traveler.clientTravelerKey?.trim())
+      .filter((key): key is string => Boolean(key)),
+  )
+  const checkLines = (
+    field: "itemLines" | "extraLines",
+    lines: Array<{ travelerKeys?: string[] | null }> | undefined,
+  ) => {
+    lines?.forEach((line, lineIndex) => {
+      line.travelerKeys?.forEach((travelerKey, keyIndex) => {
+        const key = travelerKey.trim()
+        if (!key || knownKeys.has(key)) return
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: [field, lineIndex, "travelerKeys", keyIndex],
+          message: `Unknown travelerKey: ${key}`,
+        })
+      })
+    })
+  }
+
+  checkLines("itemLines", value.itemLines)
+  checkLines("extraLines", value.extraLines)
+}
+
+function isRealEmail(value: string | null | undefined): value is string {
+  const normalized = value?.trim().toLowerCase() ?? ""
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalized) && !placeholderEmails.has(normalized)
+}
+
+const bookingCreateBaseSchema = z.object({
+  // Convert-product fields (mirrors convertProductSchema in bookings)
+  productId: z.string().min(1),
+  optionId: z.string().optional().nullable(),
+  slotId: z.string().optional().nullable(),
+  bookingNumber: z.string().min(1),
+  personId: z.string().optional().nullable(),
+  organizationId: z.string().optional().nullable(),
+  pax: z.number().int().positive().optional().nullable(),
+  internalNotes: z.string().optional().nullable(),
+  /**
+   * Override the seed `sellAmountCents` on the new booking + line item.
+   * Threads through to `convertProductToBooking` so promotion-discounted
+   * quotes land at the discounted amount instead of the product's list
+   * price. Per docs/architecture/promotions-architecture.md §7.1.
+   */
+  sellAmountCentsOverride: z.number().int().min(0).optional().nullable(),
+  catalogSellAmountCents: z.number().int().min(0).optional().nullable(),
+  confirmedSellAmountCents: z.number().int().min(0).optional().nullable(),
+  priceOverrideReason: z.string().trim().min(1).max(1000).optional().nullable(),
+
+  /**
+   * Initial lifecycle status to seat the booking in — defaults to `draft`.
+   * Lets the dialog commit straight to `confirmed` or `awaiting_payment`
+   * in the same transaction, avoiding the post-create `/override-status`
+   * roundtrip that previously occasionally raced the create's COMMIT.
+   *
+   * When set to `confirmed`, the orchestrator emits `booking.confirmed`
+   * post-commit so notification + document-bundle subscribers fire just
+   * like they would for an after-the-fact transition.
+   */
+  initialStatus: bookingStatusSchema.optional(),
+  /**
+   * When true and `initialStatus === "confirmed"`, the post-commit
+   * `booking.confirmed` event carries `suppressNotifications: true` so
+   * downstream subscribers skip customer-facing email + document
+   * bundles. Operators can confirm a booking silently this way.
+   */
+  suppressNotifications: z.boolean().optional(),
+  // Billing-contact snapshot — captured at create time. Caller (the
+  // dialog) reads the linked CRM person/org and supplies what it
+  // knows; the convertProductToBooking helper writes everything
+  // through to the booking row's contact_* columns.
+  contactFirstName: z.string().max(255).optional().nullable(),
+  contactLastName: z.string().max(255).optional().nullable(),
+  contactEmail: z.string().max(255).optional().nullable(),
+  contactPhone: z.string().max(50).optional().nullable(),
+  contactPreferredLanguage: z.string().max(35).optional().nullable(),
+  contactCountry: z.string().max(2).optional().nullable(),
+  contactRegion: z.string().max(100).optional().nullable(),
+  contactCity: z.string().max(100).optional().nullable(),
+  contactAddressLine1: z.string().max(500).optional().nullable(),
+  contactAddressLine2: z.string().max(500).optional().nullable(),
+  contactPostalCode: z.string().max(20).optional().nullable(),
+
+  // Orchestration fields
+  travelers: z.array(travelerInputSchema).optional(),
+  itemLines: z.array(itemLineInputSchema).optional(),
+  extraLines: z.array(extraLineInputSchema).optional(),
+  paymentSchedules: z.array(paymentScheduleInputSchema).optional(),
+  voucherRedemption: voucherRedemptionInputSchema.optional(),
+  groupMembership: groupMembershipInputSchema.optional(),
+  documentGeneration: documentGenerationInputSchema.optional(),
+})
+
+export const bookingCreateSchema = bookingCreateBaseSchema
+  .superRefine(requirePriceOverrideReason)
+  .superRefine(requireCompleteBookingParty)
+  .superRefine(requireUniqueClientTravelerKeys)
+  .superRefine(requireKnownTravelerKeys)
+
+export const bookingCreateSubSchema = bookingCreateBaseSchema
+  .omit({ groupMembership: true })
+  .superRefine(requirePriceOverrideReason)
+  .superRefine(requireCompleteBookingParty)
+  .superRefine(requireUniqueClientTravelerKeys)
+  .superRefine(requireKnownTravelerKeys)
+
+export type BookingCreateInput = z.infer<typeof bookingCreateSchema>
+type BookingCreatePaymentScheduleInput = NonNullable<BookingCreateInput["paymentSchedules"]>[number]
+export type BookingCreateTravelerInput = z.infer<typeof travelerInputSchema>
+
+// ---------- runtime ----------
+
+/**
+ * Fire-and-forget post-commit events. The orchestrator only knows about
+ * `booking.created` — downstream confirm/cancel lifecycle events stay
+ * with the booking service itself (the booking lands in `draft` status so no
+ * `booking.confirmed` should fire here).
+ */
+export interface BookingCreateRuntime extends FinanceServiceRuntime {
+  invoiceDocumentGenerator?: InvoiceDocumentGenerator
+  bindings?: Record<string, unknown>
+}
+
+export interface BookingCreatedEvent {
+  bookingId: string
+  bookingNumber: string
+  productId: string
+  travelerCount: number
+  paymentScheduleCount: number
+  voucherRedeemedCents: number | null
+  groupId: string | null
+  documentGeneration: {
+    contractDocument: boolean
+    invoiceDocument: boolean
+    invoiceType: "invoice" | "proforma"
+  }
+  createdByUserId: string | null
+  occurredAt: Date
+}
+
+export interface BookingCreateRejectedEvent {
+  reason: "payload_resolver_mismatch"
+  productId: string
+  optionId: string | null
+  slotId: string | null
+  bookingNumber: string
+  mismatchCount: number
+  mismatches: BookingDraftMismatch[]
+  createdByUserId: string | null
+  occurredAt: Date
+}
+
+// ---------- result shape ----------
+
+export interface BookingCreateResult {
+  booking: Booking
+  travelers: BookingTraveler[]
+  paymentSchedules: BookingPaymentSchedule[]
+  voucherRedemption: {
+    voucher: Voucher
+    redemption: VoucherRedemption
+  } | null
+  groupMembership: {
+    groupId: string
+    member: BookingGroupMember
+  } | null
+  invoice: Invoice | null
+  invoiceDocument:
+    | { status: "requested"; renditionId: string | null }
+    | { status: "generated"; renditionId: string }
+    | { status: "not_requested" | "not_available" | "failed" }
+  payments: Payment[]
+}
+
+export interface BookingCreateValidationIssue {
+  path: Array<string | number>
+  message: string
+}
+
+export type BookingCreateOutcome =
+  | { status: "ok"; result: BookingCreateResult }
+  | { status: "invalid_payment_schedules"; issues: BookingCreateValidationIssue[] }
+  | { status: "payload_resolver_mismatch"; mismatches: BookingDraftMismatch[] }
+  | { status: "product_not_found" }
+  | { status: "voucher_not_found" }
+  | { status: "voucher_inactive" }
+  | { status: "voucher_not_started" }
+  | { status: "voucher_expired" }
+  | { status: "voucher_insufficient_balance" }
+  | { status: "group_not_found" }
+  | { status: "booking_already_in_group"; currentGroupId: string }
+
+// ---------- service ----------
+
+/**
+ * Atomic booking-create orchestrator. Runs product conversion + travelers +
+ * payment schedules + voucher redemption + group membership inside a single
+ * transaction so partial failures (e.g. voucher insufficient-balance after
+ * schedules have been written) roll the whole thing back.
+ *
+ * Event emission is post-commit — if the tx rolls back, subscribers never
+ * hear about it.
+ *
+ * Why the orchestrator lives in `@voyantjs/finance`: finance already imports
+ * from `@voyantjs/bookings` (invoices-from-bookings, voucher service, payment
+ * schedules all sit here), so this is the one place that can compose the
+ * three packages without creating a new workspace dep cycle. The route wires
+ * it under `/v1/admin/bookings/create` via a HonoExtension whose
+ * `module` targets `"bookings"`.
+ */
+/**
+ * Sentinel thrown inside the tx to force drizzle to roll back. Returning a
+ * non-ok result from the tx callback doesn't abort the tx — only a thrown
+ * error does — so the orchestrator uses this to unwind cleanly when a
+ * downstream step discovers a precondition failure.
+ */
+class BookingCreateAbort extends Error {
+  constructor(readonly outcome: Exclude<BookingCreateOutcome, { status: "ok" }>) {
+    super(`create aborted: ${outcome.status}`)
+    this.name = "BookingCreateAbort"
+  }
+}
+
+class BookingCreateValidationError extends Error {
+  constructor(
+    readonly code: "payload_resolver_mismatch",
+    readonly mismatches: BookingDraftMismatch[],
+  ) {
+    super(code)
+    this.name = "BookingCreateValidationError"
+  }
+}
+
+interface AlreadyPaidScheduleMetadata {
+  alreadyPaid?: boolean
+  paymentDate?: string | null
+  paymentMethod?: string | null
+  paymentReference?: string | null
+}
+
+function parseAlreadyPaidScheduleMetadata(notes: string | null | undefined) {
+  if (!notes) return null
+  try {
+    const parsed = JSON.parse(notes) as AlreadyPaidScheduleMetadata
+    return parsed && typeof parsed === "object" ? parsed : null
+  } catch {
+    return null
+  }
+}
+
+function isAlreadyPaidSchedule(schedule: BookingCreatePaymentScheduleInput) {
+  const metadata = parseAlreadyPaidScheduleMetadata(schedule.notes)
+  return schedule.status === "paid" || metadata?.alreadyPaid === true
+}
+
+/**
+ * Load the option_unit catalog for a product so the resolver can
+ * verify the submitted itemLines server-side. Raw SQL because
+ * `option_units` lives in `@voyantjs/products` and finance doesn't
+ * depend on it directly — adding a runtime dependency for a log-only
+ * sanity check would be overkill.
+ */
+async function loadProductOptionUnits(
+  tx: PostgresJsDatabase,
+  productId: string,
+): Promise<PricingAssignmentUnit[]> {
+  const result = await tx.execute(sql`
+    SELECT
+      ou.id          AS "optionUnitId",
+      ou.option_id   AS "optionId",
+      ou.name        AS "unitName",
+      ou.code        AS "unitCode",
+      ou.min_age     AS "minAge",
+      ou.max_age     AS "maxAge",
+      ou.unit_type   AS "unitType"
+    FROM option_units ou
+    JOIN product_options po ON po.id = ou.option_id
+    WHERE po.product_id = ${productId}
+  `)
+  return toRows<PricingAssignmentUnit>(result).map((row) => ({
+    optionId: row.optionId ?? null,
+    optionUnitId: row.optionUnitId,
+    unitName: row.unitName,
+    unitCode: row.unitCode ?? null,
+    minAge: row.minAge ?? null,
+    maxAge: row.maxAge ?? null,
+    unitType: row.unitType ?? null,
+  }))
+}
+
+function isInventoryOptionUnit(unit: PricingAssignmentUnit): boolean {
+  return unit.unitType === "room" || unit.unitType === "vehicle"
+}
+
+function isPersonOptionUnit(unit: PricingAssignmentUnit): boolean {
+  return unit.unitType == null || unit.unitType === "person"
+}
+
+function normalizeAccommodationItemLinesToInventoryUnits(options: {
+  itemLines: NonNullable<BookingCreateInput["itemLines"]> | undefined
+  units: readonly PricingAssignmentUnit[]
+}): NonNullable<BookingCreateInput["itemLines"]> | undefined {
+  if (!options.itemLines?.length || options.units.length === 0) return options.itemLines
+
+  const unitsByOption = new Map<string, PricingAssignmentUnit[]>()
+  const unitById = new Map<string, PricingAssignmentUnit>()
+  const unitToPrimaryInventory = new Map<string, PricingAssignmentUnit>()
+  for (const unit of options.units) {
+    const optionKey = unit.optionId ?? unit.optionUnitId
+    unitById.set(unit.optionUnitId, unit)
+    const optionUnits = unitsByOption.get(optionKey)
+    if (optionUnits) optionUnits.push(unit)
+    else unitsByOption.set(optionKey, [unit])
+  }
+
+  for (const optionUnits of unitsByOption.values()) {
+    const primaryInventory = optionUnits.find(isInventoryOptionUnit)
+    if (!primaryInventory) continue
+    for (const unit of optionUnits) {
+      unitToPrimaryInventory.set(unit.optionUnitId, primaryInventory)
+    }
+  }
+
+  return options.itemLines.map((line) => {
+    const submittedUnit = unitById.get(line.optionUnitId)
+    const targetInventory = unitToPrimaryInventory.get(line.optionUnitId)
+    if (!submittedUnit || !targetInventory) return line
+    if (isInventoryOptionUnit(submittedUnit) || !isPersonOptionUnit(submittedUnit)) return line
+    return {
+      ...line,
+      optionUnitId: targetInventory.optionUnitId,
+    }
+  })
+}
+
+function hasResolverRejectionSignals(input: {
+  travelers: NonNullable<BookingCreateInput["travelers"]>
+  itemLines: NonNullable<BookingCreateInput["itemLines"]>
+}) {
+  const hasTravelerLinks = (line: NonNullable<BookingCreateInput["itemLines"]>[number]) =>
+    (Array.isArray(line.travelerKeys) && line.travelerKeys.length > 0) ||
+    (Array.isArray(line.travelerIndexes) && line.travelerIndexes.length > 0)
+
+  return (
+    input.travelers.every(
+      (traveler) =>
+        traveler.travelerCategory === "adult" ||
+        traveler.travelerCategory === "child" ||
+        traveler.travelerCategory === "infant",
+    ) && input.itemLines.every(hasTravelerLinks)
+  )
+}
+
+/**
+ * Re-runs `resolveBookingDraft` against the submitted payload and
+ * rejects mismatches between submitted itemLines quantities and
+ * what the resolver would derive when the request carries the
+ * traveler band + line assignment metadata the verifier needs.
+ */
+async function verifyBookingCreatePayload(tx: PostgresJsDatabase, input: BookingCreateInput) {
+  const itemLines = input.itemLines ?? []
+  const travelers = input.travelers ?? []
+  if (itemLines.length === 0 || travelers.length === 0) return
+
+  const units = await loadProductOptionUnits(tx, input.productId)
+  const verification = verifyBookingDraft({
+    travelers,
+    itemLines,
+    units,
+  })
+
+  if (!verification.ok) {
+    if (!hasResolverRejectionSignals({ travelers, itemLines })) {
+      console.warn(
+        `[bookings/create] payload drift skipped hard rejection for product=${input.productId}`,
+        JSON.stringify(verification.mismatches),
+      )
+      return
+    }
+    throw new BookingCreateValidationError("payload_resolver_mismatch", verification.mismatches)
+  }
+}
+
+/**
+ * Filter + dedupe deprecated `travelerIndexes` against the inserted traveler
+ * array, dropping any indexes outside `[0, travelersLength)`.
+ */
+function uniqueValidTravelerIndexes(
+  indexes: readonly number[] | null | undefined,
+  travelersLength: number,
+): number[] {
+  if (!indexes?.length) return []
+  const seen = new Set<number>()
+  const result: number[] = []
+  for (const index of indexes) {
+    if (index < 0 || index >= travelersLength) continue
+    if (seen.has(index)) continue
+    seen.add(index)
+    result.push(index)
+  }
+  return result
+}
+
+function uniqueTravelerKeys(keys: readonly string[] | null | undefined): string[] {
+  if (!keys?.length) return []
+  const seen = new Set<string>()
+  const result: string[] = []
+  for (const key of keys) {
+    const normalized = key.trim()
+    if (!normalized || seen.has(normalized)) continue
+    seen.add(normalized)
+    result.push(normalized)
+  }
+  return result
+}
+
+/**
+ * Look up each `booking_item` the converter inserted by its stamped
+ * `metadata.bookingCreateLineKey`, then write one
+ * `booking_item_travelers` row per requested traveler. Idempotent —
+ * dedupes by `(item_id, traveler_id)` and skips when the lookup
+ * fails (e.g. the converter didn't create an item for that key).
+ *
+ * The metadata-key bridge lets the wire-format `clientLineKey` thread
+ * through the create flow without forcing the converter to return a
+ * map back to the orchestrator. See voyantjs/voyant#1267.
+ */
+async function linkBookingCreateItemsToTravelers(
+  tx: PostgresJsDatabase,
+  bookingId: string,
+  travelers: readonly BookingTraveler[],
+  travelerInputs: readonly Pick<BookingCreateTravelerInput, "clientTravelerKey">[],
+  lines: ReadonlyArray<{
+    clientLineKey?: string | null
+    travelerKeys?: readonly string[] | null
+    travelerIndexes?: readonly number[] | null
+  }>,
+) {
+  if (travelers.length === 0 || lines.length === 0) return
+  const duplicateTravelerKeys = findDuplicateClientTravelerKeys(travelerInputs)
+  if (duplicateTravelerKeys.length > 0) {
+    throw new Error(`Duplicate clientTravelerKey: ${duplicateTravelerKeys.join(", ")}`)
+  }
+
+  type RequestedTravelerLink = {
+    clientLineKey: string | null
+    travelerKey: string | null
+    traveler: BookingTraveler | null
+  }
+
+  const travelerByClientKey = new Map<string, BookingTraveler>()
+  for (const [index, travelerInput] of travelerInputs.entries()) {
+    const key = travelerInput.clientTravelerKey?.trim()
+    const traveler = travelers[index]
+    if (key && traveler && !travelerByClientKey.has(key)) travelerByClientKey.set(key, traveler)
+  }
+
+  const requestedLinks: RequestedTravelerLink[] = []
+  for (const line of lines) {
+    const travelerKeys = uniqueTravelerKeys(line.travelerKeys)
+    if (travelerKeys.length > 0) {
+      for (const travelerKey of travelerKeys) {
+        requestedLinks.push({
+          clientLineKey: line.clientLineKey ?? null,
+          travelerKey,
+          traveler: travelerByClientKey.get(travelerKey) ?? null,
+        })
+      }
+      continue
+    }
+    for (const travelerIndex of uniqueValidTravelerIndexes(
+      line.travelerIndexes,
+      travelers.length,
+    )) {
+      requestedLinks.push({
+        clientLineKey: line.clientLineKey ?? null,
+        travelerKey: null,
+        traveler: travelers[travelerIndex] ?? null,
+      })
+    }
+  }
+  if (requestedLinks.length === 0) return
+
+  const itemRows = await tx.select().from(bookingItems).where(eq(bookingItems.bookingId, bookingId))
+  const itemByClientLineKey = new Map<string, (typeof itemRows)[number]>()
+  for (const item of itemRows) {
+    const key = (item.metadata as { bookingCreateLineKey?: unknown } | null | undefined)
+      ?.bookingCreateLineKey
+    if (typeof key === "string") itemByClientLineKey.set(key, item)
+  }
+
+  const seen = new Set<string>()
+  const unknownTravelerKeys = requestedLinks
+    .filter((link) => link.travelerKey && !link.traveler)
+    .map((link) => link.travelerKey)
+    .filter((key): key is string => Boolean(key))
+  if (unknownTravelerKeys.length > 0) {
+    throw new Error(`Unknown travelerKey: ${unknownTravelerKeys.join(", ")}`)
+  }
+
+  const linkRows = requestedLinks.flatMap(({ clientLineKey, traveler }) => {
+    if (!clientLineKey) return []
+    const item = itemByClientLineKey.get(clientLineKey)
+    if (!item || !traveler) return []
+    const dedupeKey = `${item.id}:${traveler.id}`
+    if (seen.has(dedupeKey)) return []
+    seen.add(dedupeKey)
+    return [
+      {
+        bookingItemId: item.id,
+        travelerId: traveler.id,
+        role: "traveler" as const,
+        isPrimary: traveler.isPrimary,
+      },
+    ]
+  })
+
+  if (linkRows.length > 0) {
+    await tx.insert(bookingItemTravelers).values(linkRows)
+  }
+}
+
+function validatePaymentSchedules(
+  input: BookingCreateInput,
+  booking: Booking,
+): BookingCreateValidationIssue[] {
+  const schedules = input.paymentSchedules ?? []
+  if (schedules.length === 0) return []
+
+  const issues: BookingCreateValidationIssue[] = []
+  const expectedCurrency = booking.sellCurrency
+
+  schedules.forEach((schedule, index) => {
+    if (schedule.currency !== expectedCurrency) {
+      issues.push({
+        path: ["paymentSchedules", index, "currency"],
+        message: `paymentSchedules[${index}].currency must equal the booking's sellCurrency (${expectedCurrency}); got ${schedule.currency}`,
+      })
+    }
+  })
+
+  if (typeof input.confirmedSellAmountCents === "number") {
+    const sum = schedules.reduce((total, schedule) => total + schedule.amountCents, 0)
+    if (sum !== input.confirmedSellAmountCents) {
+      issues.push({
+        path: ["paymentSchedules"],
+        message: `paymentSchedules amountCents sum (${sum}) must equal confirmedSellAmountCents (${input.confirmedSellAmountCents})`,
+      })
+    }
+  }
+
+  return issues
+}
+
+function bookingItemStatusForInitialStatus(
+  status: BookingCreateInput["initialStatus"] | undefined,
+): "draft" | "on_hold" | "confirmed" | "cancelled" | "expired" | "fulfilled" {
+  if (status === "on_hold") return "on_hold"
+  if (status === "cancelled") return "cancelled"
+  if (status === "expired") return "expired"
+  if (status === "completed") return "fulfilled"
+  if (status === "confirmed" || status === "awaiting_payment" || status === "in_progress") {
+    return "confirmed"
+  }
+  return "draft"
+}
+
+function generateInvoiceNumber(bookingNumber: string) {
+  return `INV-${bookingNumber}`.slice(0, 50)
+}
+
+function todayIsoDate() {
+  return new Date().toISOString().slice(0, 10)
+}
+
+export function deriveBookingCreatePax(input: {
+  pax?: number | null
+  travelers?: readonly { participantType?: string | null }[] | null
+}) {
+  if (Object.hasOwn(input, "pax")) {
+    return input.pax ?? null
+  }
+
+  const pax =
+    input.travelers?.filter((traveler) =>
+      [undefined, null, "traveler", "occupant"].includes(traveler.participantType),
+    ).length ?? 0
+
+  return pax > 0 ? pax : null
+}
+
+export async function createBooking(
+  db: PostgresJsDatabase,
+  rawInput: BookingCreateInput,
+  options: {
+    userId?: string
+    runtime?: BookingCreateRuntime
+  } = {},
+): Promise<BookingCreateOutcome> {
+  const { userId, runtime } = options
+  // Parse through the schema so defaults (makeBookingPrimary, role,
+  // participantType, etc.) are applied even when callers bypass validation —
+  // unit tests and hand-written integrations commonly do.
+  const input = bookingCreateSchema.parse(rawInput)
+  const documentGeneration = input.documentGeneration ?? {
+    contractDocument: false,
+    invoiceDocument: false,
+    invoiceType: "invoice" as const,
+  }
+  const pax = deriveBookingCreatePax(input)
+
+  // Validate voucher up-front so we can short-circuit before the tx starts.
+  // This is a cheap read — the authoritative balance check still happens
+  // inside the redeem savepoint so two concurrent redemptions can't double-
+  // spend.
+  if (input.voucherRedemption) {
+    const [voucher] = await db
+      .select()
+      .from(vouchers)
+      .where(eq(vouchers.id, input.voucherRedemption.voucherId))
+      .limit(1)
+    if (!voucher) return { status: "voucher_not_found" }
+    if (voucher.status !== "active") return { status: "voucher_inactive" }
+    if (voucher.validFrom && voucher.validFrom.getTime() > Date.now()) {
+      return { status: "voucher_not_started" }
+    }
+    if (voucher.expiresAt && voucher.expiresAt.getTime() < Date.now()) {
+      return { status: "voucher_expired" }
+    }
+    if (input.voucherRedemption.amountCents > voucher.remainingAmountCents) {
+      return { status: "voucher_insufficient_balance" }
+    }
+  }
+
+  let result: BookingCreateResult
+  try {
+    result = await db.transaction(async (tx) => {
+      const productOptionUnits = input.itemLines?.length
+        ? await loadProductOptionUnits(tx, input.productId)
+        : []
+      const normalizedItemLines = normalizeAccommodationItemLinesToInventoryUnits({
+        itemLines: input.itemLines,
+        units: productOptionUnits,
+      })
+      // 1. Booking from product
+      const booking = await bookingsService.createBookingFromProduct(tx, {
+        productId: input.productId,
+        optionId: input.optionId ?? null,
+        slotId: input.slotId ?? null,
+        bookingNumber: input.bookingNumber,
+        personId: input.personId ?? null,
+        organizationId: input.organizationId ?? null,
+        pax,
+        internalNotes: input.internalNotes ?? null,
+        sellAmountCentsOverride: input.sellAmountCentsOverride ?? null,
+        catalogSellAmountCents: input.catalogSellAmountCents ?? null,
+        confirmedSellAmountCents: input.confirmedSellAmountCents ?? null,
+        priceOverrideReason: input.priceOverrideReason ?? null,
+        initialStatus: input.initialStatus,
+        contactFirstName: input.contactFirstName ?? null,
+        contactLastName: input.contactLastName ?? null,
+        contactEmail: input.contactEmail ?? null,
+        contactPhone: input.contactPhone ?? null,
+        contactPreferredLanguage: input.contactPreferredLanguage ?? null,
+        contactCountry: input.contactCountry ?? null,
+        contactRegion: input.contactRegion ?? null,
+        contactCity: input.contactCity ?? null,
+        contactAddressLine1: input.contactAddressLine1 ?? null,
+        contactAddressLine2: input.contactAddressLine2 ?? null,
+        contactPostalCode: input.contactPostalCode ?? null,
+        itemLines: normalizedItemLines,
+      })
+      if (!booking) {
+        // Caller gave us a product that doesn't resolve. Throw so drizzle
+        // rolls back any writes the convert helper may have made.
+        throw new BookingCreateAbort({ status: "product_not_found" })
+      }
+      const paymentScheduleIssues = validatePaymentSchedules(input, booking)
+      if (paymentScheduleIssues.length > 0) {
+        throw new BookingCreateAbort({
+          status: "invalid_payment_schedules",
+          issues: paymentScheduleIssues,
+        })
+      }
+
+      if (input.extraLines?.length) {
+        await tx.insert(bookingItems).values(
+          input.extraLines.map((line) => {
+            const unitSellAmountCents = line.unitSellAmountCents ?? null
+            const totalSellAmountCents =
+              line.totalSellAmountCents ??
+              (unitSellAmountCents == null ? null : unitSellAmountCents * line.quantity)
+            return {
+              bookingId: booking.id,
+              title: line.name,
+              description: line.description ?? null,
+              itemType: "extra" as const,
+              status: bookingItemStatusForInitialStatus(input.initialStatus),
+              quantity: line.quantity,
+              sellCurrency: line.sellCurrency,
+              unitSellAmountCents,
+              totalSellAmountCents,
+              costCurrency: null,
+              unitCostAmountCents: null,
+              totalCostAmountCents: null,
+              productId: input.productId,
+              optionId: input.optionId ?? null,
+              optionUnitId: null,
+              metadata: {
+                productExtraId: line.productExtraId,
+                optionExtraConfigId: line.optionExtraConfigId ?? null,
+                pricingMode: line.pricingMode ?? null,
+                pricedPerPerson: line.pricedPerPerson ?? null,
+                // Mirror what the item-line converter does so
+                // `linkBookingCreateItemsToTravelers` can look up
+                // extra rows by clientLineKey and write
+                // booking_item_travelers links for per-person
+                // extras. See voyantjs/voyant#1267.
+                ...(line.clientLineKey ? { bookingCreateLineKey: line.clientLineKey } : {}),
+              },
+            }
+          }),
+        )
+      }
+
+      // 2. Travelers. The wire-format `roomUnitId` on a traveler is a
+      // deprecated pricing-tier alias accepted for compatibility but
+      // not stored on the traveler row itself. Per-traveler item linkage
+      // is expressed through `booking_item_travelers` rows linked from
+      // each `booking_item`. See voyantjs/voyant#1267.
+      const travelers: BookingTraveler[] = []
+      for (const traveler of input.travelers ?? []) {
+        const [row] = await tx
+          .insert(bookingTravelers)
+          .values({
+            bookingId: booking.id,
+            personId: traveler.personId ?? null,
+            participantType: traveler.participantType,
+            travelerCategory: traveler.travelerCategory ?? null,
+            firstName: traveler.firstName,
+            lastName: traveler.lastName,
+            email: traveler.email ?? null,
+            phone: traveler.phone ?? null,
+            preferredLanguage: traveler.preferredLanguage ?? null,
+            specialRequests: traveler.specialRequests ?? null,
+            isPrimary: traveler.isPrimary ?? false,
+            notes: traveler.notes ?? null,
+          })
+          .returning()
+        if (row) travelers.push(row)
+      }
+
+      // 2b. Link booking_items + extras to specific travelers when
+      // the caller supplied `clientLineKey` + `travelerKeys` on any
+      // line. Deprecated `travelerIndexes` remain a fallback. Item
+      // rows were inserted earlier by
+      // `convertProductToBooking` (this slice's product converter
+      // doesn't run them in the orchestrator); we look them up by
+      // the `metadata.bookingCreateLineKey` the converter stamped.
+      await linkBookingCreateItemsToTravelers(tx, booking.id, travelers, input.travelers ?? [], [
+        ...(normalizedItemLines ?? []),
+        ...(input.extraLines ?? []),
+      ])
+
+      // 2c. Re-run the resolver server-side against the submitted
+      // itemLines + travelers and reject any client/server drift on
+      // per-band quantities. See voyantjs/voyant#1272.
+      await verifyBookingCreatePayload(tx, { ...input, itemLines: normalizedItemLines })
+
+      // 3. Payment schedules
+      const paymentSchedules: BookingPaymentSchedule[] = []
+      for (const schedule of input.paymentSchedules ?? []) {
+        const [row] = await tx
+          .insert(bookingPaymentSchedules)
+          .values({
+            bookingId: booking.id,
+            scheduleType: schedule.scheduleType,
+            status: schedule.status,
+            dueDate: schedule.dueDate,
+            currency: schedule.currency,
+            amountCents: schedule.amountCents,
+            notes: schedule.notes ?? null,
+          })
+          .returning()
+        if (row) paymentSchedules.push(row)
+      }
+
+      // 4. Voucher redemption. Delegates to vouchersService so the balance
+      // decrement + redemption-log insert share the savepoint. If anything
+      // goes wrong (race with a concurrent redemption, mostly), the thrown
+      // VoucherServiceError surfaces as the outcome below.
+      let voucherRedemption: BookingCreateResult["voucherRedemption"] = null
+      if (input.voucherRedemption) {
+        const { voucher, redemption } = await vouchersService.redeem(
+          tx,
+          input.voucherRedemption.voucherId,
+          {
+            bookingId: booking.id,
+            amountCents: input.voucherRedemption.amountCents,
+          },
+          userId,
+        )
+        if (redemption) {
+          voucherRedemption = { voucher, redemption }
+        }
+      }
+
+      // 5. Group membership (partaj). Either attach to an existing group or
+      // spin up a new one with this booking as the primary.
+      let groupMembership: BookingCreateResult["groupMembership"] = null
+      if (input.groupMembership) {
+        if (input.groupMembership.action === "create") {
+          const group = await bookingGroupsService.createBookingGroup(tx, {
+            kind: input.groupMembership.kind,
+            label: input.groupMembership.label ?? `Shared — ${booking.bookingNumber}`,
+            productId: input.productId,
+            optionUnitId: input.groupMembership.optionUnitId ?? null,
+            primaryBookingId: input.groupMembership.makeBookingPrimary ? booking.id : null,
+          })
+          const memberResult = await bookingGroupsService.addGroupMember(tx, group.id, {
+            bookingId: booking.id,
+            role: input.groupMembership.makeBookingPrimary ? "primary" : "shared",
+          })
+          if (memberResult.status !== "ok") {
+            // Shouldn't happen — we just created both rows — but throw so
+            // the tx rolls back instead of leaving a half-created group.
+            throw new BookingCreateAbort({ status: "group_not_found" })
+          }
+          groupMembership = { groupId: group.id, member: memberResult.member }
+        } else {
+          const memberResult = await bookingGroupsService.addGroupMember(
+            tx,
+            input.groupMembership.groupId,
+            {
+              bookingId: booking.id,
+              role: input.groupMembership.role,
+            },
+          )
+          if (memberResult.status === "group_not_found") {
+            throw new BookingCreateAbort({ status: "group_not_found" })
+          }
+          if (memberResult.status === "booking_not_found") {
+            // Same booking we just inserted. Pg transaction visibility should
+            // prevent this; surface as group_not_found for the caller — we
+            // can't tell them the booking we created doesn't exist.
+            throw new BookingCreateAbort({ status: "group_not_found" })
+          }
+          if (memberResult.status === "already_in_group") {
+            throw new BookingCreateAbort({
+              status: "booking_already_in_group",
+              currentGroupId: memberResult.currentGroupId,
+            })
+          }
+          groupMembership = {
+            groupId: input.groupMembership.groupId,
+            member: memberResult.member,
+          }
+        }
+      }
+
+      return {
+        booking,
+        travelers,
+        paymentSchedules,
+        voucherRedemption,
+        groupMembership,
+        invoice: null,
+        invoiceDocument: { status: "not_requested" as const },
+        payments: [],
+      }
+    })
+  } catch (error) {
+    if (error instanceof BookingCreateAbort) {
+      return error.outcome
+    }
+    if (error instanceof BookingCreateValidationError) {
+      await runtime?.eventBus?.emit(
+        "booking_create.rejected",
+        {
+          reason: error.code,
+          productId: input.productId,
+          optionId: input.optionId ?? null,
+          slotId: input.slotId ?? null,
+          bookingNumber: input.bookingNumber,
+          mismatchCount: error.mismatches.length,
+          mismatches: error.mismatches,
+          createdByUserId: userId ?? null,
+          occurredAt: new Date(),
+        } satisfies BookingCreateRejectedEvent,
+        { category: "internal", source: "service" },
+      )
+      return { status: error.code, mismatches: error.mismatches }
+    }
+    if (error instanceof VoucherServiceError) {
+      if (error.code === "voucher_not_found") return { status: "voucher_not_found" }
+      if (error.code === "voucher_inactive") return { status: "voucher_inactive" }
+      if (error.code === "voucher_not_started") return { status: "voucher_not_started" }
+      if (error.code === "voucher_expired") return { status: "voucher_expired" }
+      if (error.code === "insufficient_balance") return { status: "voucher_insufficient_balance" }
+    }
+    throw error
+  }
+
+  const paidSchedules = (input.paymentSchedules ?? []).filter(isAlreadyPaidSchedule)
+  const shouldCreateInvoice = documentGeneration.invoiceDocument || paidSchedules.length > 0
+
+  if (shouldCreateInvoice) {
+    const items = await db
+      .select()
+      .from(bookingItems)
+      .where(eq(bookingItems.bookingId, result.booking.id))
+
+    const issueDate = todayIsoDate()
+    const dueDate =
+      input.paymentSchedules?.find((schedule) => schedule.dueDate)?.dueDate ??
+      result.booking.endDate ??
+      issueDate
+    const dueDatePaymentSchedule =
+      result.paymentSchedules.find((schedule) => schedule.dueDate === dueDate) ?? null
+
+    const invoice = await financeService.createInvoiceFromBooking(
+      db,
+      {
+        bookingId: result.booking.id,
+        invoiceNumber: generateInvoiceNumber(result.booking.bookingNumber),
+        issueDate,
+        dueDate,
+        invoiceType: documentGeneration.invoiceType,
+        notes: "Generated from booking create.",
+      },
+      { booking: result.booking, dueDatePaymentSchedule, items },
+      runtime,
+    )
+
+    result = {
+      ...result,
+      invoice,
+    }
+
+    if (invoice) {
+      const payments: Payment[] = []
+      for (const schedule of paidSchedules) {
+        const metadata = parseAlreadyPaidScheduleMetadata(schedule.notes)
+        const methodResult = paymentMethodSchema.safeParse(
+          metadata?.paymentMethod ?? "bank_transfer",
+        )
+        const payment = await financeService.createPayment(db, invoice.id, {
+          amountCents: schedule.amountCents,
+          currency: schedule.currency,
+          paymentMethod: methodResult.success ? methodResult.data : "bank_transfer",
+          status: "completed",
+          referenceNumber: metadata?.paymentReference?.trim() || null,
+          paymentDate: metadata?.paymentDate || schedule.dueDate || issueDate,
+          notes: schedule.notes ?? null,
+        })
+        if (payment) payments.push(payment)
+      }
+
+      let invoiceDocument: BookingCreateResult["invoiceDocument"] = { status: "not_requested" }
+      if (documentGeneration.invoiceDocument) {
+        if (runtime?.invoiceDocumentGenerator) {
+          const generated = await financeDocumentsService.generateInvoiceDocument(
+            db,
+            invoice.id,
+            { format: "pdf", replaceExisting: true, publicDelivery: false },
+            {
+              generator: runtime.invoiceDocumentGenerator,
+              eventBus: runtime.eventBus,
+              bindings: runtime.bindings,
+            },
+          )
+          invoiceDocument =
+            generated.status === "generated"
+              ? { status: "generated", renditionId: generated.rendition.id }
+              : { status: "failed" }
+        } else {
+          const requested = await financeService.renderInvoice(db, invoice.id, { format: "pdf" })
+          invoiceDocument =
+            requested.status === "requested"
+              ? { status: "requested", renditionId: requested.rendition?.id ?? null }
+              : { status: "failed" }
+        }
+      }
+
+      result = {
+        ...result,
+        invoice: await financeService.getInvoiceById(db, invoice.id),
+        invoiceDocument,
+        payments,
+      }
+    }
+  }
+
+  // Post-commit event emission. Fire-and-forget (the eventBus contract
+  // handles subscriber errors); callers that need strict delivery can
+  // re-emit from their own subscriber chain.
+  if (runtime?.eventBus) {
+    const event: BookingCreatedEvent = {
+      bookingId: result.booking.id,
+      bookingNumber: result.booking.bookingNumber,
+      productId: input.productId,
+      travelerCount: result.travelers.length,
+      paymentScheduleCount: result.paymentSchedules.length,
+      voucherRedeemedCents: result.voucherRedemption
+        ? result.voucherRedemption.redemption.amountCents
+        : null,
+      groupId: result.groupMembership?.groupId ?? null,
+      documentGeneration,
+      createdByUserId: userId ?? null,
+      occurredAt: new Date(),
+    }
+    await runtime.eventBus.emit("booking.created", event)
+    // When the caller asked us to land the booking already in
+    // `confirmed`, fan out the `booking.confirmed` event the same way
+    // the verb endpoint would so notification / document-bundle
+    // subscribers fire just once at create-time.
+    if (input.initialStatus === "confirmed") {
+      const confirmedEvent: BookingConfirmedEvent = {
+        bookingId: result.booking.id,
+        bookingNumber: result.booking.bookingNumber,
+        actorId: userId ?? null,
+        suppressNotifications: input.suppressNotifications === true ? true : undefined,
+      }
+      await runtime.eventBus.emit("booking.confirmed", confirmedEvent)
+    }
+    if (documentGeneration.contractDocument) {
+      await runtime.eventBus.emit("booking.contract_document.requested", {
+        bookingId: result.booking.id,
+        bookingNumber: result.booking.bookingNumber,
+        createdByUserId: userId ?? null,
+        occurredAt: new Date(),
+      })
+    }
+  }
+
+  return { status: "ok", result }
+}

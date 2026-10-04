@@ -1,0 +1,136 @@
+{
+  "schema_version": 1,
+  "components": [
+    {
+      "name": "gettext",
+      "installed_version": "1.0",
+      "spdx": "GPL-3.0-or-later AND LGPL-2.1-or-later",
+      "source_url": "https://ftpmirror.gnu.org/gnu/gettext/gettext-1.0.tar.gz",
+      "source_sha256": "85d99b79c981a404874c02e0342176cf75c7698e2b51fe41031cf6526d974f1a",
+      "archive_type": "tar.gz",
+      "files": [
+        "postgresql__third-party__gettext__LICENSE-METADATA.txt",
+        "postgresql__third-party__gettext__gettext-1.0__COPYING",
+        "postgresql__third-party__gettext__gettext-1.0__gettext-runtime__COPYING",
+        "postgresql__third-party__gettext__gettext-1.0__gettext-runtime__intl__COPYING.LIB",
+        "postgresql__third-party__gettext__gettext-1.0__gettext-runtime__libasprintf__COPYING",
+        "postgresql__third-party__gettext__gettext-1.0__gettext-runtime__libasprintf__COPYING.LIB",
+        "postgresql__third-party__gettext__gettext-1.0__gettext-tools__COPYING",
+        "postgresql__third-party__gettext__gettext-1.0__gettext-tools__gnulib-lib__libxml__COPYING",
+        "postgresql__third-party__gettext__gettext-1.0__gettext-tools__tree-sitter-0.23.2__LICENSE",
+        "postgresql__third-party__gettext__gettext-1.0__gettext-tools__tree-sitter-0.23.2__lib__src__unicode__LICENSE",
+        "postgresql__third-party__gettext__gettext-1.0__gettext-tools__tree-sitter-d-0.8.2__LICENSE",
+        "postgresql__third-party__gettext__gettext-1.0__gettext-tools__tree-sitter-go-0.23.4__LICENSE",
+        "postgresql__third-party__gettext__gettext-1.0__gettext-tools__tree-sitter-ocaml-0.23.2__LICENSE",
+        "postgresql__third-party__gettext__gettext-1.0__gettext-tools__tree-sitter-rust-0.23.2__LICENSE",
+        "postgresql__third-party__gettext__gettext-1.0__gettext-tools__tree-sitter-typescript-0.23.2__LICENSE",
+        "postgresql__third-party__gettext__gettext-1.0__gnulib-local__lib__libxml__COPYING",
+        "postgresql__third-party__gettext__gettext-1.0__libtextstyle__COPYING",
+        "postgresql__third-party__gettext__gettext-1.0__libtextstyle__lib__libxml__COPYING"
+      ]
+    },
+    {
+      "name": "icu4c@78",
+      "installed_version": "78.3",
+      "spdx": "Unicode-3.0",
+      "source_url": "https://github.com/unicode-org/icu/releases/download/release-78.3/icu4c-78.3-sources.tgz",
+      "source_sha256": "3a2e7a47604ba702f345878308e6fefeca612ee895cf4a5f222e7955fabfe0c0",
+      "archive_type": "tar.gz",
+      "files": [
+        "postgresql__third-party__icu4c@78__LICENSE-METADATA.txt",
+        "postgresql__third-party__icu4c@78__icu__LICENSE",
+        "postgresql__third-party__icu4c@78__icu__license.html"
+      ]
+    },
+    {
+      "name": "krb5",
+      "installed_version": "1.22.2",
+      "spdx": "LicenseRef-MIT-Kerberos-Composite",
+      "source_url": "https://kerberos.org/dist/krb5/1.22/krb5-1.22.2.tar.gz",
+      "source_sha256": "3243ffbc8ea4d4ac22ddc7dd2a1dc54c57874c40648b60ff97009763554eaf13",
+      "archive_type": "tar.gz",
+      "files": [
+        "postgresql__third-party__krb5__LICENSE-METADATA.txt",
+        "postgresql__third-party__krb5__krb5-1.22.2__NOTICE",
+        "postgresql__third-party__krb5__krb5-1.22.2__doc__copyright.rst",
+        "postgresql__third-party__krb5__krb5-1.22.2__doc__html___sources__copyright.rst.txt",
+        "postgresql__third-party__krb5__krb5-1.22.2__doc__html__copyright.html",
+        "postgresql__third-party__krb5__krb5-1.22.2__src__include__copyright.h",
+        "postgresql__third-party__krb5__krb5-1.22.2__src__lib__gssapi__LICENSE",
+        "postgresql__third-party__krb5__krb5-1.22.2__src__util__ss__copyright.h",
+        "postgresql__third-party__krb5__krb5-1.22.2__src__windows__installer__wix__lang__license.rtf"
+      ]
+    },
+    {
+      "name": "lz4",
+      "installed_version": "1.10.0",
+      "spdx": "BSD-2-Clause",
+      "source_url": "https://github.com/lz4/lz4/archive/refs/tags/v1.10.0.tar.gz",
+      "source_sha256": "537512904744b35e232912055ccf8ec66d768639ff3abe5788d90d792ec5f48b",
+      "archive_type": "tar.gz",
+      "files": [
+        "postgresql__third-party__lz4__LICENSE-METADATA.txt",
+        "postgresql__third-party__lz4__lz4-1.10.0__LICENSE",
+        "postgresql__third-party__lz4__lz4-1.10.0__contrib__debian__copyright",
+        "postgresql__third-party__lz4__lz4-1.10.0__contrib__djgpp__LICENSE",
+        "postgresql__third-party__lz4__lz4-1.10.0__examples__COPYING",
+        "postgresql__third-party__lz4__lz4-1.10.0__lib__LICENSE",
+        "postgresql__third-party__lz4__lz4-1.10.0__programs__COPYING",
+        "postgresql__third-party__lz4__lz4-1.10.0__tests__COPYING"
+      ]
+    },
+    {
+      "name": "openssl@3",
+      "installed_version": "3.6.3",
+      "spdx": "Apache-2.0",
+      "source_url": "https://github.com/openssl/openssl/releases/download/openssl-3.6.3/openssl-3.6.3.tar.gz",
+      "source_sha256": "243a86649cf6f23eeb6a2ff2456e09e5d77dd9018a54d3d96b0c6bdd6ba6c7f1",
+      "archive_type": "tar.gz",
+      "files": [
+        "postgresql__third-party__openssl@3__LICENSE-METADATA.txt",
+        "postgresql__third-party__openssl@3__openssl-3.6.3__LICENSE.txt",
+        "postgresql__third-party__openssl@3__openssl-3.6.3__external__perl__Text-Template-1.56__LICENSE",
+        "postgresql__third-party__openssl@3__openssl-3.6.3__util__perl__OpenSSL__copyright.pm"
+      ]
+    },
+    {
+      "name": "postgresql@17",
+      "installed_version": "17.11",
+      "spdx": "PostgreSQL",
+      "source_url": "https://ftp.postgresql.org/pub/source/v17.11/postgresql-17.11.tar.bz2",
+      "source_sha256": "dd27f2b3c59e73ed14aa3324901242bf69a032a6347805f274e6260322d42979",
+      "archive_type": "tar.bz2",
+      "files": [
+        "postgresql__third-party__postgresql@17__LICENSE-METADATA.txt",
+        "postgresql__third-party__postgresql@17__postgresql-17.11__COPYRIGHT",
+        "postgresql__third-party__postgresql@17__postgresql-17.11__src__backend__regex__COPYRIGHT",
+        "postgresql__third-party__postgresql@17__postgresql-17.11__src__tools__copyright.pl"
+      ]
+    },
+    {
+      "name": "readline",
+      "installed_version": "8.3.3",
+      "spdx": "GPL-3.0-or-later",
+      "source_url": "https://ftp.gnu.org/gnu/readline/readline-8.3.tar.gz",
+      "source_sha256": "fe5383204467828cd495ee8d1d3c037a7eba1389c22bc6a041f627976f9061cc",
+      "archive_type": "tar.gz",
+      "files": [
+        "postgresql__third-party__readline__LICENSE-METADATA.txt",
+        "postgresql__third-party__readline__readline-8.3__COPYING"
+      ]
+    },
+    {
+      "name": "zstd",
+      "installed_version": "1.5.7",
+      "spdx": "(BSD-3-Clause OR GPL-2.0-only) AND BSD-2-Clause AND MIT",
+      "source_url": "https://github.com/facebook/zstd/archive/refs/tags/v1.5.7.tar.gz",
+      "source_sha256": "37d7284556b20954e56e1ca85b80226768902e2edabd3b649e9e72c0c9012ee3",
+      "archive_type": "tar.gz",
+      "files": [
+        "postgresql__third-party__zstd__LICENSE-METADATA.txt",
+        "postgresql__third-party__zstd__zstd-1.5.7__COPYING",
+        "postgresql__third-party__zstd__zstd-1.5.7__LICENSE"
+      ]
+    }
+  ]
+}

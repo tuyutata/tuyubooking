@@ -1,0 +1,5 @@
+{"schema_version":1,"domain":"tour","scenarios":[
+{"id":"tour-capacity","given":"团期只剩一个名额","when":"两个请求并发确认","then":"只有一个成功且剩余名额不为负"},
+{"id":"tour-hold-expiry","given":"名额占用已过期","when":"计算可售量","then":"释放占用"},
+{"id":"tour-published-snapshot","given":"团期已有订单","when":"编辑产品模板","then":"历史内容与价格不变"},
+{"id":"tour-participant-limit","given":"订单购买两个名额","when":"添加第三名参与者","then":"拒绝操作"}]}

@@ -1,0 +1,93 @@
+{
+  "schema_version": 1,
+  "status": "tool_inputs_updated_runtime_verification_pending",
+  "platform": "macos",
+  "architecture": "arm64",
+  "bundle_root": "runtime/business/macos",
+  "network_install_allowed_at_runtime": false,
+  "components": {
+    "python": {
+      "prefetch": true,
+      "version": "3.14.3",
+      "artifact": "Python-3.14.3.tgz",
+      "url": "https://www.python.org/ftp/python/3.14.3/Python-3.14.3.tgz",
+      "sha256": "d7fe130d0501ae047ca318fa92aa642603ab6f217901015a1df6ce650d5470cd",
+      "license": "PSF-2.0",
+      "output": "python/bin/python3"
+    },
+    "node": {
+      "prefetch": true,
+      "tool": "node",
+      "platform": "macos"
+    },
+    "yarn": {
+      "prefetch": true,
+      "tool": "yarn",
+      "platform": "macos"
+    },
+    "php": {
+      "version": "8.4.24",
+      "artifact": "php-8.4.24.tar.xz",
+      "url": "https://www.php.net/distributions/php-8.4.24.tar.xz",
+      "sha256": "e127be09a8506f4327c5cfa78a614b00d210714484ec215ce0011b4a03c00731",
+      "license": "PHP-3.01",
+      "outputs": [
+        "php/bin/php",
+        "php/sbin/php-fpm"
+      ]
+    },
+    "nginx": {
+      "prefetch": true,
+      "version": "1.30.4",
+      "channel": "stable",
+      "artifact": "nginx-1.30.4.tar.gz",
+      "url": "https://nginx.org/download/nginx-1.30.4.tar.gz",
+      "signature_url": "https://nginx.org/download/nginx-1.30.4.tar.gz.asc",
+      "sha256": "4261dc90e9e47c1c4041276e9aaa3d48ebe2e664f728e14fa95ae6c67d57a08b",
+      "license": "BSD-2-Clause-style",
+      "output": "nginx/sbin/nginx"
+    },
+    "postgresql": {
+      "prefetch": true,
+      "version": "17.11",
+      "artifact": "postgresql-17.11.tar.bz2",
+      "url": "https://ftp.postgresql.org/pub/source/v17.11/postgresql-17.11.tar.bz2",
+      "sha256": "dd27f2b3c59e73ed14aa3324901242bf69a032a6347805f274e6260322d42979",
+      "license": "PostgreSQL",
+      "output": "postgresql/bin/postgres"
+    }
+  },
+  "generated_artifacts": {
+    "frappe_bench": {
+      "source_commits": "scripts/business-runtime/runtime.lock.json",
+      "dependency_policy": "product-lock-and-package-manager-cache",
+      "asset_builder": "scripts/business-runtime/build_frappe_assets.sh",
+      "output": "bench",
+      "asset_output": "bench/sites/assets"
+    },
+    "voyant": {
+      "commit": "ea7f1b1f858650ebcf3e66ae215d82d1ff09424f",
+      "dependency_lock": "upstream/voyant/pnpm-lock.yaml",
+      "output": "voyant/operator/.output"
+    },
+    "hi_events_backend": {
+      "commit": "048243e2a99a65c8e77fc6f3cb44de158169855e",
+      "dependency_lock": "upstream/hi_events/backend/composer.lock",
+      "output": "hi_events/backend/vendor"
+    },
+    "hi_events_frontend": {
+      "commit": "048243e2a99a65c8e77fc6f3cb44de158169855e",
+      "dependency_lock": "upstream/hi_events/frontend/yarn.lock",
+      "output": "hi_events/frontend/dist"
+    }
+  },
+  "promotion_requirements": [
+    "all_source_signatures_and_hashes_verified",
+    "all_generated_files_recorded_in_bundle_manifest",
+    "spdx_sbom_present",
+    "third_party_licenses_present",
+    "all_macho_dependencies_relocatable",
+    "offline_smoke_test_passed",
+    "final_bundle_sha256_and_signature_present"
+  ]
+}

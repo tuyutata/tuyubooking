@@ -1,0 +1,502 @@
+<?php
+
+namespace HiEvents\Services\Domain\Order;
+
+use Exception;
+use HiEvents\DomainObjects\CapacityAssignmentDomainObject;
+use HiEvents\DomainObjects\Enums\ProductPriceType;
+use HiEvents\DomainObjects\EventDomainObject;
+use HiEvents\DomainObjects\Generated\PromoCodeDomainObjectAbstract;
+use HiEvents\DomainObjects\ProductDomainObject;
+use HiEvents\DomainObjects\ProductPriceDomainObject;
+use HiEvents\DomainObjects\PromoCodeDomainObject;
+use HiEvents\Helper\Currency;
+use HiEvents\Repository\Interfaces\EventRepositoryInterface;
+use HiEvents\Repository\Interfaces\PromoCodeRepositoryInterface;
+use HiEvents\Repository\Interfaces\ProductRepositoryInterface;
+use HiEvents\Services\Domain\Product\AvailableProductQuantitiesFetchService;
+use HiEvents\Services\Domain\Product\DTO\AvailableProductQuantitiesDTO;
+use HiEvents\Services\Domain\Product\DTO\AvailableProductQuantitiesResponseDTO;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
+
+class OrderCreateRequestValidationService
+{
+    private AvailableProductQuantitiesResponseDTO $availableProductQuantities;
+
+    public function __construct(
+        readonly private ProductRepositoryInterface             $productRepository,
+        readonly private PromoCodeRepositoryInterface           $promoCodeRepository,
+        readonly private EventRepositoryInterface               $eventRepository,
+        readonly private AvailableProductQuantitiesFetchService $fetchAvailableProductQuantitiesService,
+    )
+    {
+    }
+
+    /**
+     * @throws ValidationException
+     * @throws Exception
+     */
+    public function validateRequestData(int $eventId, array $data = []): void
+    {
+        $this->validateTypes($data);
+
+        $event = $this->eventRepository->findById($eventId);
+        $promoCode = $this->validatePromoCode($eventId, $data);
+        $this->validateProductSelection($data);
+
+        $this->availableProductQuantities = $this->fetchAvailableProductQuantitiesService
+            ->getAvailableProductQuantities(
+                $event->getId(),
+                ignoreCache: true,
+            );
+
+        $this->validateOverallCapacity($data);
+        $this->validateProductDetails($event, $data, $promoCode);
+    }
+
+    /**
+     * @throws ValidationException
+     */
+    private function validatePromoCode(int $eventId, array $data): ?PromoCodeDomainObject
+    {
+        if (!isset($data['promo_code'])) {
+            return null;
+        }
+
+        $promoCode = $this->promoCodeRepository->findFirstWhere([
+            PromoCodeDomainObjectAbstract::CODE => strtolower(trim($data['promo_code'])),
+            PromoCodeDomainObjectAbstract::EVENT_ID => $eventId,
+        ]);
+
+        if (!$promoCode) {
+            throw ValidationException::withMessages([
+                'promo_code' => __('This promo code is invalid'),
+            ]);
+        }
+
+        return $promoCode->isValid() ? $promoCode : null;
+    }
+
+    /**
+     * @throws ValidationException
+     */
+    private function validateTypes(array $data): void
+    {
+        $validator = Validator::make($data, [
+            'products' => 'required|array',
+            'products.*.product_id' => 'required|integer',
+            'products.*.quantities' => 'required|array',
+            'products.*.quantities.*.quantity' => 'required|integer|min:0',
+            'products.*.quantities.*.price_id' => 'required|integer',
+            'products.*.quantities.*.price' => 'numeric|min:0',
+        ]);
+
+        if ($validator->fails()) {
+            throw ValidationException::withMessages($validator->errors()->toArray());
+        }
+    }
+
+    /**
+     * @throws ValidationException
+     */
+    private function validateProductSelection(array $data): void
+    {
+        $productData = collect($data['products']);
+        if ($productData->isEmpty() || $productData->sum(fn($product) => collect($product['quantities'])->sum('quantity')) === 0) {
+            throw ValidationException::withMessages([
+                'products' => __('You haven\'t selected any products')
+            ]);
+        }
+    }
+
+    /**
+     * @throws Exception
+     */
+    private function getProducts(array $data): Collection
+    {
+        $productIds = collect($data['products'])->pluck('product_id');
+        return $this->productRepository
+            ->loadRelation(ProductPriceDomainObject::class)
+            ->findWhereIn('id', $productIds->toArray());
+    }
+
+    /**
+     * @throws ValidationException
+     * @throws Exception
+     */
+    private function validateProductDetails(EventDomainObject $event, array $data, ?PromoCodeDomainObject $promoCode): void
+    {
+        $products = $this->getProducts($data);
+        $quantitiesByProductId = $this->sumQuantitiesByProductId($data);
+        $quantitiesByPriceId = $this->sumQuantitiesByPriceId($data);
+
+        foreach ($data['products'] as $productIndex => $productAndQuantities) {
+            $this->validateSingleProductDetails(
+                $event,
+                $productIndex,
+                $productAndQuantities,
+                $products,
+                $promoCode,
+                $quantitiesByProductId,
+                $quantitiesByPriceId,
+            );
+        }
+    }
+
+    /**
+     * @return array<int, int>
+     */
+    private function sumQuantitiesByProductId(array $data): array
+    {
+        return collect($data['products'])
+            ->groupBy('product_id')
+            ->map(fn(Collection $entries) => (int)$entries
+                ->sum(fn(array $entry) => collect($entry['quantities'])->sum('quantity')))
+            ->all();
+    }
+
+    /**
+     * @return array<int, array<int, int>>
+     */
+    private function sumQuantitiesByPriceId(array $data): array
+    {
+        return collect($data['products'])
+            ->groupBy('product_id')
+            ->map(fn(Collection $entries) => $entries
+                ->flatMap(fn(array $entry) => $entry['quantities'])
+                ->groupBy('price_id')
+                ->map(fn(Collection $prices) => (int)$prices->sum('quantity'))
+                ->all())
+            ->all();
+    }
+
+    /**
+     * @throws ValidationException
+     */
+    private function validateSingleProductDetails(EventDomainObject $event, int $productIndex, array $productAndQuantities, $products, ?PromoCodeDomainObject $promoCode, array $quantitiesByProductId, array $quantitiesByPriceId): void
+    {
+        $productId = $productAndQuantities['product_id'];
+        $totalQuantity = collect($productAndQuantities['quantities'])->sum('quantity');
+
+        if ($totalQuantity === 0) {
+            return;
+        }
+
+        /** @var ProductDomainObject $product */
+        $product = $products->filter(fn($t) => $t->getId() === $productId)->first();
+        if (!$product) {
+            throw new NotFoundHttpException(sprintf('Product ID %d not found', $productId));
+        }
+
+        $this->validateProductEvent(
+            event: $event,
+            productId: $productId,
+            product: $product
+        );
+
+        $this->validateProductVisibility(
+            product: $product,
+            promoCode: $promoCode
+        );
+
+        $this->validateProductSaleWindow(
+            productIndex: $productIndex,
+            product: $product
+        );
+
+        $this->validateProductQuantity(
+            productIndex: $productIndex,
+            productAndQuantities: $productAndQuantities,
+            product: $product,
+            totalQuantityForProduct: $quantitiesByProductId[$productId] ?? $totalQuantity,
+            quantitiesByPriceId: $quantitiesByPriceId[$productId] ?? [],
+        );
+
+        $this->validateProductTypeAndPrice(
+            event: $event,
+            productIndex: $productIndex,
+            productAndQuantities: $productAndQuantities,
+            product: $product
+        );
+
+        $this->validateSoldOutProducts(
+            productId: $productId,
+            productIndex: $productIndex,
+            product: $product
+        );
+
+        $this->validatePriceIdAndQuantity(
+            productIndex: $productIndex,
+            productAndQuantities: $productAndQuantities,
+            product: $product
+        );
+    }
+
+    /**
+     * @throws ValidationException
+     */
+    private function validateProductQuantity(int $productIndex, array $productAndQuantities, ProductDomainObject $product, int $totalQuantityForProduct, array $quantitiesByPriceId): void
+    {
+        $totalQuantity = $totalQuantityForProduct;
+        $maxPerOrder = (int)$product->getMaxPerOrder() ?: 100;
+
+        $capacityMaximum = $this->availableProductQuantities
+            ->productQuantities
+            ->where('product_id', $product->getId())
+            ->map(fn(AvailableProductQuantitiesDTO $price) => $price->capacities)
+            ->flatten()
+            ->min(fn(CapacityAssignmentDomainObject $capacity) => $capacity->getCapacity());
+
+        $productAvailableQuantity = $this->availableProductQuantities
+            ->productQuantities
+            ->first(fn(AvailableProductQuantitiesDTO $price) => $price->product_id === $product->getId())
+            ->quantity_available;
+
+        # if there are fewer products available than the configured minimum, we allow less than the minimum to be purchased
+        $minPerOrder = min((int)$product->getMinPerOrder() ?: 1,
+            $capacityMaximum ?: $maxPerOrder,
+            $productAvailableQuantity ?: $maxPerOrder);
+
+        $this->validateProductPricesQuantity(
+            quantities: $productAndQuantities['quantities'],
+            product: $product,
+            productIndex: $productIndex,
+            quantitiesByPriceId: $quantitiesByPriceId,
+        );
+
+        if ($totalQuantity > $maxPerOrder) {
+            throw ValidationException::withMessages([
+                "products.$productIndex" => __("The maximum number of products available for :products is :max", [
+                    'max' => $maxPerOrder,
+                    'products' => $product->getTitle(),
+                ]),
+            ]);
+        }
+
+        if ($totalQuantity < $minPerOrder) {
+            throw ValidationException::withMessages([
+                "products.$productIndex" => __("You must order at least :min products for :product", [
+                    'min' => $minPerOrder,
+                    'product' => $product->getTitle(),
+                ]),
+            ]);
+        }
+    }
+
+    private function validateProductEvent(EventDomainObject $event, int $productId, ProductDomainObject $product): void
+    {
+        if ($product->getEventId() !== $event->getId()) {
+            throw new NotFoundHttpException(sprintf('Product ID %d not found for event ID %d', $productId, $event->getId()));
+        }
+    }
+
+    /**
+     * Products the organiser has hidden must not be purchasable through the public checkout, even when the
+     * product ID is known. Products hidden behind a promo code are only purchasable when a valid promo code
+     * that applies to the product is supplied. This mirrors the display filtering in ProductFilterService.
+     */
+    private function validateProductVisibility(ProductDomainObject $product, ?PromoCodeDomainObject $promoCode): void
+    {
+        if ($product->getIsHidden()) {
+            throw new NotFoundHttpException(sprintf('Product ID %d not found', $product->getId()));
+        }
+
+        if ($product->getIsHiddenWithoutPromoCode()
+            && !($promoCode && $promoCode->appliesToProduct($product))) {
+            throw new NotFoundHttpException(sprintf('Product ID %d not found', $product->getId()));
+        }
+    }
+
+    /**
+     * @throws ValidationException
+     */
+    private function validateProductSaleWindow(int $productIndex, ProductDomainObject $product): void
+    {
+        if ($product->isBeforeSaleStartDate()) {
+            throw ValidationException::withMessages([
+                "products.$productIndex" => __(':product is not yet on sale', [
+                    'product' => $product->getTitle(),
+                ]),
+            ]);
+        }
+
+        if ($product->isAfterSaleEndDate()) {
+            throw ValidationException::withMessages([
+                "products.$productIndex" => __('Sales for :product have ended', [
+                    'product' => $product->getTitle(),
+                ]),
+            ]);
+        }
+    }
+
+    /**
+     * @throws ValidationException
+     */
+    private function validateProductTypeAndPrice(
+        EventDomainObject  $event,
+        int                $productIndex,
+        array              $productAndQuantities,
+        ProductDomainObject $product
+    ): void
+    {
+        if ($product->getType() === ProductPriceType::DONATION->name) {
+            $price = $productAndQuantities['quantities'][0]['price'] ?? 0;
+            if ($price < $product->getPrice()) {
+                $formattedPrice = Currency::format($product->getPrice(), $event->getCurrency());
+                throw ValidationException::withMessages([
+                    "products.$productIndex.quantities.0.price" => __("The minimum amount is :price", ['price' => $formattedPrice]),
+                ]);
+            }
+        }
+    }
+
+    /**
+     * @throws ValidationException
+     */
+    private function validateSoldOutProducts(int $productId, int $productIndex, ProductDomainObject $product): void
+    {
+        if ($product->isSoldOut()) {
+            throw ValidationException::withMessages([
+                "products.$productIndex" => __("The product :product is sold out", [
+                    'id' => $productId,
+                    'product' => $product->getTitle(),
+                ]),
+            ]);
+        }
+    }
+
+    /**
+     * @throws ValidationException
+     */
+    private function validatePriceIdAndQuantity(int $productIndex, array $productAndQuantities, ProductDomainObject $product): void
+    {
+        $errors = [];
+
+        foreach ($productAndQuantities['quantities'] as $quantityIndex => $quantityData) {
+            $priceId = $quantityData['price_id'] ?? null;
+            $quantity = $quantityData['quantity'] ?? null;
+
+            if (null === $priceId || null === $quantity) {
+                $missingField = null === $priceId ? 'price_id' : 'quantity';
+                $errors["products.$productIndex.quantities.$quantityIndex.$missingField"] = __(":field must be specified", [
+                    'field' => ucfirst($missingField)
+                ]);
+            }
+
+            $productPrices = $product->getProductPrices();
+            $validPriceIds = $productPrices?->map(fn(ProductPriceDomainObject $price) => $price->getId());
+            if (!in_array($priceId, $validPriceIds->toArray(), true)) {
+                $errors["products.$productIndex.quantities.$quantityIndex.price_id"] = __('Invalid price ID');
+                continue;
+            }
+
+            $selectedPrice = $productPrices?->first(fn(ProductPriceDomainObject $price) => $price->getId() === $priceId);
+            if ((int)$quantity > 0 && $this->isPriceUnavailable($selectedPrice)) {
+                $errors["products.$productIndex.quantities.$quantityIndex.price_id"] = __('Invalid price ID');
+            }
+        }
+
+        if (!empty($errors)) {
+            throw ValidationException::withMessages($errors);
+        }
+    }
+
+    private function isPriceUnavailable(?ProductPriceDomainObject $price): bool
+    {
+        if ($price === null) {
+            return true;
+        }
+
+        return $price->getIsHidden()
+            || $price->isBeforeSaleStartDate()
+            || $price->isAfterSaleEndDate();
+    }
+
+    /**
+     * @throws ValidationException
+     */
+    private function validateProductPricesQuantity(array $quantities, ProductDomainObject $product, int $productIndex, array $quantitiesByPriceId): void
+    {
+        foreach ($quantities as $productQuantity) {
+            if ($productQuantity['quantity'] === 0) {
+                continue;
+            }
+
+            $requestedQuantity = $quantitiesByPriceId[$productQuantity['price_id']] ?? $productQuantity['quantity'];
+
+            $numberAvailable = $this->availableProductQuantities
+                ->productQuantities
+                ->where('product_id', $product->getId())
+                ->where('price_id', $productQuantity['price_id'])
+                ->first()?->quantity_available;
+
+            /** @var ProductPriceDomainObject $productPrice */
+            $productPrice = $product->getProductPrices()
+                ?->first(fn(ProductPriceDomainObject $price) => $price->getId() === $productQuantity['price_id']);
+
+            if ($requestedQuantity > $numberAvailable) {
+                if ($numberAvailable === 0) {
+                    throw ValidationException::withMessages([
+                        "products.$productIndex" => __("The product :product is sold out", [
+                            'product' => $product->getTitle() . ($productPrice->getLabel() ? ' - ' . $productPrice->getLabel() : ''),
+                        ]),
+                    ]);
+                }
+
+                throw ValidationException::withMessages([
+                    "products.$productIndex" => __("The maximum number of products available for :product is :max", [
+                        'max' => $numberAvailable,
+                        'product' => $product->getTitle() . ($productPrice->getLabel() ? ' - ' . $productPrice->getLabel() : ''),
+                    ]),
+                ]);
+            }
+        }
+    }
+
+    /**
+     * @throws ValidationException
+     */
+    private function validateOverallCapacity(array $data): void
+    {
+        foreach ($this->availableProductQuantities->capacities as $capacity) {
+            if ($capacity->getProducts() === null) {
+                continue;
+            }
+
+            $productIds = $capacity->getProducts()->map(fn(ProductDomainObject $product) => $product->getId());
+            $totalQuantity = collect($data['products'])
+                ->filter(fn($product) => in_array($product['product_id'], $productIds->toArray(), true))
+                ->sum(fn($product) => collect($product['quantities'])->sum('quantity'));
+
+            if ($totalQuantity === 0) {
+                continue;
+            }
+
+            $reservedProductQuantities = $capacity->getProducts()
+                ->map(fn(ProductDomainObject $product) => $this
+                    ->availableProductQuantities
+                    ->productQuantities
+                    ->where('product_id', $product->getId())
+                    ->sum('quantity_reserved')
+                )
+                ->sum();
+
+            if ($totalQuantity > ($capacity->getAvailableCapacity() - $reservedProductQuantities)) {
+                if ($capacity->getAvailableCapacity() - $reservedProductQuantities <= 0) {
+                    throw ValidationException::withMessages([
+                        'products' => __('Sorry, these products are sold out'),
+                    ]);
+                }
+
+                throw ValidationException::withMessages([
+                    'products' => __('The maximum number of products available is :max', [
+                        'max' => $capacity->getAvailableCapacity(),
+                    ]),
+                ]);
+            }
+        }
+    }
+}

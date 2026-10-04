@@ -1,0 +1,51 @@
+id = "voyant"
+name_zh = "旅行团及活动"
+name_en = "Tours and Activities"
+version = "0.1.0"
+module_api = 1
+integration_status = "source_integrated"
+[verification]
+source = "verified"
+database = "verified"
+runtime = "pending"
+e2e = "pending"
+
+
+[source]
+repository = "https://github.com/tuyutata/voyant"
+commit = "ea7f1b1f858650ebcf3e66ae215d82d1ff09424f"
+path = "upstream/voyant"
+
+[runtime]
+family = "node-tanstack-start"
+build = "upstream"
+start = "tuyu_node_postgresql"
+
+[localization]
+default = "zh-CN"
+supported = ["zh-CN", "en"]
+
+[authentication]
+administrator = "tuyu_sr25519_local_qr"
+staff = "upstream_native"
+administrator_bridge = "postgresql_one_time_assertion"
+administrator_assertion_ttl_seconds = 60
+administrator_upstream_role = "technical_super_administrator"
+
+[access]
+employee_access = "lan_browser"
+https_required = true
+public_access = false
+gateway_only = true
+
+[database]
+engine = "postgresql"
+database = "tuyubooking"
+schema = "module_voyant"
+role = "tuyu_voyant_app"
+isolated_database = false
+additional_persistent_database = false
+
+[orders]
+owns_orders = true
+event_contract = "tuyubooking.order.v1"

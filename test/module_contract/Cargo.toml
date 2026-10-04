@@ -1,0 +1,14 @@
+[package]
+name = "tuyubooking-module-contract-test"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[workspace]
+
+[dependencies]
+tuyubooking-native = { path = "../../host" }
+
+# 测试入口直接保存在crate根，避免单文件src包装层。
+[lib]
+path = "lib.rs"

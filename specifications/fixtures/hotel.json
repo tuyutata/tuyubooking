@@ -1,0 +1,5 @@
+{"schema_version":1,"domain":"hotel","scenarios":[
+{"id":"hotel-overlap","given":"同一房间已有已确认住宿","when":"创建日期交叠预订","then":"拒绝或按超售策略处理"},
+{"id":"hotel-hold-expiry","given":"报价占用已过期","when":"重新查询库存","then":"释放占用并恢复可售量"},
+{"id":"hotel-room-posting","given":"住客有效入住","when":"酒店餐厅订单挂房账","then":"Folio 增加等额餐饮明细"},
+{"id":"hotel-folio-conservation","given":"拆分或转移 Folio","when":"操作提交","then":"总金额不变并产生审计记录"}]}

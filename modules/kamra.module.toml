@@ -1,0 +1,57 @@
+id = "kamra"
+name_zh = "酒店及酒店餐厅"
+name_en = "Hotel and Hotel Restaurant"
+version = "0.1.0"
+module_api = 1
+integration_status = "source_integrated"
+[verification]
+source = "verified"
+database = "verified"
+runtime = "pending"
+e2e = "pending"
+
+
+[framework]
+id = "frappe"
+version = "16.25.0-tuyu.1"
+profile = "tuyu_postgresql_schema"
+
+[source]
+repository = "https://github.com/tuyutata/kamra-pms"
+commit = "3d3c1eb96b1331769c1c110b15476801ecb2adce"
+branch = "codex/tuyubooking-postgresql-schema"
+path = "upstream/kamra"
+
+[runtime]
+family = "python-frappe"
+build = "upstream"
+start = "frappe_tuyu_postgresql"
+
+[localization]
+default = "zh-CN"
+supported = ["zh-CN", "en"]
+
+[authentication]
+administrator = "tuyu_sr25519_local_qr"
+staff = "upstream_native"
+administrator_bridge = "postgresql_one_time_assertion"
+administrator_assertion_ttl_seconds = 60
+administrator_upstream_role = "System Manager"
+
+[access]
+employee_access = "lan_browser"
+https_required = true
+public_access = false
+gateway_only = true
+
+[database]
+engine = "postgresql"
+database = "tuyubooking"
+schema = "module_kamra"
+role = "tuyu_kamra_app"
+isolated_database = false
+additional_persistent_database = false
+
+[orders]
+owns_orders = true
+event_contract = "tuyubooking.order.v1"

@@ -1,0 +1,120 @@
+{
+  "name": "@voyantjs/core",
+  "version": "0.104.1",
+  "license": "Apache-2.0",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./env": "./src/env.ts",
+    "./module": "./src/module.ts",
+    "./hooks": "./src/hooks.ts",
+    "./locking": "./src/locking.ts",
+    "./registry": "./src/registry.ts",
+    "./container": "./src/container.ts",
+    "./events": "./src/events.ts",
+    "./orchestration": "./src/orchestration.ts",
+    "./links": "./src/links.ts",
+    "./query": "./src/query.ts",
+    "./workflows": "./src/workflows.ts",
+    "./plugin": "./src/plugin.ts",
+    "./config": "./src/config.ts"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "lint": "biome check src/",
+    "test": "vitest run",
+    "clean": "rm -rf dist tsconfig.tsbuildinfo",
+    "prepack": "pnpm run build"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@voyantjs/voyant-typescript-config": "workspace:*",
+    "typescript": "^6.0.2"
+  },
+  "files": [
+    "dist"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "import": "./dist/index.js",
+        "default": "./dist/index.js"
+      },
+      "./env": {
+        "types": "./dist/env.d.ts",
+        "import": "./dist/env.js",
+        "default": "./dist/env.js"
+      },
+      "./module": {
+        "types": "./dist/module.d.ts",
+        "import": "./dist/module.js",
+        "default": "./dist/module.js"
+      },
+      "./hooks": {
+        "types": "./dist/hooks.d.ts",
+        "import": "./dist/hooks.js",
+        "default": "./dist/hooks.js"
+      },
+      "./locking": {
+        "types": "./dist/locking.d.ts",
+        "import": "./dist/locking.js",
+        "default": "./dist/locking.js"
+      },
+      "./registry": {
+        "types": "./dist/registry.d.ts",
+        "import": "./dist/registry.js",
+        "default": "./dist/registry.js"
+      },
+      "./container": {
+        "types": "./dist/container.d.ts",
+        "import": "./dist/container.js",
+        "default": "./dist/container.js"
+      },
+      "./events": {
+        "types": "./dist/events.d.ts",
+        "import": "./dist/events.js",
+        "default": "./dist/events.js"
+      },
+      "./orchestration": {
+        "types": "./dist/orchestration.d.ts",
+        "import": "./dist/orchestration.js",
+        "default": "./dist/orchestration.js"
+      },
+      "./links": {
+        "types": "./dist/links.d.ts",
+        "import": "./dist/links.js",
+        "default": "./dist/links.js"
+      },
+      "./query": {
+        "types": "./dist/query.d.ts",
+        "import": "./dist/query.js",
+        "default": "./dist/query.js"
+      },
+      "./workflows": {
+        "types": "./dist/workflows.d.ts",
+        "import": "./dist/workflows.js",
+        "default": "./dist/workflows.js"
+      },
+      "./plugin": {
+        "types": "./dist/plugin.d.ts",
+        "import": "./dist/plugin.js",
+        "default": "./dist/plugin.js"
+      },
+      "./config": {
+        "types": "./dist/config.d.ts",
+        "import": "./dist/config.js",
+        "default": "./dist/config.js"
+      }
+    },
+    "main": "./dist/index.js",
+    "types": "./dist/index.d.ts"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/voyantjs/voyant.git",
+    "directory": "packages/core"
+  }
+}

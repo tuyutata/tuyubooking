@@ -1,0 +1,203 @@
+{
+  "name": "@voyantjs/catalog",
+  "version": "0.104.1",
+  "license": "Apache-2.0",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./schema": "./src/schema.ts",
+    "./schema-sourced-entries": "./src/schema-sourced-entries.ts",
+    "./contract": "./src/contract.ts",
+    "./provenance": "./src/provenance.ts",
+    "./overlay/schema": "./src/overlay/schema.ts",
+    "./overlay/resolver": "./src/overlay/resolver.ts",
+    "./snapshot/schema": "./src/snapshot/schema.ts",
+    "./indexer/contract": "./src/indexer/contract.ts",
+    "./indexer/typesense": "./src/indexer/typesense.ts",
+    "./search/routes": "./src/search/routes.ts",
+    "./search/rerank": "./src/search/rerank.ts",
+    "./drift/events": "./src/drift/events.ts",
+    "./events/taxonomy": "./src/events/taxonomy.ts",
+    "./adapter/contract": "./src/adapter/contract.ts",
+    "./adapter/schemas": "./src/adapter/schemas.ts",
+    "./services/overlay": "./src/services/overlay-service.ts",
+    "./services/snapshot": "./src/services/snapshot-service.ts",
+    "./services/indexer": "./src/services/indexer-service.ts",
+    "./services/sourced-entry": "./src/services/sourced-entry-service.ts",
+    "./services/content": "./src/services/content-service.ts",
+    "./booking-engine": "./src/booking-engine/index.ts",
+    "./booking-engine/schema": "./src/booking-engine/schema.ts",
+    "./booking-engine/draft-shape": "./src/booking-engine/draft-shape.ts",
+    "./booking-engine/contracts": "./src/booking-engine/contracts.ts",
+    "./booking-engine/drafts-schema": "./src/booking-engine/drafts-schema.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "lint": "biome check src/",
+    "test": "vitest run",
+    "build": "tsc -p tsconfig.json",
+    "clean": "rm -rf dist tsconfig.tsbuildinfo",
+    "prepack": "pnpm run build",
+    "db:generate": "drizzle-kit generate"
+  },
+  "files": [
+    "dist"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "import": "./dist/index.js",
+        "default": "./dist/index.js"
+      },
+      "./schema": {
+        "types": "./dist/schema.d.ts",
+        "import": "./dist/schema.js",
+        "default": "./dist/schema.js"
+      },
+      "./schema-sourced-entries": {
+        "types": "./dist/schema-sourced-entries.d.ts",
+        "import": "./dist/schema-sourced-entries.js",
+        "default": "./dist/schema-sourced-entries.js"
+      },
+      "./contract": {
+        "types": "./dist/contract.d.ts",
+        "import": "./dist/contract.js",
+        "default": "./dist/contract.js"
+      },
+      "./provenance": {
+        "types": "./dist/provenance.d.ts",
+        "import": "./dist/provenance.js",
+        "default": "./dist/provenance.js"
+      },
+      "./overlay/schema": {
+        "types": "./dist/overlay/schema.d.ts",
+        "import": "./dist/overlay/schema.js",
+        "default": "./dist/overlay/schema.js"
+      },
+      "./overlay/resolver": {
+        "types": "./dist/overlay/resolver.d.ts",
+        "import": "./dist/overlay/resolver.js",
+        "default": "./dist/overlay/resolver.js"
+      },
+      "./snapshot/schema": {
+        "types": "./dist/snapshot/schema.d.ts",
+        "import": "./dist/snapshot/schema.js",
+        "default": "./dist/snapshot/schema.js"
+      },
+      "./indexer/contract": {
+        "types": "./dist/indexer/contract.d.ts",
+        "import": "./dist/indexer/contract.js",
+        "default": "./dist/indexer/contract.js"
+      },
+      "./indexer/typesense": {
+        "types": "./dist/indexer/typesense.d.ts",
+        "import": "./dist/indexer/typesense.js",
+        "default": "./dist/indexer/typesense.js"
+      },
+      "./search/routes": {
+        "types": "./dist/search/routes.d.ts",
+        "import": "./dist/search/routes.js",
+        "default": "./dist/search/routes.js"
+      },
+      "./search/rerank": {
+        "types": "./dist/search/rerank.d.ts",
+        "import": "./dist/search/rerank.js",
+        "default": "./dist/search/rerank.js"
+      },
+      "./drift/events": {
+        "types": "./dist/drift/events.d.ts",
+        "import": "./dist/drift/events.js",
+        "default": "./dist/drift/events.js"
+      },
+      "./events/taxonomy": {
+        "types": "./dist/events/taxonomy.d.ts",
+        "import": "./dist/events/taxonomy.js",
+        "default": "./dist/events/taxonomy.js"
+      },
+      "./adapter/contract": {
+        "types": "./dist/adapter/contract.d.ts",
+        "import": "./dist/adapter/contract.js",
+        "default": "./dist/adapter/contract.js"
+      },
+      "./adapter/schemas": {
+        "types": "./dist/adapter/schemas.d.ts",
+        "import": "./dist/adapter/schemas.js",
+        "default": "./dist/adapter/schemas.js"
+      },
+      "./services/overlay": {
+        "types": "./dist/services/overlay-service.d.ts",
+        "import": "./dist/services/overlay-service.js",
+        "default": "./dist/services/overlay-service.js"
+      },
+      "./services/snapshot": {
+        "types": "./dist/services/snapshot-service.d.ts",
+        "import": "./dist/services/snapshot-service.js",
+        "default": "./dist/services/snapshot-service.js"
+      },
+      "./services/indexer": {
+        "types": "./dist/services/indexer-service.d.ts",
+        "import": "./dist/services/indexer-service.js",
+        "default": "./dist/services/indexer-service.js"
+      },
+      "./services/sourced-entry": {
+        "types": "./dist/services/sourced-entry-service.d.ts",
+        "import": "./dist/services/sourced-entry-service.js",
+        "default": "./dist/services/sourced-entry-service.js"
+      },
+      "./services/content": {
+        "types": "./dist/services/content-service.d.ts",
+        "import": "./dist/services/content-service.js",
+        "default": "./dist/services/content-service.js"
+      },
+      "./booking-engine": {
+        "types": "./dist/booking-engine/index.d.ts",
+        "import": "./dist/booking-engine/index.js",
+        "default": "./dist/booking-engine/index.js"
+      },
+      "./booking-engine/schema": {
+        "types": "./dist/booking-engine/schema.d.ts",
+        "import": "./dist/booking-engine/schema.js",
+        "default": "./dist/booking-engine/schema.js"
+      },
+      "./booking-engine/draft-shape": {
+        "types": "./dist/booking-engine/draft-shape.d.ts",
+        "import": "./dist/booking-engine/draft-shape.js",
+        "default": "./dist/booking-engine/draft-shape.js"
+      },
+      "./booking-engine/contracts": {
+        "types": "./dist/booking-engine/contracts.d.ts",
+        "import": "./dist/booking-engine/contracts.js",
+        "default": "./dist/booking-engine/contracts.js"
+      },
+      "./booking-engine/drafts-schema": {
+        "types": "./dist/booking-engine/drafts-schema.d.ts",
+        "import": "./dist/booking-engine/drafts-schema.js",
+        "default": "./dist/booking-engine/drafts-schema.js"
+      }
+    },
+    "main": "./dist/index.js",
+    "types": "./dist/index.d.ts"
+  },
+  "dependencies": {
+    "@voyantjs/catalog-contracts": "workspace:*",
+    "@voyantjs/core": "workspace:*",
+    "@voyantjs/db": "workspace:*",
+    "@voyantjs/hono": "workspace:*",
+    "drizzle-orm": "^0.45.2",
+    "hono": "^4.12.10",
+    "zod": "^4.1.4"
+  },
+  "devDependencies": {
+    "@voyantjs/voyant-typescript-config": "workspace:*",
+    "drizzle-kit": "^0.31.10",
+    "typescript": "^6.0.2",
+    "vitest": "^4.1.2"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/voyantjs/voyant.git",
+    "directory": "packages/catalog"
+  }
+}

@@ -1,0 +1,461 @@
+import { bookings } from "@voyantjs/bookings/schema"
+import type { EventBus } from "@voyantjs/core"
+import { invoiceRenditions, invoices } from "@voyantjs/finance/schema"
+import { contractAttachments, contracts } from "@voyantjs/legal/contracts"
+import { and, desc, eq, ne, or } from "drizzle-orm"
+import type { PostgresJsDatabase } from "drizzle-orm/postgres-js"
+
+import { sendNotification } from "./service-deliveries.js"
+import type {
+  BookingDocumentBundleItem,
+  NotificationService,
+  SendBookingDocumentsNotificationInput,
+} from "./service-shared.js"
+import {
+  listBookingNotificationItems,
+  listBookingNotificationParticipants,
+  resolveReminderRecipient,
+} from "./service-shared.js"
+import type { NotificationAttachment } from "./types.js"
+
+export type BookingDocumentAttachmentResolver = (
+  document: BookingDocumentBundleItem,
+) => Promise<NotificationAttachment | null>
+
+export interface SendBookingDocumentsRuntimeOptions {
+  attachmentResolver?: BookingDocumentAttachmentResolver
+  eventBus?: EventBus
+}
+
+export interface BookingDocumentsSentEvent {
+  bookingId: string
+  recipient: string
+  deliveryId: string
+  provider: string | null
+  documentKeys: string[]
+}
+
+function getMetadataRecord(value: unknown): Record<string, unknown> | null {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return null
+  }
+  return value as Record<string, unknown>
+}
+
+function getMetadataString(
+  metadata: Record<string, unknown> | null,
+  keys: ReadonlyArray<string>,
+): string | null {
+  if (!metadata) {
+    return null
+  }
+
+  for (const key of keys) {
+    const value = metadata[key]
+    if (typeof value === "string" && value.length > 0) {
+      return value
+    }
+  }
+
+  return null
+}
+
+function createDefaultAttachmentFromDocument(
+  document: BookingDocumentBundleItem,
+): NotificationAttachment | null {
+  if (!document.downloadUrl) {
+    return null
+  }
+
+  return {
+    filename: document.name,
+    path: document.downloadUrl,
+    contentType: document.mimeType ?? undefined,
+  }
+}
+
+function buildDefaultDocumentMessage(
+  booking: typeof bookings.$inferSelect,
+  documents: ReadonlyArray<BookingDocumentBundleItem>,
+) {
+  const label = booking.bookingNumber || booking.id
+  const listText = documents.map((document) => `- ${document.name}`).join("\n")
+  const listHtml = documents.map((document) => `<li>${document.name}</li>`).join("")
+
+  return {
+    subject: `Booking ${label} documents`,
+    text: `Your booking documents are attached.\n\nBooking: ${label}\n\n${listText}`,
+    html: `<p>Your booking documents are attached.</p><p><strong>Booking:</strong> ${label}</p><ul>${listHtml}</ul>`,
+  }
+}
+
+async function listLegalBookingDocuments(
+  db: PostgresJsDatabase,
+  bookingId: string,
+): Promise<BookingDocumentBundleItem[]> {
+  const contractRows = await db
+    .select()
+    .from(contracts)
+    .where(
+      and(
+        eq(contracts.bookingId, bookingId),
+        eq(contracts.scope, "customer"),
+        ne(contracts.status, "void"),
+      ),
+    )
+    .orderBy(desc(contracts.createdAt))
+
+  if (contractRows.length === 0) {
+    return []
+  }
+
+  const attachmentRows = await db
+    .select()
+    .from(contractAttachments)
+    .where(
+      and(
+        eq(contractAttachments.kind, "document"),
+        or(...contractRows.map((contract) => eq(contractAttachments.contractId, contract.id))),
+      ),
+    )
+    .orderBy(desc(contractAttachments.createdAt))
+
+  const bestAttachmentByContractId = new Map<string, typeof contractAttachments.$inferSelect>()
+  for (const attachment of attachmentRows) {
+    if (!bestAttachmentByContractId.has(attachment.contractId)) {
+      bestAttachmentByContractId.set(attachment.contractId, attachment)
+    }
+  }
+
+  return contractRows.flatMap((contract) => {
+    const attachment = bestAttachmentByContractId.get(contract.id)
+    if (!attachment) {
+      return []
+    }
+
+    const metadata = getMetadataRecord(attachment.metadata)
+
+    return [
+      {
+        key: `legal:${attachment.id}`,
+        source: "legal" as const,
+        documentType: "contract" as const,
+        bookingId,
+        contractId: contract.id,
+        invoiceId: null,
+        attachmentId: attachment.id,
+        renditionId: null,
+        contractStatus: contract.status,
+        invoiceStatus: null,
+        name: attachment.name,
+        format: attachment.mimeType === "application/pdf" ? "pdf" : null,
+        mimeType: attachment.mimeType ?? null,
+        storageKey: attachment.storageKey ?? null,
+        downloadUrl: getMetadataString(metadata, ["url"]),
+        language: contract.language ?? null,
+        metadata,
+        createdAt: attachment.createdAt.toISOString(),
+      },
+    ]
+  })
+}
+
+function compareInvoiceRenditions(
+  left: typeof invoiceRenditions.$inferSelect,
+  right: typeof invoiceRenditions.$inferSelect,
+) {
+  const formatRank = new Map([
+    ["pdf", 0],
+    ["html", 1],
+    ["json", 2],
+    ["xml", 3],
+  ])
+
+  const leftRank = formatRank.get(left.format) ?? Number.MAX_SAFE_INTEGER
+  const rightRank = formatRank.get(right.format) ?? Number.MAX_SAFE_INTEGER
+
+  if (leftRank !== rightRank) {
+    return leftRank - rightRank
+  }
+
+  return right.createdAt.getTime() - left.createdAt.getTime()
+}
+
+async function listFinanceBookingDocuments(
+  db: PostgresJsDatabase,
+  bookingId: string,
+): Promise<BookingDocumentBundleItem[]> {
+  const invoiceRows = await db
+    .select()
+    .from(invoices)
+    .where(and(eq(invoices.bookingId, bookingId), ne(invoices.status, "void")))
+    .orderBy(desc(invoices.createdAt))
+
+  if (invoiceRows.length === 0) {
+    return []
+  }
+
+  const renditionRows = await db
+    .select()
+    .from(invoiceRenditions)
+    .where(
+      and(
+        eq(invoiceRenditions.status, "ready"),
+        or(...invoiceRows.map((invoice) => eq(invoiceRenditions.invoiceId, invoice.id))),
+      ),
+    )
+    .orderBy(desc(invoiceRenditions.createdAt))
+
+  const bestRenditionByInvoiceId = new Map<string, typeof invoiceRenditions.$inferSelect>()
+  for (const rendition of renditionRows) {
+    const existing = bestRenditionByInvoiceId.get(rendition.invoiceId)
+    if (!existing || compareInvoiceRenditions(rendition, existing) < 0) {
+      bestRenditionByInvoiceId.set(rendition.invoiceId, rendition)
+    }
+  }
+
+  return invoiceRows.flatMap((invoice) => {
+    const rendition = bestRenditionByInvoiceId.get(invoice.id)
+    if (!rendition) {
+      return []
+    }
+
+    const metadata = getMetadataRecord(rendition.metadata)
+    const format = rendition.format
+    const extension = format === "pdf" ? "pdf" : format
+
+    return [
+      {
+        key: `finance:${rendition.id}`,
+        source: "finance" as const,
+        documentType: invoice.invoiceType === "proforma" ? "proforma" : "invoice",
+        bookingId,
+        contractId: null,
+        invoiceId: invoice.id,
+        attachmentId: null,
+        renditionId: rendition.id,
+        contractStatus: null,
+        invoiceStatus: invoice.status,
+        name: `${invoice.invoiceNumber}.${extension}`,
+        format,
+        mimeType:
+          format === "pdf"
+            ? "application/pdf"
+            : format === "html"
+              ? "text/html"
+              : format === "json"
+                ? "application/json"
+                : "application/xml",
+        storageKey: rendition.storageKey ?? null,
+        downloadUrl: getMetadataString(metadata, ["url"]),
+        language: rendition.language ?? invoice.language ?? null,
+        metadata,
+        createdAt: rendition.createdAt.toISOString(),
+      },
+    ]
+  })
+}
+
+export const bookingDocumentNotificationsService = {
+  async listBookingDocumentBundle(db: PostgresJsDatabase, bookingId: string) {
+    const [booking] = await db.select().from(bookings).where(eq(bookings.id, bookingId)).limit(1)
+    if (!booking) {
+      return null
+    }
+
+    const [legalDocuments, financeDocuments] = await Promise.all([
+      listLegalBookingDocuments(db, bookingId),
+      listFinanceBookingDocuments(db, bookingId),
+    ])
+
+    return {
+      bookingId,
+      documents: [...legalDocuments, ...financeDocuments],
+    }
+  },
+
+  async sendBookingDocumentsNotification(
+    db: PostgresJsDatabase,
+    dispatcher: NotificationService,
+    bookingId: string,
+    input: SendBookingDocumentsNotificationInput,
+    runtime: SendBookingDocumentsRuntimeOptions = {},
+  ) {
+    const [booking] = await db.select().from(bookings).where(eq(bookings.id, bookingId)).limit(1)
+    if (!booking) {
+      return { status: "not_found" as const }
+    }
+
+    const bundle = await this.listBookingDocumentBundle(db, bookingId)
+    const requestedTypes = new Set(input.documentTypes ?? ["contract", "invoice", "proforma"])
+    const documents = (bundle?.documents ?? []).filter((document) =>
+      requestedTypes.has(document.documentType),
+    )
+
+    if (documents.length === 0) {
+      return { status: "no_documents" as const }
+    }
+
+    const [participants, items] = await Promise.all([
+      listBookingNotificationParticipants(db, bookingId),
+      listBookingNotificationItems(db, bookingId),
+    ])
+    const recipient = resolveReminderRecipient(booking, participants)
+    const to = input.to ?? recipient?.email ?? null
+    if (!to) {
+      return { status: "no_recipient" as const }
+    }
+
+    const attachmentResolver =
+      runtime.attachmentResolver ??
+      (async (document: BookingDocumentBundleItem) => createDefaultAttachmentFromDocument(document))
+
+    const attachments = (
+      await Promise.all(documents.map((document) => attachmentResolver(document)))
+    ).filter((attachment): attachment is NotificationAttachment => Boolean(attachment))
+
+    if (attachments.length === 0) {
+      return { status: "no_attachments" as const }
+    }
+
+    const defaults = buildDefaultDocumentMessage(booking, documents)
+
+    const delivery = await sendNotification(db, dispatcher, {
+      templateId: input.templateId ?? null,
+      templateSlug: input.templateSlug ?? null,
+      channel: "email",
+      provider: input.provider ?? null,
+      to,
+      from: input.from ?? null,
+      subject: input.subject ?? defaults.subject,
+      html: input.html ?? defaults.html,
+      text: input.text ?? defaults.text,
+      attachments,
+      data: {
+        booking: {
+          id: booking.id,
+          bookingNumber: booking.bookingNumber,
+          status: booking.status,
+          sellCurrency: booking.sellCurrency,
+          sellAmountCents: booking.sellAmountCents,
+          startDate: booking.startDate,
+          endDate: booking.endDate,
+        },
+        traveler: recipient
+          ? {
+              firstName: recipient.firstName,
+              lastName: recipient.lastName,
+              email: recipient.email,
+              participantType: recipient.participantType,
+              isPrimary: recipient.isPrimary,
+            }
+          : null,
+        travelers: participants,
+        documents,
+        items,
+        ...(input.data ?? {}),
+      },
+      targetType: "booking",
+      targetId: booking.id,
+      bookingId: booking.id,
+      personId: booking.personId ?? null,
+      organizationId: booking.organizationId ?? null,
+      metadata: {
+        bookingDocumentKeys: documents.map((document) => document.key),
+        ...(input.metadata ?? {}),
+      },
+      scheduledFor: input.scheduledFor ?? null,
+    })
+
+    if (!delivery) {
+      return { status: "send_failed" as const }
+    }
+
+    await runtime.eventBus?.emit(
+      "booking.documents.sent",
+      {
+        bookingId: booking.id,
+        recipient: to,
+        deliveryId: delivery.id,
+        provider: delivery.provider ?? null,
+        documentKeys: documents.map((document) => document.key),
+      } satisfies BookingDocumentsSentEvent,
+      {
+        category: "domain",
+        source: "service",
+      },
+    )
+
+    return {
+      status: "sent" as const,
+      bookingId: booking.id,
+      recipient: to,
+      documents,
+      delivery,
+    }
+  },
+
+  /**
+   * Confirm-and-dispatch — single orchestrated call for the operator flow
+   * that wants "list the booking's documents, then send them to the client"
+   * to be one action instead of two round-trips.
+   *
+   * With `sendNotification: false`, the caller gets the bundle back without
+   * attempting a send — useful for rendering a preview/checkbox list before
+   * the operator confirms. With `sendNotification: true`, the same send
+   * guards as `sendBookingDocumentsNotification` apply (no_documents,
+   * no_recipient, no_attachments, send_failed); the result keeps the bundle
+   * regardless so the UI always has something to show.
+   */
+  async confirmAndDispatchBooking(
+    db: PostgresJsDatabase,
+    dispatcher: NotificationService,
+    bookingId: string,
+    input: { sendNotification?: boolean } & SendBookingDocumentsNotificationInput,
+    runtime: SendBookingDocumentsRuntimeOptions = {},
+  ) {
+    const bundle = await this.listBookingDocumentBundle(db, bookingId)
+    if (!bundle) return { status: "not_found" as const }
+
+    const documents = bundle.documents
+    const sendNotification = input.sendNotification ?? true
+    if (!sendNotification) {
+      return {
+        status: "preview" as const,
+        bookingId,
+        documents,
+      }
+    }
+
+    const result = await this.sendBookingDocumentsNotification(
+      db,
+      dispatcher,
+      bookingId,
+      input,
+      runtime,
+    )
+
+    if (result.status === "not_found") {
+      return { status: "not_found" as const }
+    }
+
+    if (result.status !== "sent") {
+      return {
+        status: "skipped" as const,
+        bookingId,
+        documents,
+        skipReason: result.status,
+      }
+    }
+
+    return {
+      status: "dispatched" as const,
+      bookingId: result.bookingId,
+      documents: result.documents,
+      recipient: result.recipient,
+      delivery: result.delivery,
+    }
+  },
+}
+
+export { createDefaultAttachmentFromDocument as createDefaultBookingDocumentAttachment }

@@ -1,0 +1,222 @@
+{
+  "name": "@voyantjs/admin",
+  "version": "0.104.1",
+  "license": "Apache-2.0",
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": "./src/index.ts",
+    "./styles.css": "./src/styles.css",
+    "./components/admin-nav-group": "./src/components/admin-nav-group.tsx",
+    "./components/admin-nav-link": "./src/components/admin-nav-link.tsx",
+    "./components/admin-page-head": "./src/components/admin-page-head.tsx",
+    "./components/admin-widget-slot": "./src/components/admin-widget-slot.tsx",
+    "./components/operator-admin-bootstrap-gate": "./src/components/operator-admin-bootstrap-gate.tsx",
+    "./components/operator-admin-page-shell": "./src/components/operator-admin-page-shell.tsx",
+    "./components/operator-admin-sidebar": "./src/components/operator-admin-sidebar.tsx",
+    "./components/team-settings-page": "./src/components/team-settings-page.tsx",
+    "./components/operator-admin-user-menu": "./src/components/operator-admin-user-menu.tsx",
+    "./dashboard": "./src/dashboard/dashboard-page.tsx",
+    "./dashboard/query-options": "./src/dashboard/dashboard-query-options.ts",
+    "./dashboard/skeleton": "./src/dashboard/dashboard-skeleton.tsx",
+    "./extensions": "./src/extensions.ts",
+    "./navigation/operator-navigation": "./src/navigation/operator-navigation.ts",
+    "./providers/admin-extensions": "./src/providers/admin-extensions.tsx",
+    "./providers/locale-preferences": "./src/providers/locale-preferences.tsx",
+    "./providers/operator-admin-shell": "./src/providers/operator-admin-shell.tsx",
+    "./providers/operator-admin-messages": "./src/providers/operator-admin-messages.tsx",
+    "./providers/theme": "./src/providers/theme.tsx",
+    "./providers/locale": "./src/providers/locale.tsx",
+    "./providers/query-client": "./src/providers/query-client.ts",
+    "./providers/admin-provider": "./src/providers/admin-provider.tsx",
+    "./lib/i18n": "./src/lib/i18n.tsx",
+    "./lib/initials": "./src/lib/initials.ts",
+    "./types": "./src/types.ts"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "clean": "rm -rf dist tsconfig.tsbuildinfo",
+    "prepack": "pnpm run build",
+    "typecheck": "tsc --noEmit",
+    "lint": "biome check src/",
+    "test": "vitest run --passWithNoTests"
+  },
+  "peerDependencies": {
+    "@tanstack/react-query": "^5.0.0",
+    "@tanstack/react-router": "^1.0.0",
+    "@voyantjs/ui": "workspace:*",
+    "lucide-react": "^0.475.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "recharts": "^3.0.0"
+  },
+  "dependencies": {
+    "@voyantjs/i18n": "workspace:*",
+    "@voyantjs/react": "workspace:*"
+  },
+  "devDependencies": {
+    "@tanstack/react-query": "^5.100.11",
+    "@tanstack/react-router": "^1.170.4",
+    "@testing-library/react": "^16.0.0",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@voyantjs/ui": "workspace:*",
+    "@voyantjs/voyant-typescript-config": "workspace:*",
+    "jsdom": "^25.0.0",
+    "lucide-react": "^1.7.0",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4",
+    "recharts": "3.8.1",
+    "typescript": "^6.0.2",
+    "vitest": "^4.1.2"
+  },
+  "files": [
+    "dist",
+    "src/styles.css"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "import": "./dist/index.js",
+        "default": "./dist/index.js"
+      },
+      "./styles.css": {
+        "default": "./src/styles.css"
+      },
+      "./components/admin-nav-group": {
+        "types": "./dist/components/admin-nav-group.d.ts",
+        "import": "./dist/components/admin-nav-group.js",
+        "default": "./dist/components/admin-nav-group.js"
+      },
+      "./components/admin-nav-link": {
+        "types": "./dist/components/admin-nav-link.d.ts",
+        "import": "./dist/components/admin-nav-link.js",
+        "default": "./dist/components/admin-nav-link.js"
+      },
+      "./components/admin-page-head": {
+        "types": "./dist/components/admin-page-head.d.ts",
+        "import": "./dist/components/admin-page-head.js",
+        "default": "./dist/components/admin-page-head.js"
+      },
+      "./components/admin-widget-slot": {
+        "types": "./dist/components/admin-widget-slot.d.ts",
+        "import": "./dist/components/admin-widget-slot.js",
+        "default": "./dist/components/admin-widget-slot.js"
+      },
+      "./components/operator-admin-bootstrap-gate": {
+        "types": "./dist/components/operator-admin-bootstrap-gate.d.ts",
+        "import": "./dist/components/operator-admin-bootstrap-gate.js",
+        "default": "./dist/components/operator-admin-bootstrap-gate.js"
+      },
+      "./components/operator-admin-page-shell": {
+        "types": "./dist/components/operator-admin-page-shell.d.ts",
+        "import": "./dist/components/operator-admin-page-shell.js",
+        "default": "./dist/components/operator-admin-page-shell.js"
+      },
+      "./components/operator-admin-sidebar": {
+        "types": "./dist/components/operator-admin-sidebar.d.ts",
+        "import": "./dist/components/operator-admin-sidebar.js",
+        "default": "./dist/components/operator-admin-sidebar.js"
+      },
+      "./components/operator-admin-user-menu": {
+        "types": "./dist/components/operator-admin-user-menu.d.ts",
+        "import": "./dist/components/operator-admin-user-menu.js",
+        "default": "./dist/components/operator-admin-user-menu.js"
+      },
+      "./components/team-settings-page": {
+        "types": "./dist/components/team-settings-page.d.ts",
+        "import": "./dist/components/team-settings-page.js",
+        "default": "./dist/components/team-settings-page.js"
+      },
+      "./dashboard": {
+        "types": "./dist/dashboard/dashboard-page.d.ts",
+        "import": "./dist/dashboard/dashboard-page.js",
+        "default": "./dist/dashboard/dashboard-page.js"
+      },
+      "./dashboard/query-options": {
+        "types": "./dist/dashboard/dashboard-query-options.d.ts",
+        "import": "./dist/dashboard/dashboard-query-options.js",
+        "default": "./dist/dashboard/dashboard-query-options.js"
+      },
+      "./dashboard/skeleton": {
+        "types": "./dist/dashboard/dashboard-skeleton.d.ts",
+        "import": "./dist/dashboard/dashboard-skeleton.js",
+        "default": "./dist/dashboard/dashboard-skeleton.js"
+      },
+      "./extensions": {
+        "types": "./dist/extensions.d.ts",
+        "import": "./dist/extensions.js",
+        "default": "./dist/extensions.js"
+      },
+      "./navigation/operator-navigation": {
+        "types": "./dist/navigation/operator-navigation.d.ts",
+        "import": "./dist/navigation/operator-navigation.js",
+        "default": "./dist/navigation/operator-navigation.js"
+      },
+      "./providers/admin-extensions": {
+        "types": "./dist/providers/admin-extensions.d.ts",
+        "import": "./dist/providers/admin-extensions.js",
+        "default": "./dist/providers/admin-extensions.js"
+      },
+      "./providers/locale-preferences": {
+        "types": "./dist/providers/locale-preferences.d.ts",
+        "import": "./dist/providers/locale-preferences.js",
+        "default": "./dist/providers/locale-preferences.js"
+      },
+      "./providers/operator-admin-shell": {
+        "types": "./dist/providers/operator-admin-shell.d.ts",
+        "import": "./dist/providers/operator-admin-shell.js",
+        "default": "./dist/providers/operator-admin-shell.js"
+      },
+      "./providers/operator-admin-messages": {
+        "types": "./dist/providers/operator-admin-messages.d.ts",
+        "import": "./dist/providers/operator-admin-messages.js",
+        "default": "./dist/providers/operator-admin-messages.js"
+      },
+      "./providers/theme": {
+        "types": "./dist/providers/theme.d.ts",
+        "import": "./dist/providers/theme.js",
+        "default": "./dist/providers/theme.js"
+      },
+      "./providers/locale": {
+        "types": "./dist/providers/locale.d.ts",
+        "import": "./dist/providers/locale.js",
+        "default": "./dist/providers/locale.js"
+      },
+      "./providers/query-client": {
+        "types": "./dist/providers/query-client.d.ts",
+        "import": "./dist/providers/query-client.js",
+        "default": "./dist/providers/query-client.js"
+      },
+      "./providers/admin-provider": {
+        "types": "./dist/providers/admin-provider.d.ts",
+        "import": "./dist/providers/admin-provider.js",
+        "default": "./dist/providers/admin-provider.js"
+      },
+      "./lib/i18n": {
+        "types": "./dist/lib/i18n.d.ts",
+        "import": "./dist/lib/i18n.js",
+        "default": "./dist/lib/i18n.js"
+      },
+      "./lib/initials": {
+        "types": "./dist/lib/initials.d.ts",
+        "import": "./dist/lib/initials.js",
+        "default": "./dist/lib/initials.js"
+      },
+      "./types": {
+        "types": "./dist/types.d.ts",
+        "import": "./dist/types.js",
+        "default": "./dist/types.js"
+      }
+    },
+    "main": "./dist/index.js",
+    "types": "./dist/index.d.ts"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/voyantjs/voyant.git",
+    "directory": "packages/admin"
+  }
+}

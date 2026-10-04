@@ -1,0 +1,52 @@
+id = "ury"
+name_zh = "独立餐厅"
+name_en = "Independent Restaurant"
+version = "0.1.0"
+module_api = 1
+integration_status = "source_integrated"
+[verification]
+source = "verified"
+database = "verified"
+runtime = "pending"
+e2e = "pending"
+
+
+[source]
+repository = "https://github.com/tuyutata/ury"
+commit = "4d2c559d3219cc61687cae6586af8560993ea70c"
+path = "upstream/ury"
+
+[runtime]
+family = "python-frappe"
+build = "upstream"
+start = "ury_frappe_postgresql"
+required_apps = ["erpnext", "hrms"]
+
+[localization]
+default = "zh-CN"
+supported = ["zh-CN", "en"]
+
+[authentication]
+administrator = "tuyu_sr25519_local_qr"
+staff = "upstream_native"
+administrator_bridge = "postgresql_one_time_assertion"
+administrator_assertion_ttl_seconds = 60
+administrator_upstream_role = "System Manager"
+
+[access]
+employee_access = "lan_browser"
+https_required = true
+public_access = false
+gateway_only = true
+
+[database]
+engine = "postgresql"
+database = "tuyubooking"
+schema = "module_ury"
+role = "tuyu_ury_app"
+isolated_database = false
+additional_persistent_database = false
+
+[orders]
+owns_orders = true
+event_contract = "tuyubooking.order.v1"

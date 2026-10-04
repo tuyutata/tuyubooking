@@ -1,0 +1,81 @@
+# Voyant Future Architecture Considerations
+
+This document tracks architecture ideas that are worth keeping visible, but
+that should stay out of the active cleanup and execution backlog for now.
+
+The goal is simple:
+
+- capture promising future work without treating it as current scope
+- keep later-stage ideas visible and reviewable
+- avoid bloating the active architecture surface before the basics are settled
+
+These are not rejected ideas. They are deferred ideas.
+
+For the disciplined review order and the "first real slice" to take when one of
+these items becomes justified, see
+[`future-architecture-review-plan.md`](./future-architecture-review-plan.md).
+
+## Deferral Rules
+
+An item belongs here when:
+
+- it solves a real future problem but not an urgent current one
+- the current framework can stay simpler without it
+- it depends on runtime or scale assumptions that are not settled yet
+- it would add meaningful surface area before the simpler baseline is fully in
+  place
+
+Rule:
+
+If an idea is plausible but not yet necessary, track it here instead of turning
+it into an active architecture requirement.
+
+## Promoted Since Drafting
+
+The following items have moved into active architecture guidance:
+
+- advanced constraint and index policy
+  see [`data-model-schema-authoring.md`](./data-model-schema-authoring.md) and
+  [`index-and-constraint-policy.md`](./index-and-constraint-policy.md)
+- locking and concurrency control policy
+  see [`locking-and-concurrency-policy.md`](./locking-and-concurrency-policy.md)
+- event delivery and durable execution policy
+  see
+  [`event-delivery-and-durable-execution-policy.md`](./event-delivery-and-durable-execution-policy.md)
+- token signing and key distribution policy
+  see
+  [`token-signing-and-key-distribution-policy.md`](./token-signing-and-key-distribution-policy.md)
+- link metadata and relationship policy
+  see
+  [`link-metadata-and-relationship-policy.md`](./link-metadata-and-relationship-policy.md)
+- cross-module indexing and projection policy
+  see
+  [`cross-module-indexing-and-projection-policy.md`](./cross-module-indexing-and-projection-policy.md)
+
+## Deferred Areas
+
+There are currently no deferred architecture items in the active review set.
+
+Future additions should only be added here when they meet the deferral rules
+above and are not yet justified as active guidance.
+
+## Review Guidance
+
+When revisiting an item from this document, ask:
+
+1. Is the current simpler model now causing real friction?
+2. Do we have concrete workload or product evidence for the change?
+3. Can the new primitive stay narrow instead of becoming a framework-wide
+   abstraction leak?
+
+If the answer is yes, the item may be ready to move into the active backlog.
+
+## Non-Goals
+
+This document is not:
+
+- a roadmap commitment
+- a promise that every item here will be built
+- a dump for vague ideas with no architectural reason
+
+The purpose is disciplined deferral, not an architecture wish list.

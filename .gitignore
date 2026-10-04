@@ -1,0 +1,12 @@
+# Rust本机输出只允许进入产品源码外工作区；产品根target不得恢复。
+/target/
+# 所有独立Cargo合同测试也只允许使用产品源码外工作区。
+**/target/
+**/target/
+
+# macOS Finder 元数据
+.DS_Store
+
+# 本机 AI 入口直接解析唯一规则；产品源码不跟踪本机链接。
+/CODEX.md
+/CLAUDE.md

@@ -1,0 +1,10 @@
+Package: tuyubooking
+Version: @VERSION@
+Section: office
+Priority: optional
+Architecture: amd64
+Maintainer: TuyuLove <support@tuyulove.com>
+Depends: libgtk-3-0, libsecret-1-0, libblkid1, liblzma5, libstdc++6
+Description: TuyuLove unified merchant application
+ TuyuBooking provides hotel, restaurant, tour, and ticket operations in one
+ application with a private embedded PostgreSQL runtime.

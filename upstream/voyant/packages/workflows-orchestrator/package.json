@@ -1,0 +1,63 @@
+{
+  "name": "@voyantjs/workflows-orchestrator",
+  "version": "0.104.1",
+  "description": "Reference orchestrator core for Voyant Workflows — drives runs through the tenant step handler over the v1 wire protocol.",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/voyantjs/voyant.git",
+    "directory": "packages/workflows-orchestrator"
+  },
+  "homepage": "https://voyant.cloud/workflows",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "import": "./src/index.ts"
+    },
+    "./testing": {
+      "types": "./src/testing/driver-compliance.ts",
+      "import": "./src/testing/driver-compliance.ts"
+    }
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "src",
+    "!**/*.test.*",
+    "!**/*.spec.*",
+    "NOTICE"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "check-types": "tsc --noEmit",
+    "dev": "tsc -w -p tsconfig.json",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@voyantjs/workflows": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^20.12.0",
+    "@voyantjs/voyant-typescript-config": "workspace:*",
+    "typescript": "^5.9.2",
+    "vitest": "^3.2.0"
+  },
+  "publishConfig": {
+    "access": "public",
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "import": "./dist/index.js"
+      },
+      "./testing": {
+        "types": "./dist/testing/driver-compliance.d.ts",
+        "import": "./dist/testing/driver-compliance.js"
+      }
+    },
+    "main": "./dist/index.js",
+    "types": "./dist/index.d.ts"
+  }
+}

@@ -1,0 +1,92 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tuyulove.com/schemas/tuyubooking/module-v1.json",
+  "title": "TuyuBooking Module Contract v1",
+  "type": "object",
+  "required": [
+    "id",
+    "name_zh",
+    "name_en",
+    "version",
+    "module_api",
+    "integration_status",
+    "source",
+    "runtime",
+    "localization",
+    "authentication",
+    "access",
+    "database",
+    "orders",
+    "verification"
+  ],
+  "properties": {
+    "module_api": {
+      "const": 1
+    },
+    "integration_status": {
+      "const": "source_integrated"
+    },
+    "database": {
+      "type": "object",
+      "required": [
+        "engine",
+        "database",
+        "schema",
+        "role",
+        "isolated_database",
+        "additional_persistent_database"
+      ],
+      "properties": {
+        "engine": {
+          "const": "postgresql"
+        },
+        "database": {
+          "const": "tuyubooking"
+        },
+        "schema": {
+          "type": "string",
+          "pattern": "^module_[a-z0-9_]+$",
+          "not": {
+            "const": "public"
+          }
+        },
+        "isolated_database": {
+          "const": false
+        },
+        "additional_persistent_database": {
+          "const": false
+        }
+      }
+    },
+    "verification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source",
+        "database",
+        "runtime",
+        "e2e"
+      ],
+      "properties": {
+        "source": {
+          "const": "verified"
+        },
+        "database": {
+          "const": "verified"
+        },
+        "runtime": {
+          "enum": [
+            "pending",
+            "verified"
+          ]
+        },
+        "e2e": {
+          "enum": [
+            "pending",
+            "verified"
+          ]
+        }
+      }
+    }
+  }
+}

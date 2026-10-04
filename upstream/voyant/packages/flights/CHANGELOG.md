@@ -1,0 +1,1685 @@
+# @voyantjs/flights
+
+## 0.104.1
+
+### Patch Changes
+
+- @voyantjs/catalog@0.104.1
+- @voyantjs/db@0.104.1
+- @voyantjs/flights-contracts@0.104.1
+
+## 0.104.0
+
+### Patch Changes
+
+- @voyantjs/catalog@0.104.0
+- @voyantjs/db@0.104.0
+- @voyantjs/flights-contracts@0.104.0
+
+## 0.103.0
+
+### Patch Changes
+
+- @voyantjs/catalog@0.103.0
+- @voyantjs/db@0.103.0
+- @voyantjs/flights-contracts@0.103.0
+
+## 0.102.0
+
+### Patch Changes
+
+- @voyantjs/catalog@0.102.0
+- @voyantjs/db@0.102.0
+- @voyantjs/flights-contracts@0.102.0
+
+## 0.101.2
+
+### Patch Changes
+
+- @voyantjs/catalog@0.101.2
+- @voyantjs/db@0.101.2
+- @voyantjs/flights-contracts@0.101.2
+
+## 0.101.1
+
+### Patch Changes
+
+- @voyantjs/catalog@0.101.1
+- @voyantjs/db@0.101.1
+- @voyantjs/flights-contracts@0.101.1
+
+## 0.101.0
+
+### Patch Changes
+
+- @voyantjs/catalog@0.101.0
+- @voyantjs/db@0.101.0
+- @voyantjs/flights-contracts@0.101.0
+
+## 0.100.0
+
+### Patch Changes
+
+- @voyantjs/catalog@0.100.0
+- @voyantjs/db@0.100.0
+- @voyantjs/flights-contracts@0.100.0
+
+## 0.99.0
+
+### Patch Changes
+
+- Updated dependencies [c893886]
+  - @voyantjs/catalog@0.99.0
+  - @voyantjs/db@0.99.0
+  - @voyantjs/flights-contracts@0.99.0
+
+## 0.98.0
+
+### Patch Changes
+
+- @voyantjs/catalog@0.98.0
+- @voyantjs/db@0.98.0
+- @voyantjs/flights-contracts@0.98.0
+
+## 0.97.0
+
+### Minor Changes
+
+- 2555264: Extract two more contract surfaces into lightweight packages, closing the
+  remaining gaps in the `*-contracts` pattern (ADR-0002 / ADR-0003).
+
+  `@voyantjs/flights-contracts` (new, zod-only) now owns the pure flight
+  `SourceAdapter` contract, request/response schemas, post-book types, and the
+  reference-data shapes (`contract/{types,adapter,schemas,post-book-types}`,
+  `reference/{contract,static-bundle}`), so flight-provider adapter authors and
+  external consumers can integrate without the flights runtime (Drizzle/DB).
+
+  `@voyantjs/catalog-contracts` gains the pure booking-engine contracts —
+  `booking-engine/contracts` (the `BookingDraft` + V1 engine schemas) and
+  `booking-engine/promotions-contract` — which were previously trapped in the
+  catalog runtime.
+
+  The runtime `@voyantjs/flights` and `@voyantjs/catalog` packages re-export from
+  the contract packages, so existing `@voyantjs/flights/contract/*`,
+  `@voyantjs/flights/reference/*`, and `@voyantjs/catalog/booking-engine/*` import
+  paths are unchanged.
+
+  Note: `@voyantjs/flights`' `snapshot.ts` stays in the runtime for now — it
+  depends on catalog's `CaptureSnapshotInput` / `PricingBasis`, which still live in
+  catalog runtime files (`services/snapshot-service.ts`, `snapshot/schema.ts`).
+  Carving those pure shapes into `catalog-contracts` (which would let the flight
+  snapshot move too) is a tracked follow-up.
+
+### Patch Changes
+
+- Updated dependencies [2555264]
+  - @voyantjs/catalog@0.97.0
+  - @voyantjs/db@0.97.0
+  - @voyantjs/flights-contracts@0.97.0
+
+## 0.96.0
+
+### Patch Changes
+
+- Updated dependencies [2d8d59b]
+  - @voyantjs/catalog@0.96.0
+  - @voyantjs/db@0.96.0
+
+## 0.95.0
+
+### Patch Changes
+
+- Updated dependencies [a8d3a3f]
+  - @voyantjs/catalog@0.95.0
+  - @voyantjs/db@0.95.0
+
+## 0.94.0
+
+### Patch Changes
+
+- @voyantjs/catalog@0.94.0
+- @voyantjs/db@0.94.0
+
+## 0.93.0
+
+### Patch Changes
+
+- @voyantjs/catalog@0.93.0
+- @voyantjs/db@0.93.0
+
+## 0.92.0
+
+### Patch Changes
+
+- Updated dependencies [5de3d72]
+  - @voyantjs/catalog@0.92.0
+  - @voyantjs/db@0.92.0
+
+## 0.91.0
+
+### Patch Changes
+
+- Updated dependencies [dc8554b]
+  - @voyantjs/catalog@0.91.0
+  - @voyantjs/db@0.91.0
+
+## 0.90.0
+
+### Patch Changes
+
+- @voyantjs/catalog@0.90.0
+- @voyantjs/db@0.90.0
+
+## 0.89.0
+
+### Patch Changes
+
+- @voyantjs/catalog@0.89.0
+- @voyantjs/db@0.89.0
+
+## 0.88.0
+
+### Patch Changes
+
+- Updated dependencies [27afa4b]
+  - @voyantjs/catalog@0.88.0
+  - @voyantjs/db@0.88.0
+
+## 0.87.1
+
+### Patch Changes
+
+- @voyantjs/catalog@0.87.1
+- @voyantjs/db@0.87.1
+
+## 0.87.0
+
+### Patch Changes
+
+- Updated dependencies [85505e6]
+  - @voyantjs/catalog@0.87.0
+  - @voyantjs/db@0.87.0
+
+## 0.86.0
+
+### Patch Changes
+
+- Updated dependencies [ddf4a19]
+  - @voyantjs/catalog@0.86.0
+  - @voyantjs/db@0.86.0
+
+## 0.85.4
+
+### Patch Changes
+
+- @voyantjs/catalog@0.85.4
+- @voyantjs/db@0.85.4
+
+## 0.85.3
+
+### Patch Changes
+
+- @voyantjs/catalog@0.85.3
+- @voyantjs/db@0.85.3
+
+## 0.85.2
+
+### Patch Changes
+
+- @voyantjs/catalog@0.85.2
+- @voyantjs/db@0.85.2
+
+## 0.85.1
+
+### Patch Changes
+
+- @voyantjs/catalog@0.85.1
+- @voyantjs/db@0.85.1
+
+## 0.85.0
+
+### Patch Changes
+
+- @voyantjs/catalog@0.85.0
+- @voyantjs/db@0.85.0
+
+## 0.84.4
+
+### Patch Changes
+
+- @voyantjs/catalog@0.84.4
+- @voyantjs/db@0.84.4
+
+## 0.84.3
+
+### Patch Changes
+
+- @voyantjs/catalog@0.84.3
+- @voyantjs/db@0.84.3
+
+## 0.84.2
+
+### Patch Changes
+
+- @voyantjs/catalog@0.84.2
+- @voyantjs/db@0.84.2
+
+## 0.84.1
+
+### Patch Changes
+
+- Updated dependencies [b9ef614]
+  - @voyantjs/catalog@0.84.1
+  - @voyantjs/db@0.84.1
+
+## 0.84.0
+
+### Patch Changes
+
+- Updated dependencies [4ea42b3]
+  - @voyantjs/catalog@0.84.0
+  - @voyantjs/db@0.84.0
+
+## 0.83.1
+
+### Patch Changes
+
+- @voyantjs/catalog@0.83.1
+- @voyantjs/db@0.83.1
+
+## 0.83.0
+
+### Patch Changes
+
+- @voyantjs/catalog@0.83.0
+- @voyantjs/db@0.83.0
+
+## 0.82.1
+
+### Patch Changes
+
+- @voyantjs/catalog@0.82.1
+- @voyantjs/db@0.82.1
+
+## 0.82.0
+
+### Patch Changes
+
+- @voyantjs/catalog@0.82.0
+- @voyantjs/db@0.82.0
+
+## 0.81.21
+
+### Patch Changes
+
+- @voyantjs/catalog@0.81.21
+- @voyantjs/db@0.81.21
+
+## 0.81.20
+
+### Patch Changes
+
+- @voyantjs/catalog@0.81.20
+- @voyantjs/db@0.81.20
+
+## 0.81.19
+
+### Patch Changes
+
+- @voyantjs/catalog@0.81.19
+- @voyantjs/db@0.81.19
+
+## 0.81.18
+
+### Patch Changes
+
+- @voyantjs/catalog@0.81.18
+- @voyantjs/db@0.81.18
+
+## 0.81.17
+
+### Patch Changes
+
+- @voyantjs/catalog@0.81.17
+- @voyantjs/db@0.81.17
+
+## 0.81.16
+
+### Patch Changes
+
+- Updated dependencies [0a617cc]
+  - @voyantjs/catalog@0.81.16
+  - @voyantjs/db@0.81.16
+
+## 0.81.15
+
+### Patch Changes
+
+- @voyantjs/catalog@0.81.15
+- @voyantjs/db@0.81.15
+
+## 0.81.14
+
+### Patch Changes
+
+- @voyantjs/catalog@0.81.14
+- @voyantjs/db@0.81.14
+
+## 0.81.13
+
+### Patch Changes
+
+- @voyantjs/catalog@0.81.13
+- @voyantjs/db@0.81.13
+
+## 0.81.12
+
+### Patch Changes
+
+- @voyantjs/catalog@0.81.12
+- @voyantjs/db@0.81.12
+
+## 0.81.11
+
+### Patch Changes
+
+- @voyantjs/catalog@0.81.11
+- @voyantjs/db@0.81.11
+
+## 0.81.10
+
+### Patch Changes
+
+- @voyantjs/catalog@0.81.10
+- @voyantjs/db@0.81.10
+
+## 0.81.9
+
+### Patch Changes
+
+- @voyantjs/catalog@0.81.9
+- @voyantjs/db@0.81.9
+
+## 0.81.8
+
+### Patch Changes
+
+- @voyantjs/catalog@0.81.8
+- @voyantjs/db@0.81.8
+
+## 0.81.7
+
+### Patch Changes
+
+- @voyantjs/catalog@0.81.7
+- @voyantjs/db@0.81.7
+
+## 0.81.6
+
+### Patch Changes
+
+- @voyantjs/catalog@0.81.6
+- @voyantjs/db@0.81.6
+
+## 0.81.5
+
+### Patch Changes
+
+- @voyantjs/catalog@0.81.5
+- @voyantjs/db@0.81.5
+
+## 0.81.4
+
+### Patch Changes
+
+- @voyantjs/catalog@0.81.4
+- @voyantjs/db@0.81.4
+
+## 0.81.3
+
+### Patch Changes
+
+- @voyantjs/catalog@0.81.3
+- @voyantjs/db@0.81.3
+
+## 0.81.2
+
+### Patch Changes
+
+- @voyantjs/catalog@0.81.2
+- @voyantjs/db@0.81.2
+
+## 0.81.1
+
+### Patch Changes
+
+- @voyantjs/catalog@0.81.1
+- @voyantjs/db@0.81.1
+
+## 0.81.0
+
+### Patch Changes
+
+- @voyantjs/catalog@0.81.0
+- @voyantjs/db@0.81.0
+
+## 0.80.18
+
+### Patch Changes
+
+- @voyantjs/catalog@0.80.18
+- @voyantjs/db@0.80.18
+
+## 0.80.17
+
+### Patch Changes
+
+- @voyantjs/catalog@0.80.17
+- @voyantjs/db@0.80.17
+
+## 0.80.16
+
+### Patch Changes
+
+- @voyantjs/catalog@0.80.16
+- @voyantjs/db@0.80.16
+
+## 0.80.15
+
+### Patch Changes
+
+- @voyantjs/catalog@0.80.15
+- @voyantjs/db@0.80.15
+
+## 0.80.14
+
+### Patch Changes
+
+- @voyantjs/catalog@0.80.14
+- @voyantjs/db@0.80.14
+
+## 0.80.13
+
+### Patch Changes
+
+- @voyantjs/catalog@0.80.13
+- @voyantjs/db@0.80.13
+
+## 0.80.12
+
+### Patch Changes
+
+- @voyantjs/catalog@0.80.12
+- @voyantjs/db@0.80.12
+
+## 0.80.11
+
+### Patch Changes
+
+- @voyantjs/catalog@0.80.11
+- @voyantjs/db@0.80.11
+
+## 0.80.10
+
+### Patch Changes
+
+- @voyantjs/catalog@0.80.10
+- @voyantjs/db@0.80.10
+
+## 0.80.9
+
+### Patch Changes
+
+- @voyantjs/catalog@0.80.9
+- @voyantjs/db@0.80.9
+
+## 0.80.8
+
+### Patch Changes
+
+- @voyantjs/catalog@0.80.8
+- @voyantjs/db@0.80.8
+
+## 0.80.7
+
+### Patch Changes
+
+- @voyantjs/catalog@0.80.7
+- @voyantjs/db@0.80.7
+
+## 0.80.6
+
+### Patch Changes
+
+- @voyantjs/catalog@0.80.6
+- @voyantjs/db@0.80.6
+
+## 0.80.5
+
+### Patch Changes
+
+- @voyantjs/catalog@0.80.5
+- @voyantjs/db@0.80.5
+
+## 0.80.4
+
+### Patch Changes
+
+- @voyantjs/catalog@0.80.4
+- @voyantjs/db@0.80.4
+
+## 0.80.3
+
+### Patch Changes
+
+- @voyantjs/catalog@0.80.3
+- @voyantjs/db@0.80.3
+
+## 0.80.2
+
+### Patch Changes
+
+- @voyantjs/catalog@0.80.2
+- @voyantjs/db@0.80.2
+
+## 0.80.1
+
+### Patch Changes
+
+- @voyantjs/catalog@0.80.1
+- @voyantjs/db@0.80.1
+
+## 0.80.0
+
+### Patch Changes
+
+- @voyantjs/catalog@0.80.0
+- @voyantjs/db@0.80.0
+
+## 0.79.0
+
+### Patch Changes
+
+- @voyantjs/catalog@0.79.0
+- @voyantjs/db@0.79.0
+
+## 0.78.0
+
+### Patch Changes
+
+- @voyantjs/catalog@0.78.0
+- @voyantjs/db@0.78.0
+
+## 0.77.13
+
+### Patch Changes
+
+- @voyantjs/catalog@0.77.13
+- @voyantjs/db@0.77.13
+
+## 0.77.12
+
+### Patch Changes
+
+- @voyantjs/catalog@0.77.12
+- @voyantjs/db@0.77.12
+
+## 0.77.11
+
+### Patch Changes
+
+- @voyantjs/catalog@0.77.11
+- @voyantjs/db@0.77.11
+
+## 0.77.10
+
+### Patch Changes
+
+- @voyantjs/catalog@0.77.10
+- @voyantjs/db@0.77.10
+
+## 0.77.9
+
+### Patch Changes
+
+- @voyantjs/catalog@0.77.9
+- @voyantjs/db@0.77.9
+
+## 0.77.8
+
+### Patch Changes
+
+- @voyantjs/catalog@0.77.8
+- @voyantjs/db@0.77.8
+
+## 0.77.7
+
+### Patch Changes
+
+- @voyantjs/catalog@0.77.7
+- @voyantjs/db@0.77.7
+
+## 0.77.6
+
+### Patch Changes
+
+- @voyantjs/catalog@0.77.6
+- @voyantjs/db@0.77.6
+
+## 0.77.5
+
+### Patch Changes
+
+- @voyantjs/catalog@0.77.5
+- @voyantjs/db@0.77.5
+
+## 0.77.4
+
+### Patch Changes
+
+- @voyantjs/catalog@0.77.4
+- @voyantjs/db@0.77.4
+
+## 0.77.3
+
+### Patch Changes
+
+- @voyantjs/catalog@0.77.3
+- @voyantjs/db@0.77.3
+
+## 0.77.2
+
+### Patch Changes
+
+- @voyantjs/catalog@0.77.2
+- @voyantjs/db@0.77.2
+
+## 0.77.1
+
+### Patch Changes
+
+- @voyantjs/catalog@0.77.1
+- @voyantjs/db@0.77.1
+
+## 0.77.0
+
+### Patch Changes
+
+- @voyantjs/catalog@0.77.0
+- @voyantjs/db@0.77.0
+
+## 0.76.0
+
+### Patch Changes
+
+- @voyantjs/catalog@0.76.0
+- @voyantjs/db@0.76.0
+
+## 0.75.7
+
+### Patch Changes
+
+- @voyantjs/catalog@0.75.7
+- @voyantjs/db@0.75.7
+
+## 0.75.6
+
+### Patch Changes
+
+- @voyantjs/catalog@0.75.6
+- @voyantjs/db@0.75.6
+
+## 0.75.5
+
+### Patch Changes
+
+- @voyantjs/catalog@0.75.5
+- @voyantjs/db@0.75.5
+
+## 0.75.4
+
+### Patch Changes
+
+- @voyantjs/catalog@0.75.4
+- @voyantjs/db@0.75.4
+
+## 0.75.3
+
+### Patch Changes
+
+- @voyantjs/catalog@0.75.3
+- @voyantjs/db@0.75.3
+
+## 0.75.2
+
+### Patch Changes
+
+- @voyantjs/catalog@0.75.2
+- @voyantjs/db@0.75.2
+
+## 0.75.1
+
+### Patch Changes
+
+- @voyantjs/catalog@0.75.1
+- @voyantjs/db@0.75.1
+
+## 0.75.0
+
+### Patch Changes
+
+- @voyantjs/catalog@0.75.0
+- @voyantjs/db@0.75.0
+
+## 0.74.2
+
+### Patch Changes
+
+- @voyantjs/catalog@0.74.2
+- @voyantjs/db@0.74.2
+
+## 0.74.1
+
+### Patch Changes
+
+- @voyantjs/catalog@0.74.1
+- @voyantjs/db@0.74.1
+
+## 0.74.0
+
+### Patch Changes
+
+- @voyantjs/catalog@0.74.0
+- @voyantjs/db@0.74.0
+
+## 0.73.1
+
+### Patch Changes
+
+- @voyantjs/catalog@0.73.1
+- @voyantjs/db@0.73.1
+
+## 0.73.0
+
+### Patch Changes
+
+- @voyantjs/catalog@0.73.0
+- @voyantjs/db@0.73.0
+
+## 0.72.0
+
+### Patch Changes
+
+- @voyantjs/catalog@0.72.0
+- @voyantjs/db@0.72.0
+
+## 0.71.0
+
+### Patch Changes
+
+- @voyantjs/catalog@0.71.0
+- @voyantjs/db@0.71.0
+
+## 0.70.0
+
+### Patch Changes
+
+- @voyantjs/catalog@0.70.0
+- @voyantjs/db@0.70.0
+
+## 0.69.1
+
+### Patch Changes
+
+- @voyantjs/catalog@0.69.1
+- @voyantjs/db@0.69.1
+
+## 0.69.0
+
+### Patch Changes
+
+- @voyantjs/catalog@0.69.0
+- @voyantjs/db@0.69.0
+
+## 0.68.0
+
+### Patch Changes
+
+- @voyantjs/catalog@0.68.0
+- @voyantjs/db@0.68.0
+
+## 0.67.0
+
+### Patch Changes
+
+- @voyantjs/catalog@0.67.0
+- @voyantjs/db@0.67.0
+
+## 0.66.6
+
+### Patch Changes
+
+- @voyantjs/catalog@0.66.6
+- @voyantjs/db@0.66.6
+
+## 0.66.5
+
+### Patch Changes
+
+- @voyantjs/catalog@0.66.5
+- @voyantjs/db@0.66.5
+
+## 0.66.4
+
+### Patch Changes
+
+- @voyantjs/catalog@0.66.4
+- @voyantjs/db@0.66.4
+
+## 0.66.3
+
+### Patch Changes
+
+- @voyantjs/catalog@0.66.3
+- @voyantjs/db@0.66.3
+
+## 0.66.2
+
+### Patch Changes
+
+- @voyantjs/catalog@0.66.2
+- @voyantjs/db@0.66.2
+
+## 0.66.1
+
+### Patch Changes
+
+- @voyantjs/catalog@0.66.1
+- @voyantjs/db@0.66.1
+
+## 0.66.0
+
+### Patch Changes
+
+- @voyantjs/catalog@0.66.0
+- @voyantjs/db@0.66.0
+
+## 0.65.0
+
+### Patch Changes
+
+- @voyantjs/catalog@0.65.0
+- @voyantjs/db@0.65.0
+
+## 0.64.1
+
+### Patch Changes
+
+- @voyantjs/catalog@0.64.1
+- @voyantjs/db@0.64.1
+
+## 0.64.0
+
+### Patch Changes
+
+- Updated dependencies [6d0c8f3]
+  - @voyantjs/catalog@0.64.0
+  - @voyantjs/db@0.64.0
+
+## 0.63.1
+
+### Patch Changes
+
+- @voyantjs/catalog@0.63.1
+- @voyantjs/db@0.63.1
+
+## 0.63.0
+
+### Patch Changes
+
+- @voyantjs/catalog@0.63.0
+- @voyantjs/db@0.63.0
+
+## 0.62.3
+
+### Patch Changes
+
+- @voyantjs/catalog@0.62.3
+- @voyantjs/db@0.62.3
+
+## 0.62.2
+
+### Patch Changes
+
+- @voyantjs/catalog@0.62.2
+- @voyantjs/db@0.62.2
+
+## 0.62.1
+
+### Patch Changes
+
+- @voyantjs/catalog@0.62.1
+- @voyantjs/db@0.62.1
+
+## 0.62.0
+
+### Patch Changes
+
+- Updated dependencies [77aad68]
+  - @voyantjs/catalog@0.62.0
+  - @voyantjs/db@0.62.0
+
+## 0.61.0
+
+### Patch Changes
+
+- @voyantjs/catalog@0.61.0
+- @voyantjs/db@0.61.0
+
+## 0.60.0
+
+### Patch Changes
+
+- @voyantjs/catalog@0.60.0
+- @voyantjs/db@0.60.0
+
+## 0.59.0
+
+### Patch Changes
+
+- Updated dependencies [48927be]
+  - @voyantjs/catalog@0.59.0
+  - @voyantjs/db@0.59.0
+
+## 0.58.0
+
+### Patch Changes
+
+- Updated dependencies [5b21488]
+  - @voyantjs/catalog@0.58.0
+  - @voyantjs/db@0.58.0
+
+## 0.57.0
+
+### Minor Changes
+
+- 0829145: Add zod runtime schemas for the public flight connector contract, including requests, responses, enums, value objects, adapter context, and capability declarations.
+
+### Patch Changes
+
+- @voyantjs/catalog@0.57.0
+- @voyantjs/db@0.57.0
+
+## 0.56.0
+
+### Minor Changes
+
+- fe403fc: Complete the flight connector contract with optional capability-gated methods for post-book seat selection, check-in, exchange, refund, void, and SSR operations. Extend adapter context with optional request, idempotency, logger, abort signal, and environment fields.
+
+### Patch Changes
+
+- @voyantjs/catalog@0.56.0
+- @voyantjs/db@0.56.0
+
+## 0.55.1
+
+### Patch Changes
+
+- Updated dependencies [819c847]
+  - @voyantjs/catalog@0.55.1
+  - @voyantjs/db@0.55.1
+
+## 0.55.0
+
+### Patch Changes
+
+- @voyantjs/catalog@0.55.0
+- @voyantjs/db@0.55.0
+
+## 0.54.0
+
+### Patch Changes
+
+- @voyantjs/catalog@0.54.0
+- @voyantjs/db@0.54.0
+
+## 0.53.2
+
+### Patch Changes
+
+- @voyantjs/catalog@0.53.2
+- @voyantjs/db@0.53.2
+
+## 0.53.1
+
+### Patch Changes
+
+- @voyantjs/catalog@0.53.1
+- @voyantjs/db@0.53.1
+
+## 0.53.0
+
+### Patch Changes
+
+- @voyantjs/catalog@0.53.0
+- @voyantjs/db@0.53.0
+
+## 0.52.4
+
+### Patch Changes
+
+- @voyantjs/catalog@0.52.4
+- @voyantjs/db@0.52.4
+
+## 0.52.3
+
+### Patch Changes
+
+- Updated dependencies [9679a57]
+  - @voyantjs/catalog@0.52.3
+  - @voyantjs/db@0.52.3
+
+## 0.52.2
+
+### Patch Changes
+
+- @voyantjs/catalog@0.52.2
+- @voyantjs/db@0.52.2
+
+## 0.52.1
+
+### Patch Changes
+
+- @voyantjs/catalog@0.52.1
+- @voyantjs/db@0.52.1
+
+## 0.52.0
+
+### Patch Changes
+
+- @voyantjs/catalog@0.52.0
+- @voyantjs/db@0.52.0
+
+## 0.51.1
+
+### Patch Changes
+
+- @voyantjs/catalog@0.51.1
+- @voyantjs/db@0.51.1
+
+## 0.51.0
+
+### Patch Changes
+
+- @voyantjs/catalog@0.51.0
+- @voyantjs/db@0.51.0
+
+## 0.50.8
+
+### Patch Changes
+
+- @voyantjs/catalog@0.50.8
+- @voyantjs/db@0.50.8
+
+## 0.50.7
+
+### Patch Changes
+
+- @voyantjs/catalog@0.50.7
+- @voyantjs/db@0.50.7
+
+## 0.50.6
+
+### Patch Changes
+
+- @voyantjs/catalog@0.50.6
+- @voyantjs/db@0.50.6
+
+## 0.50.5
+
+### Patch Changes
+
+- @voyantjs/catalog@0.50.5
+- @voyantjs/db@0.50.5
+
+## 0.50.4
+
+### Patch Changes
+
+- @voyantjs/catalog@0.50.4
+- @voyantjs/db@0.50.4
+
+## 0.50.3
+
+### Patch Changes
+
+- @voyantjs/catalog@0.50.3
+- @voyantjs/db@0.50.3
+
+## 0.50.2
+
+### Patch Changes
+
+- @voyantjs/catalog@0.50.2
+- @voyantjs/db@0.50.2
+
+## 0.50.1
+
+### Patch Changes
+
+- @voyantjs/catalog@0.50.1
+- @voyantjs/db@0.50.1
+
+## 0.50.0
+
+### Patch Changes
+
+- @voyantjs/catalog@0.50.0
+- @voyantjs/db@0.50.0
+
+## 0.49.0
+
+### Patch Changes
+
+- @voyantjs/catalog@0.49.0
+- @voyantjs/db@0.49.0
+
+## 0.48.0
+
+### Patch Changes
+
+- @voyantjs/catalog@0.48.0
+- @voyantjs/db@0.48.0
+
+## 0.47.0
+
+### Patch Changes
+
+- @voyantjs/catalog@0.47.0
+- @voyantjs/db@0.47.0
+
+## 0.46.0
+
+### Patch Changes
+
+- @voyantjs/catalog@0.46.0
+- @voyantjs/db@0.46.0
+
+## 0.45.0
+
+### Patch Changes
+
+- @voyantjs/catalog@0.45.0
+- @voyantjs/db@0.45.0
+
+## 0.44.0
+
+### Patch Changes
+
+- @voyantjs/catalog@0.44.0
+- @voyantjs/db@0.44.0
+
+## 0.43.0
+
+### Patch Changes
+
+- @voyantjs/catalog@0.43.0
+- @voyantjs/db@0.43.0
+
+## 0.42.0
+
+### Patch Changes
+
+- @voyantjs/catalog@0.42.0
+- @voyantjs/db@0.42.0
+
+## 0.41.3
+
+### Patch Changes
+
+- @voyantjs/catalog@0.41.3
+- @voyantjs/db@0.41.3
+
+## 0.41.2
+
+### Patch Changes
+
+- @voyantjs/catalog@0.41.2
+- @voyantjs/db@0.41.2
+
+## 0.41.1
+
+### Patch Changes
+
+- @voyantjs/catalog@0.41.1
+- @voyantjs/db@0.41.1
+
+## 0.41.0
+
+### Patch Changes
+
+- @voyantjs/catalog@0.41.0
+- @voyantjs/db@0.41.0
+
+## 0.40.1
+
+### Patch Changes
+
+- @voyantjs/catalog@0.40.1
+- @voyantjs/db@0.40.1
+
+## 0.40.0
+
+### Patch Changes
+
+- @voyantjs/catalog@0.40.0
+- @voyantjs/db@0.40.0
+
+## 0.39.0
+
+### Patch Changes
+
+- @voyantjs/catalog@0.39.0
+- @voyantjs/db@0.39.0
+
+## 0.38.2
+
+### Patch Changes
+
+- @voyantjs/catalog@0.38.2
+- @voyantjs/db@0.38.2
+
+## 0.38.1
+
+### Patch Changes
+
+- @voyantjs/catalog@0.38.1
+- @voyantjs/db@0.38.1
+
+## 0.38.0
+
+### Patch Changes
+
+- @voyantjs/catalog@0.38.0
+- @voyantjs/db@0.38.0
+
+## 0.37.1
+
+### Patch Changes
+
+- @voyantjs/catalog@0.37.1
+- @voyantjs/db@0.37.1
+
+## 0.37.0
+
+### Patch Changes
+
+- @voyantjs/catalog@0.37.0
+- @voyantjs/db@0.37.0
+
+## 0.36.0
+
+### Patch Changes
+
+- @voyantjs/catalog@0.36.0
+- @voyantjs/db@0.36.0
+
+## 0.35.0
+
+### Patch Changes
+
+- @voyantjs/catalog@0.35.0
+- @voyantjs/db@0.35.0
+
+## 0.34.0
+
+### Patch Changes
+
+- @voyantjs/catalog@0.34.0
+- @voyantjs/db@0.34.0
+
+## 0.33.1
+
+### Patch Changes
+
+- @voyantjs/catalog@0.33.1
+- @voyantjs/db@0.33.1
+
+## 0.33.0
+
+### Patch Changes
+
+- @voyantjs/catalog@0.33.0
+- @voyantjs/db@0.33.0
+
+## 0.32.3
+
+### Patch Changes
+
+- @voyantjs/catalog@0.32.3
+- @voyantjs/db@0.32.3
+
+## 0.32.2
+
+### Patch Changes
+
+- @voyantjs/catalog@0.32.2
+- @voyantjs/db@0.32.2
+
+## 0.32.1
+
+### Patch Changes
+
+- @voyantjs/catalog@0.32.1
+- @voyantjs/db@0.32.1
+
+## 0.32.0
+
+### Patch Changes
+
+- @voyantjs/catalog@0.32.0
+- @voyantjs/db@0.32.0
+
+## 0.31.4
+
+### Patch Changes
+
+- @voyantjs/catalog@0.31.4
+- @voyantjs/db@0.31.4
+
+## 0.31.3
+
+### Patch Changes
+
+- Updated dependencies [5f974dd]
+  - @voyantjs/catalog@0.31.3
+  - @voyantjs/db@0.31.3
+
+## 0.31.2
+
+### Patch Changes
+
+- @voyantjs/catalog@0.31.2
+- @voyantjs/db@0.31.2
+
+## 0.31.1
+
+### Patch Changes
+
+- @voyantjs/catalog@0.31.1
+- @voyantjs/db@0.31.1
+
+## 0.31.0
+
+### Patch Changes
+
+- @voyantjs/catalog@0.31.0
+- @voyantjs/db@0.31.0
+
+## 0.30.7
+
+### Patch Changes
+
+- @voyantjs/catalog@0.30.7
+- @voyantjs/db@0.30.7
+
+## 0.30.6
+
+### Patch Changes
+
+- Updated dependencies [5a4c592]
+  - @voyantjs/catalog@0.30.6
+  - @voyantjs/db@0.30.6
+
+## 0.30.5
+
+### Patch Changes
+
+- @voyantjs/catalog@0.30.5
+- @voyantjs/db@0.30.5
+
+## 0.30.4
+
+### Patch Changes
+
+- @voyantjs/catalog@0.30.4
+- @voyantjs/db@0.30.4
+
+## 0.30.3
+
+### Patch Changes
+
+- @voyantjs/catalog@0.30.3
+- @voyantjs/db@0.30.3
+
+## 0.30.2
+
+### Patch Changes
+
+- @voyantjs/catalog@0.30.2
+- @voyantjs/db@0.30.2
+
+## 0.30.1
+
+### Patch Changes
+
+- @voyantjs/catalog@0.30.1
+- @voyantjs/db@0.30.1
+
+## 0.30.0
+
+### Patch Changes
+
+- @voyantjs/catalog@0.30.0
+- @voyantjs/db@0.30.0
+
+## 0.29.0
+
+### Patch Changes
+
+- Updated dependencies [583326e]
+- Updated dependencies [583326e]
+- Updated dependencies [583326e]
+- Updated dependencies [4a6523e]
+- Updated dependencies [db51715]
+  - @voyantjs/catalog@0.29.0
+  - @voyantjs/db@0.29.0
+
+## 0.28.3
+
+### Patch Changes
+
+- @voyantjs/catalog@0.28.3
+- @voyantjs/db@0.28.3
+
+## 0.28.2
+
+### Patch Changes
+
+- @voyantjs/catalog@0.28.2
+- @voyantjs/db@0.28.2
+
+## 0.28.1
+
+### Patch Changes
+
+- @voyantjs/catalog@0.28.1
+- @voyantjs/db@0.28.1
+
+## 0.28.0
+
+### Patch Changes
+
+- @voyantjs/catalog@0.28.0
+- @voyantjs/db@0.28.0
+
+## 0.27.0
+
+### Patch Changes
+
+- @voyantjs/catalog@0.27.0
+- @voyantjs/db@0.27.0
+
+## 0.26.9
+
+### Patch Changes
+
+- @voyantjs/catalog@0.26.9
+- @voyantjs/db@0.26.9
+
+## 0.26.8
+
+### Patch Changes
+
+- @voyantjs/catalog@0.26.8
+- @voyantjs/db@0.26.8
+
+## 0.26.7
+
+### Patch Changes
+
+- @voyantjs/catalog@0.26.7
+- @voyantjs/db@0.26.7
+
+## 0.26.6
+
+### Patch Changes
+
+- @voyantjs/catalog@0.26.6
+- @voyantjs/db@0.26.6
+
+## 0.26.5
+
+### Patch Changes
+
+- Updated dependencies [7a92aba]
+  - @voyantjs/catalog@0.26.5
+  - @voyantjs/db@0.26.5
+
+## 0.26.4
+
+### Patch Changes
+
+- Updated dependencies [6493f62]
+  - @voyantjs/catalog@0.26.4
+  - @voyantjs/db@0.26.4
+
+## 0.26.3
+
+### Patch Changes
+
+- Updated dependencies [372cad5]
+  - @voyantjs/catalog@0.26.3
+  - @voyantjs/db@0.26.3
+
+## 0.26.2
+
+### Patch Changes
+
+- Updated dependencies [ffdb485]
+  - @voyantjs/catalog@0.26.2
+  - @voyantjs/db@0.26.2
+
+## 0.26.1
+
+### Patch Changes
+
+- Updated dependencies [c0507a6]
+  - @voyantjs/catalog@0.26.1
+  - @voyantjs/db@0.26.1
+
+## 0.26.0
+
+### Patch Changes
+
+- @voyantjs/catalog@0.26.0
+- @voyantjs/db@0.26.0
+
+## 0.25.0
+
+### Patch Changes
+
+- @voyantjs/catalog@0.25.0
+- @voyantjs/db@0.25.0
+
+## 0.24.3
+
+### Patch Changes
+
+- @voyantjs/catalog@0.24.3
+- @voyantjs/db@0.24.3
+
+## 0.24.2
+
+### Patch Changes
+
+- Updated dependencies [bec0471]
+  - @voyantjs/catalog@0.24.2
+  - @voyantjs/db@0.24.2
+
+## 0.24.1
+
+### Patch Changes
+
+- Updated dependencies [2d6297d]
+  - @voyantjs/catalog@0.24.1
+  - @voyantjs/db@0.24.1
+
+## 0.24.0
+
+### Patch Changes
+
+- @voyantjs/catalog@0.24.0
+- @voyantjs/db@0.24.0
+
+## 0.23.0
+
+### Patch Changes
+
+- @voyantjs/catalog@0.23.0
+- @voyantjs/db@0.23.0
+
+## 0.22.0
+
+### Patch Changes
+
+- @voyantjs/catalog@0.22.0
+- @voyantjs/db@0.22.0
+
+## 0.21.1
+
+### Patch Changes
+
+- @voyantjs/catalog@0.21.1
+- @voyantjs/db@0.21.1
+
+## 0.21.0
+
+### Patch Changes
+
+- Updated dependencies [6427bad]
+  - @voyantjs/catalog@0.21.0
+  - @voyantjs/db@0.21.0
+
+## 0.20.0
+
+### Minor Changes
+
+- cc3eddd: **Demo flight adapter is now a standalone HTTP service with its own DB; flight orders get a list page, payment status badges, and search/filter/sort.**
+
+  The previous demo adapter lived inside the operator template, used an in-memory `Map` for "persistence" (orders vanished on every restart), and bled fake tables into the template's primary Postgres. None of that scales to "show me my bookings". This release extracts the demo into a proper standalone provider so the operator template no longer pretends a demo is real.
+
+  - **New** `@voyantjs/plugin-flights-demo` is now a thin HTTP-client `FlightConnectorAdapter` (~150 lines, zero state). `createDemoFlightAdapter({ baseUrl })` returns the adapter; every method `fetch()`s the standalone service. Real GDS connectors (Sabre, Amadeus, Duffel) plug in the same way — replace the import, no template churn.
+  - **New runnable** `apps/flights-demo-api` (Node + Hono + drizzle + postgres) — own database, own migrations, own `docker-compose.yml`. Mirrors the `FlightConnectorAdapter` 1:1 over REST: `POST /search`, `POST /price`, `POST /book`, `GET /orders`, `GET /orders/:id`, `POST /orders/:id/cancel`, `POST /ancillaries`, `POST /seatmap`, `GET /health`. Fails fast at startup if its Postgres is unreachable. Set `FLIGHTS_DEMO_DATABASE_URL` (preferred over the shared `DATABASE_URL` so the demo can never silently inherit the operator's DB).
+  - **Booking** is no longer "idempotent" via deterministic order id — `synthesizeOrder` now seeds with the offer hash + `Date.now()` + a random nonce so every `bookFlight` call mints a unique PNR, matching real GDS behaviour. Same offer + same passengers → distinct order rows.
+  - **Contract: `FlightConnectorAdapter.listOrders?(ctx, query)`** is a new optional method (`flight/list-orders` capability), with `FlightOrdersListQuery` and `FlightOrdersListResponse` types. Adapters that own a persistent store (the demo, real travel-tech connectors with agency-side APIs) implement it; pass-through GDS connectors simply omit it. `FlightAdapterContext.deps` is a new optional escape hatch for adapter-specific runtime handles (DB, FX clients, etc.) — real connectors ignore it.
+  - **`useFlightOrders(filters?)`** hook in `@voyantjs/flights-react` with `cursor` / `limit` / `search` / `status` / `paymentStatus` filters, plus the `FlightOrdersListResponseDto` schema and the new `FlightOrderPaymentStatus` enum.
+  - **Operator template** gets `/flights/orders` route, sidebar "Orders" sub-item under Flights (en + ro i18n), payment status badge on the booking confirmation page, and the orders list now includes Booking + Payment status columns, search debounced 250ms, two filter dropdowns (booking status + payment status — operator-side filter against the bulk-fetched session map, no N+1), and toggle-direction sort headers on Order/Total.
+  - **Webhook + redirect plumbing**: the operator template adds the Netopia callback path (`/v1/finance/providers/netopia/callback`) to `publicPaths`, sets `vite.config.ts` `server.allowedHosts: true` (Cloudflare-tunnel friendly for dev webhook delivery), and ships a `/pay` resolver route + `POST /v1/public/payment-link/resolve?ref=` + `POST /v1/public/payment-link/:sessionId/retry` + `POST /v1/public/payment-link/:sessionId/start-card` so any orderID/clientReference echoed back by Netopia resolves to the canonical session id, lazy-starts the card path on demand, and supports retrying after a failed payment by minting a fresh session.
+
+  Migration: if you were importing `createDemoFlightAdapter` from the old (template-internal) location, switch to `@voyantjs/plugin-flights-demo` and pass `{ baseUrl: env.FLIGHTS_DEMO_API_URL }`. Stand up the new service via `pnpm --filter flights-demo-api db:migrate && pnpm --filter flights-demo-api dev` (defaults to `:3320`). Drop the `demo_flight_orders` table from your operator DB — migration `0006_common_vance_astro` handles this idempotently for templates following the operator one.
+
+### Patch Changes
+
+- @voyantjs/catalog@0.20.0
+- @voyantjs/db@0.20.0

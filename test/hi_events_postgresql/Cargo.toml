@@ -1,0 +1,11 @@
+[package]
+name = "tuyubooking-hi-events-postgresql-test"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[workspace]
+
+# 测试入口直接保存在crate根，避免单文件src包装层。
+[lib]
+path = "lib.rs"

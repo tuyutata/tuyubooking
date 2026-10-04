@@ -1,0 +1,127 @@
+{
+  "name": "@voyantjs/ui",
+  "version": "0.104.1",
+  "license": "Apache-2.0",
+  "type": "module",
+  "sideEffects": false,
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "clean": "rm -rf dist tsconfig.tsbuildinfo",
+    "prepack": "pnpm run build",
+    "typecheck": "tsc --noEmit",
+    "lint": "biome check registry/",
+    "registry:build": "pnpm -C ../.. registry:build"
+  },
+  "dependencies": {
+    "@base-ui/react": "^1.3.0",
+    "@hookform/resolvers": "^5.1.1",
+    "@tanstack/react-table": "^8.21.3",
+    "@voyantjs/i18n": "workspace:*",
+    "@voyantjs/notifications": "workspace:*",
+    "@voyantjs/notifications-react": "workspace:*",
+    "@voyantjs/utils": "workspace:*",
+    "@tiptap/core": "^3.7.2",
+    "@tiptap/extensions": "^3.7.2",
+    "@tiptap/pm": "^3.7.2",
+    "@tiptap/react": "^3.7.2",
+    "@tiptap/starter-kit": "^3.7.2",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "cmdk": "^1.1.1",
+    "date-fns": "^4.1.0",
+    "embla-carousel-react": "^8.6.0",
+    "input-otp": "^1.4.2",
+    "lucide-react": "^0.475.0",
+    "next-themes": "^0.4.6",
+    "react": "^19.1.0",
+    "react-colorful": "5.6.1",
+    "react-day-picker": "^9.8.0",
+    "react-dom": "^19.1.0",
+    "react-easy-crop": "^5.5.0",
+    "react-hook-form": "^7.60.0",
+    "react-phone-number-input": "^3.4.12",
+    "react-resizable-panels": "^3.0.3",
+    "sonner": "^2.0.6",
+    "tailwind-merge": "^3.3.1",
+    "tw-animate-css": "^1.3.5",
+    "vaul": "^1.1.2",
+    "zod": "^4.3.6"
+  },
+  "peerDependencies": {
+    "recharts": "^3.0.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.1.11",
+    "@types/node": "^20.19.8",
+    "@types/react": "^19.1.8",
+    "@types/react-dom": "^19.1.6",
+    "@voyantjs/voyant-typescript-config": "workspace:*",
+    "recharts": "3.8.1",
+    "tailwindcss": "^4.1.11",
+    "typescript": "^5.8.3"
+  },
+  "exports": {
+    "./globals.css": "./src/styles/globals.css",
+    "./styles.css": "./src/styles.css",
+    "./postcss.config": "./postcss.config.mjs",
+    "./lib/*": "./src/lib/*.ts",
+    "./components": "./src/components/index.tsx",
+    "./components/*": "./src/components/*.tsx",
+    "./components/big-calendar": "./src/components/big-calendar/index.ts",
+    "./components/notification-template-dialog": "./src/components/notification-template-dialog.tsx",
+    "./components/notification-templates-page": "./src/components/notification-templates-page.tsx",
+    "./components/notification-reminder-rule-dialog": "./src/components/notification-reminder-rule-dialog.tsx",
+    "./components/notification-reminder-rules-page": "./src/components/notification-reminder-rules-page.tsx",
+    "./components/notification-deliveries-page": "./src/components/notification-deliveries-page.tsx",
+    "./components/notification-reminder-runs-page": "./src/components/notification-reminder-runs-page.tsx",
+    "./components/notification-template-authoring-help": "./src/components/notification-template-authoring-help.tsx",
+    "./components/rich-text-variable-extension": "./src/components/rich-text-variable-extension.ts",
+    "./hooks/*": "./src/hooks/*.ts"
+  },
+  "files": [
+    "dist",
+    "src/styles.css",
+    "src/styles",
+    "postcss.config.mjs"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "exports": {
+      "./globals.css": "./src/styles/globals.css",
+      "./styles.css": {
+        "default": "./src/styles.css"
+      },
+      "./postcss.config": "./postcss.config.mjs",
+      "./lib/*": {
+        "types": "./dist/lib/*.d.ts",
+        "import": "./dist/lib/*.js",
+        "default": "./dist/lib/*.js"
+      },
+      "./components": {
+        "types": "./dist/components/index.d.ts",
+        "import": "./dist/components/index.js",
+        "default": "./dist/components/index.js"
+      },
+      "./components/*": {
+        "types": "./dist/components/*.d.ts",
+        "import": "./dist/components/*.js",
+        "default": "./dist/components/*.js"
+      },
+      "./components/big-calendar": {
+        "types": "./dist/components/big-calendar/index.d.ts",
+        "import": "./dist/components/big-calendar/index.js",
+        "default": "./dist/components/big-calendar/index.js"
+      },
+      "./hooks/*": {
+        "types": "./dist/hooks/*.d.ts",
+        "import": "./dist/hooks/*.js",
+        "default": "./dist/hooks/*.js"
+      }
+    }
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/voyantjs/voyant.git",
+    "directory": "packages/ui"
+  }
+}

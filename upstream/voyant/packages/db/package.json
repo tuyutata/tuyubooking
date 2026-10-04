@@ -1,0 +1,324 @@
+{
+  "name": "@voyantjs/db",
+  "version": "0.104.1",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/voyantjs/voyant.git",
+    "directory": "packages/db"
+  },
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./operators": "./src/operators.ts",
+    "./lib": "./src/lib/index.ts",
+    "./lib/typeid": "./src/lib/typeid.ts",
+    "./lib/typeid-column": "./src/lib/typeid-column.ts",
+    "./columns": "./src/columns/index.ts",
+    "./primitives": "./src/primitives/index.ts",
+    "./primitives/*": "./src/primitives/*.ts",
+    "./utils": "./src/utils.ts",
+    "./helpers": "./src/helpers.ts",
+    "./types": "./src/types.ts",
+    "./transaction-capability": "./src/transaction-capability.ts",
+    "./transaction": "./src/transaction.ts",
+    "./crud": "./src/crud.ts",
+    "./links": "./src/links.ts",
+    "./queries": "./src/queries/index.ts",
+    "./runtime": "./src/runtime/index.ts",
+    "./schema": "./src/schema/index.ts",
+    "./schema/00_ensure_schemas": "./src/schema/00_ensure_schemas.ts",
+    "./schema/iam": "./src/schema/iam/index.ts",
+    "./schema/iam/apikey": "./src/schema/iam/apikey.ts",
+    "./schema/iam/auth": "./src/schema/iam/auth.ts",
+    "./schema/iam/cloud_auth": "./src/schema/iam/cloud_auth.ts",
+    "./schema/iam/invitations": "./src/schema/iam/invitations.ts",
+    "./schema/iam/kms": "./src/schema/iam/kms.ts",
+    "./schema/iam/roles": "./src/schema/iam/roles.ts",
+    "./schema/iam/user_profiles": "./src/schema/iam/user_profiles.ts",
+    "./schema/iam/*": "./src/schema/iam/*.ts",
+    "./schema/infra": "./src/schema/infra/index.ts",
+    "./schema/infra/domains": "./src/schema/infra/domains.ts",
+    "./schema/infra/email_domain_records": "./src/schema/infra/email_domain_records.ts",
+    "./schema/infra/idempotency_keys": "./src/schema/infra/idempotency_keys.ts",
+    "./schema/infra/public_document_delivery_grants": "./src/schema/infra/public_document_delivery_grants.ts",
+    "./schema/infra/rate_limit_buckets": "./src/schema/infra/rate_limit_buckets.ts",
+    "./schema/infra/webhook_deliveries": "./src/schema/infra/webhook_deliveries.ts",
+    "./schema/infra/webhook_subscriptions": "./src/schema/infra/webhook_subscriptions.ts",
+    "./schema/infra/*": "./src/schema/infra/*.ts",
+    "./schema/voyant/bookings": "./src/schema/voyant/bookings.ts",
+    "./schema/voyant/finance": "./src/schema/voyant/finance.ts",
+    "./schema/voyant/*": "./src/schema/voyant/*.ts",
+    "./schema/*": "./src/schema/*.ts",
+    "./schema/*/*": "./src/schema/*/*.ts",
+    "./schema/*/*/*": "./src/schema/*/*/*.ts",
+    "./schema/*/*/*/*": "./src/schema/*/*/*/*.ts",
+    "./test-utils": "./src/test-utils.ts"
+  },
+  "publishConfig": {
+    "access": "public",
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "import": "./dist/index.js",
+        "default": "./dist/index.js"
+      },
+      "./operators": {
+        "types": "./dist/operators.d.ts",
+        "import": "./dist/operators.js",
+        "default": "./dist/operators.js"
+      },
+      "./lib": {
+        "types": "./dist/lib/index.d.ts",
+        "import": "./dist/lib/index.js",
+        "default": "./dist/lib/index.js"
+      },
+      "./lib/typeid": {
+        "types": "./dist/lib/typeid.d.ts",
+        "import": "./dist/lib/typeid.js",
+        "default": "./dist/lib/typeid.js"
+      },
+      "./lib/typeid-column": {
+        "types": "./dist/lib/typeid-column.d.ts",
+        "import": "./dist/lib/typeid-column.js",
+        "default": "./dist/lib/typeid-column.js"
+      },
+      "./columns": {
+        "types": "./dist/columns/index.d.ts",
+        "import": "./dist/columns/index.js",
+        "default": "./dist/columns/index.js"
+      },
+      "./primitives": {
+        "types": "./dist/primitives/index.d.ts",
+        "import": "./dist/primitives/index.js",
+        "default": "./dist/primitives/index.js"
+      },
+      "./primitives/*": {
+        "types": "./dist/primitives/*.d.ts",
+        "import": "./dist/primitives/*.js",
+        "default": "./dist/primitives/*.js"
+      },
+      "./utils": {
+        "types": "./dist/utils.d.ts",
+        "import": "./dist/utils.js",
+        "default": "./dist/utils.js"
+      },
+      "./helpers": {
+        "types": "./dist/helpers.d.ts",
+        "import": "./dist/helpers.js",
+        "default": "./dist/helpers.js"
+      },
+      "./types": {
+        "types": "./dist/types.d.ts",
+        "import": "./dist/types.js",
+        "default": "./dist/types.js"
+      },
+      "./transaction-capability": {
+        "types": "./dist/transaction-capability.d.ts",
+        "import": "./dist/transaction-capability.js",
+        "default": "./dist/transaction-capability.js"
+      },
+      "./transaction": {
+        "types": "./dist/transaction.d.ts",
+        "import": "./dist/transaction.js",
+        "default": "./dist/transaction.js"
+      },
+      "./crud": {
+        "types": "./dist/crud.d.ts",
+        "import": "./dist/crud.js",
+        "default": "./dist/crud.js"
+      },
+      "./lifecycle": {
+        "types": "./dist/lifecycle.d.ts",
+        "import": "./dist/lifecycle.js",
+        "default": "./dist/lifecycle.js"
+      },
+      "./links": {
+        "types": "./dist/links.d.ts",
+        "import": "./dist/links.js",
+        "default": "./dist/links.js"
+      },
+      "./queries": {
+        "types": "./dist/queries/index.d.ts",
+        "import": "./dist/queries/index.js",
+        "default": "./dist/queries/index.js"
+      },
+      "./runtime": {
+        "types": "./dist/runtime/index.d.ts",
+        "import": "./dist/runtime/index.js",
+        "default": "./dist/runtime/index.js"
+      },
+      "./schema": {
+        "types": "./dist/schema/index.d.ts",
+        "import": "./dist/schema/index.js",
+        "default": "./dist/schema/index.js"
+      },
+      "./schema/00_ensure_schemas": {
+        "types": "./dist/schema/00_ensure_schemas.d.ts",
+        "import": "./dist/schema/00_ensure_schemas.js",
+        "default": "./dist/schema/00_ensure_schemas.js"
+      },
+      "./schema/iam": {
+        "types": "./dist/schema/iam/index.d.ts",
+        "import": "./dist/schema/iam/index.js",
+        "default": "./dist/schema/iam/index.js"
+      },
+      "./schema/iam/apikey": {
+        "types": "./dist/schema/iam/apikey.d.ts",
+        "import": "./dist/schema/iam/apikey.js",
+        "default": "./dist/schema/iam/apikey.js"
+      },
+      "./schema/iam/auth": {
+        "types": "./dist/schema/iam/auth.d.ts",
+        "import": "./dist/schema/iam/auth.js",
+        "default": "./dist/schema/iam/auth.js"
+      },
+      "./schema/iam/cloud_auth": {
+        "types": "./dist/schema/iam/cloud_auth.d.ts",
+        "import": "./dist/schema/iam/cloud_auth.js",
+        "default": "./dist/schema/iam/cloud_auth.js"
+      },
+      "./schema/iam/invitations": {
+        "types": "./dist/schema/iam/invitations.d.ts",
+        "import": "./dist/schema/iam/invitations.js",
+        "default": "./dist/schema/iam/invitations.js"
+      },
+      "./schema/iam/kms": {
+        "types": "./dist/schema/iam/kms.d.ts",
+        "import": "./dist/schema/iam/kms.js",
+        "default": "./dist/schema/iam/kms.js"
+      },
+      "./schema/iam/roles": {
+        "types": "./dist/schema/iam/roles.d.ts",
+        "import": "./dist/schema/iam/roles.js",
+        "default": "./dist/schema/iam/roles.js"
+      },
+      "./schema/iam/user_profiles": {
+        "types": "./dist/schema/iam/user_profiles.d.ts",
+        "import": "./dist/schema/iam/user_profiles.js",
+        "default": "./dist/schema/iam/user_profiles.js"
+      },
+      "./schema/iam/*": {
+        "types": "./dist/schema/iam/*.d.ts",
+        "import": "./dist/schema/iam/*.js",
+        "default": "./dist/schema/iam/*.js"
+      },
+      "./schema/infra": {
+        "types": "./dist/schema/infra/index.d.ts",
+        "import": "./dist/schema/infra/index.js",
+        "default": "./dist/schema/infra/index.js"
+      },
+      "./schema/infra/domains": {
+        "types": "./dist/schema/infra/domains.d.ts",
+        "import": "./dist/schema/infra/domains.js",
+        "default": "./dist/schema/infra/domains.js"
+      },
+      "./schema/infra/email_domain_records": {
+        "types": "./dist/schema/infra/email_domain_records.d.ts",
+        "import": "./dist/schema/infra/email_domain_records.js",
+        "default": "./dist/schema/infra/email_domain_records.js"
+      },
+      "./schema/infra/idempotency_keys": {
+        "types": "./dist/schema/infra/idempotency_keys.d.ts",
+        "import": "./dist/schema/infra/idempotency_keys.js",
+        "default": "./dist/schema/infra/idempotency_keys.js"
+      },
+      "./schema/infra/public_document_delivery_grants": {
+        "types": "./dist/schema/infra/public_document_delivery_grants.d.ts",
+        "import": "./dist/schema/infra/public_document_delivery_grants.js",
+        "default": "./dist/schema/infra/public_document_delivery_grants.js"
+      },
+      "./schema/infra/rate_limit_buckets": {
+        "types": "./dist/schema/infra/rate_limit_buckets.d.ts",
+        "import": "./dist/schema/infra/rate_limit_buckets.js",
+        "default": "./dist/schema/infra/rate_limit_buckets.js"
+      },
+      "./schema/infra/webhook_deliveries": {
+        "types": "./dist/schema/infra/webhook_deliveries.d.ts",
+        "import": "./dist/schema/infra/webhook_deliveries.js",
+        "default": "./dist/schema/infra/webhook_deliveries.js"
+      },
+      "./schema/infra/webhook_subscriptions": {
+        "types": "./dist/schema/infra/webhook_subscriptions.d.ts",
+        "import": "./dist/schema/infra/webhook_subscriptions.js",
+        "default": "./dist/schema/infra/webhook_subscriptions.js"
+      },
+      "./schema/infra/*": {
+        "types": "./dist/schema/infra/*.d.ts",
+        "import": "./dist/schema/infra/*.js",
+        "default": "./dist/schema/infra/*.js"
+      },
+      "./schema/voyant/bookings": {
+        "types": "./dist/schema/voyant/bookings.d.ts",
+        "import": "./dist/schema/voyant/bookings.js",
+        "default": "./dist/schema/voyant/bookings.js"
+      },
+      "./schema/voyant/finance": {
+        "types": "./dist/schema/voyant/finance.d.ts",
+        "import": "./dist/schema/voyant/finance.js",
+        "default": "./dist/schema/voyant/finance.js"
+      },
+      "./schema/voyant/*": {
+        "types": "./dist/schema/voyant/*.d.ts",
+        "import": "./dist/schema/voyant/*.js",
+        "default": "./dist/schema/voyant/*.js"
+      },
+      "./schema/*": {
+        "types": "./dist/schema/*.d.ts",
+        "import": "./dist/schema/*.js",
+        "default": "./dist/schema/*.js"
+      },
+      "./schema/*/*": {
+        "types": "./dist/schema/*/*.d.ts",
+        "import": "./dist/schema/*/*.js",
+        "default": "./dist/schema/*/*.js"
+      },
+      "./schema/*/*/*": {
+        "types": "./dist/schema/*/*/*.d.ts",
+        "import": "./dist/schema/*/*/*.js",
+        "default": "./dist/schema/*/*/*.js"
+      },
+      "./schema/*/*/*/*": {
+        "types": "./dist/schema/*/*/*/*.d.ts",
+        "import": "./dist/schema/*/*/*/*.js",
+        "default": "./dist/schema/*/*/*/*.js"
+      },
+      "./test-utils": {
+        "types": "./dist/test-utils.d.ts",
+        "import": "./dist/test-utils.js",
+        "default": "./dist/test-utils.js"
+      }
+    },
+    "main": "./dist/index.js",
+    "types": "./dist/index.d.ts"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json && node scripts/fix-esm-imports.mjs",
+    "clean": "rm -rf dist tsconfig.tsbuildinfo",
+    "prepack": "pnpm run build",
+    "typecheck": "tsc --noEmit",
+    "lint": "biome check src/",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@neondatabase/serverless": "^1.0.2",
+    "@voyantjs/core": "workspace:*",
+    "@voyantjs/schema-kit": "workspace:*",
+    "drizzle-orm": "^0.45.2",
+    "postgres": "^3.4.8",
+    "typeid-js": "^1.2.0",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@voyantjs/voyant-typescript-config": "workspace:*",
+    "typescript": "^6.0.2",
+    "vitest": "^4.1.2"
+  },
+  "voyant": {
+    "schema": "./schema",
+    "requiresSchemas": []
+  }
+}

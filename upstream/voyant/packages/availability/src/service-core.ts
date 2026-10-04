@@ -1,0 +1,430 @@
+import type { EventBus } from "@voyantjs/core"
+import { and, asc, desc, eq, getTableColumns, gte, sql } from "drizzle-orm"
+import type { PostgresJsDatabase } from "drizzle-orm/postgres-js"
+
+import { AVAILABILITY_SLOT_CHANGED_EVENT, type AvailabilitySlotChangedEvent } from "./events.js"
+import { productsRef } from "./products-ref.js"
+import {
+  availabilityCloseouts,
+  availabilityRules,
+  availabilitySlots,
+  availabilityStartTimes,
+} from "./schema.js"
+import type {
+  AvailabilityCloseoutListQuery,
+  AvailabilityRuleListQuery,
+  AvailabilitySlotListQuery,
+  AvailabilityStartTimeListQuery,
+  CreateAvailabilityCloseoutInput,
+  CreateAvailabilityRuleInput,
+  CreateAvailabilitySlotInput,
+  CreateAvailabilityStartTimeInput,
+  UpdateAvailabilityCloseoutInput,
+  UpdateAvailabilityRuleInput,
+  UpdateAvailabilitySlotInput,
+  UpdateAvailabilityStartTimeInput,
+} from "./service-shared.js"
+import { paginate, toDateOrNull } from "./service-shared.js"
+
+export async function listRules(db: PostgresJsDatabase, query: AvailabilityRuleListQuery) {
+  const conditions = []
+  if (query.productId) conditions.push(eq(availabilityRules.productId, query.productId))
+  if (query.optionId) conditions.push(eq(availabilityRules.optionId, query.optionId))
+  if (query.facilityId) conditions.push(eq(availabilityRules.facilityId, query.facilityId))
+  if (query.active !== undefined) conditions.push(eq(availabilityRules.active, query.active))
+
+  const where = conditions.length ? and(...conditions) : undefined
+  return paginate(
+    db
+      .select({ ...getTableColumns(availabilityRules), productName: productsRef.name })
+      .from(availabilityRules)
+      .leftJoin(productsRef, eq(availabilityRules.productId, productsRef.id))
+      .where(where)
+      .limit(query.limit)
+      .offset(query.offset)
+      .orderBy(desc(availabilityRules.updatedAt)),
+    db.select({ count: sql<number>`count(*)::int` }).from(availabilityRules).where(where),
+    query.limit,
+    query.offset,
+  )
+}
+
+export async function getRuleById(db: PostgresJsDatabase, id: string) {
+  const [row] = await db
+    .select()
+    .from(availabilityRules)
+    .where(eq(availabilityRules.id, id))
+    .limit(1)
+  return row ?? null
+}
+
+export async function createRule(db: PostgresJsDatabase, data: CreateAvailabilityRuleInput) {
+  const [row] = await db.insert(availabilityRules).values(data).returning()
+  return row
+}
+
+export async function updateRule(
+  db: PostgresJsDatabase,
+  id: string,
+  data: UpdateAvailabilityRuleInput,
+) {
+  const [row] = await db
+    .update(availabilityRules)
+    .set({ ...data, updatedAt: new Date() })
+    .where(eq(availabilityRules.id, id))
+    .returning()
+  return row ?? null
+}
+
+export async function deleteRule(db: PostgresJsDatabase, id: string) {
+  const [row] = await db
+    .delete(availabilityRules)
+    .where(eq(availabilityRules.id, id))
+    .returning({ id: availabilityRules.id })
+  return row ?? null
+}
+
+export async function listStartTimes(
+  db: PostgresJsDatabase,
+  query: AvailabilityStartTimeListQuery,
+) {
+  const conditions = []
+  if (query.productId) conditions.push(eq(availabilityStartTimes.productId, query.productId))
+  if (query.optionId) conditions.push(eq(availabilityStartTimes.optionId, query.optionId))
+  if (query.facilityId) conditions.push(eq(availabilityStartTimes.facilityId, query.facilityId))
+  if (query.active !== undefined) conditions.push(eq(availabilityStartTimes.active, query.active))
+  const where = conditions.length ? and(...conditions) : undefined
+
+  return paginate(
+    db
+      .select({ ...getTableColumns(availabilityStartTimes), productName: productsRef.name })
+      .from(availabilityStartTimes)
+      .leftJoin(productsRef, eq(availabilityStartTimes.productId, productsRef.id))
+      .where(where)
+      .limit(query.limit)
+      .offset(query.offset)
+      .orderBy(availabilityStartTimes.sortOrder, availabilityStartTimes.createdAt),
+    db.select({ count: sql<number>`count(*)::int` }).from(availabilityStartTimes).where(where),
+    query.limit,
+    query.offset,
+  )
+}
+
+export async function getStartTimeById(db: PostgresJsDatabase, id: string) {
+  const [row] = await db
+    .select()
+    .from(availabilityStartTimes)
+    .where(eq(availabilityStartTimes.id, id))
+    .limit(1)
+  return row ?? null
+}
+
+export async function createStartTime(
+  db: PostgresJsDatabase,
+  data: CreateAvailabilityStartTimeInput,
+) {
+  const [row] = await db.insert(availabilityStartTimes).values(data).returning()
+  return row
+}
+
+export async function updateStartTime(
+  db: PostgresJsDatabase,
+  id: string,
+  data: UpdateAvailabilityStartTimeInput,
+) {
+  const [row] = await db
+    .update(availabilityStartTimes)
+    .set({ ...data, updatedAt: new Date() })
+    .where(eq(availabilityStartTimes.id, id))
+    .returning()
+  return row ?? null
+}
+
+export async function deleteStartTime(db: PostgresJsDatabase, id: string) {
+  const [row] = await db
+    .delete(availabilityStartTimes)
+    .where(eq(availabilityStartTimes.id, id))
+    .returning({ id: availabilityStartTimes.id })
+  return row ?? null
+}
+
+export async function listSlots(db: PostgresJsDatabase, query: AvailabilitySlotListQuery) {
+  const conditions = []
+  if (query.productId) conditions.push(eq(availabilitySlots.productId, query.productId))
+  if (query.itineraryId) conditions.push(eq(availabilitySlots.itineraryId, query.itineraryId))
+  if (query.optionId) conditions.push(eq(availabilitySlots.optionId, query.optionId))
+  if (query.facilityId) conditions.push(eq(availabilitySlots.facilityId, query.facilityId))
+  if (query.availabilityRuleId) {
+    conditions.push(eq(availabilitySlots.availabilityRuleId, query.availabilityRuleId))
+  }
+  if (query.startTimeId) conditions.push(eq(availabilitySlots.startTimeId, query.startTimeId))
+  if (query.dateLocal) conditions.push(eq(availabilitySlots.dateLocal, query.dateLocal))
+  if (query.startsAtFrom)
+    conditions.push(gte(availabilitySlots.startsAt, new Date(query.startsAtFrom)))
+  if (query.status) conditions.push(eq(availabilitySlots.status, query.status))
+  const where = conditions.length ? and(...conditions) : undefined
+
+  return paginate(
+    db
+      .select({ ...getTableColumns(availabilitySlots), productName: productsRef.name })
+      .from(availabilitySlots)
+      .leftJoin(productsRef, eq(availabilitySlots.productId, productsRef.id))
+      .where(where)
+      .limit(query.limit)
+      .offset(query.offset)
+      .orderBy(asc(availabilitySlots.startsAt)),
+    db.select({ count: sql<number>`count(*)::int` }).from(availabilitySlots).where(where),
+    query.limit,
+    query.offset,
+  )
+}
+
+export async function getSlotById(db: PostgresJsDatabase, id: string) {
+  const [row] = await db
+    .select()
+    .from(availabilitySlots)
+    .where(eq(availabilitySlots.id, id))
+    .limit(1)
+  return row ?? null
+}
+
+export interface SlotMutationRuntime {
+  /**
+   * Optional event bus. When wired, slot create/update/delete each emit
+   * `availability.slot.changed` so subscribers (channel-push, catalog
+   * bridge) can react to any mutation that changes a product's effective
+   * departure surface — not just operator edits.
+   *
+   * Per docs/architecture/channel-push-architecture.md §5.1.
+   */
+  eventBus?: EventBus
+  /**
+   * Origin of the change. `createSlot` / `deleteSlot` default to
+   * `"created"` / `"deleted"`. `updateSlot` defaults to `"manual"`. The
+   * scheduled-refresh job overrides with `"refresh"` so dashboards can
+   * attribute drift correctly.
+   */
+  source?: AvailabilitySlotChangedEvent["source"]
+}
+
+/**
+ * Back-compat alias for the original update-only runtime type. New
+ * callers should reach for `SlotMutationRuntime`.
+ */
+export type UpdateSlotRuntime = SlotMutationRuntime
+
+export async function createSlot(
+  db: PostgresJsDatabase,
+  data: CreateAvailabilitySlotInput,
+  runtime: SlotMutationRuntime = {},
+) {
+  const [row] = await db
+    .insert(availabilitySlots)
+    .values({
+      ...data,
+      startsAt: new Date(data.startsAt),
+      endsAt: toDateOrNull(data.endsAt),
+    })
+    .returning()
+  if (!row) return row
+
+  // Emit on create so subscribers (catalog-plane bridge, channel-push)
+  // see new departures the same way they see edits. Without this, a
+  // freshly-created slot is invisible to the projection until the next
+  // unrelated update.
+  const eventBus = runtime.eventBus
+  if (eventBus) {
+    const payload: AvailabilitySlotChangedEvent = {
+      slotId: row.id,
+      productId: row.productId,
+      optionId: row.optionId ?? null,
+      startsAt: row.startsAt,
+      remainingPax: row.unlimited ? null : (row.remainingPax ?? null),
+      unlimited: row.unlimited,
+      source: runtime.source ?? "created",
+    }
+    await eventBus.emit(AVAILABILITY_SLOT_CHANGED_EVENT, payload, {
+      category: "domain",
+      source: "service",
+    })
+  }
+
+  return row
+}
+
+export async function updateSlot(
+  db: PostgresJsDatabase,
+  id: string,
+  data: UpdateAvailabilitySlotInput,
+  runtime: SlotMutationRuntime = {},
+) {
+  const { remainingPax: _ignoredRemainingPax, ...rest } = data
+  const patch: Record<string, unknown> = {
+    ...rest,
+    startsAt: data.startsAt === undefined ? undefined : new Date(data.startsAt),
+    endsAt: data.endsAt === undefined ? undefined : toDateOrNull(data.endsAt),
+    updatedAt: new Date(),
+  }
+
+  // `remaining_pax` is a derived value the service owns — concurrent flows
+  // (holds, bookings, refunds) update it atomically while a form is open,
+  // so we never trust a client-supplied snapshot (#1087, Codex review on
+  // #1088). Recompute here using the row's *current* state inside the same
+  // UPDATE statement so the capacity-change rebalance is race-free.
+  //
+  //   - Switching to unlimited → NULL (no cap).
+  //   - Changing initialPax with a finite cap → preserve the consumed
+  //     delta: `new_initial - (old_initial - old_remaining)`, clamped to
+  //     [0, new_initial]. If consumed > new_initial (capacity dropped
+  //     below what's already booked) the slot lands at 0; the operator
+  //     can release allocations to recover headroom.
+  //   - Leaving capacity alone → don't touch remaining_pax.
+  if (data.unlimited === true) {
+    patch.remainingPax = null
+  } else if (data.initialPax !== undefined && data.initialPax !== null) {
+    const newInitial = data.initialPax
+    patch.remainingPax = sql`GREATEST(
+      0,
+      LEAST(
+        ${newInitial}::int,
+        ${newInitial}::int
+          - GREATEST(
+              0,
+              COALESCE(${availabilitySlots.initialPax}, ${newInitial}::int)
+                - COALESCE(${availabilitySlots.remainingPax}, ${newInitial}::int)
+            )
+      )
+    )::int`
+  }
+
+  const [row] = await db
+    .update(availabilitySlots)
+    .set(patch)
+    .where(eq(availabilitySlots.id, id))
+    .returning()
+  if (!row) return null
+
+  // Emit on every successful update — subscribers decide what to do with
+  // the signal (channel-push only acts on availability-affecting fields).
+  // The intent table on the channel-push side collapses by (channelId,
+  // slotId) so duplicate or noisy emits are harmless. Per §5.1.
+  const eventBus = runtime.eventBus
+  if (eventBus) {
+    const payload: AvailabilitySlotChangedEvent = {
+      slotId: row.id,
+      productId: row.productId,
+      optionId: row.optionId ?? null,
+      startsAt: row.startsAt,
+      remainingPax: row.unlimited ? null : (row.remainingPax ?? null),
+      unlimited: row.unlimited,
+      source: runtime.source ?? "manual",
+    }
+    await eventBus.emit(AVAILABILITY_SLOT_CHANGED_EVENT, payload, {
+      category: "domain",
+      source: "service",
+    })
+  }
+
+  return row
+}
+
+export async function deleteSlot(
+  db: PostgresJsDatabase,
+  id: string,
+  runtime: SlotMutationRuntime = {},
+) {
+  // Snapshot the row before deletion so we can build a complete event
+  // payload — once the row is gone we can't reconstruct productId etc.
+  const [snapshot] = await db
+    .select()
+    .from(availabilitySlots)
+    .where(eq(availabilitySlots.id, id))
+    .limit(1)
+
+  const [row] = await db
+    .delete(availabilitySlots)
+    .where(eq(availabilitySlots.id, id))
+    .returning({ id: availabilitySlots.id })
+  if (!row) return null
+
+  const eventBus = runtime.eventBus
+  if (eventBus && snapshot) {
+    const payload: AvailabilitySlotChangedEvent = {
+      slotId: snapshot.id,
+      productId: snapshot.productId,
+      optionId: snapshot.optionId ?? null,
+      startsAt: snapshot.startsAt,
+      // Deleted slot contributes zero capacity. `remainingPax` reflects
+      // the post-mutation state per the contract; for a delete that's 0.
+      remainingPax: 0,
+      unlimited: false,
+      source: runtime.source ?? "deleted",
+    }
+    await eventBus.emit(AVAILABILITY_SLOT_CHANGED_EVENT, payload, {
+      category: "domain",
+      source: "service",
+    })
+  }
+
+  return row
+}
+
+export async function listCloseouts(db: PostgresJsDatabase, query: AvailabilityCloseoutListQuery) {
+  const conditions = []
+  if (query.productId) conditions.push(eq(availabilityCloseouts.productId, query.productId))
+  if (query.slotId) conditions.push(eq(availabilityCloseouts.slotId, query.slotId))
+  if (query.dateLocal) conditions.push(eq(availabilityCloseouts.dateLocal, query.dateLocal))
+  const where = conditions.length ? and(...conditions) : undefined
+
+  return paginate(
+    db
+      .select({ ...getTableColumns(availabilityCloseouts), productName: productsRef.name })
+      .from(availabilityCloseouts)
+      .leftJoin(productsRef, eq(availabilityCloseouts.productId, productsRef.id))
+      .where(where)
+      .limit(query.limit)
+      .offset(query.offset)
+      .orderBy(desc(availabilityCloseouts.createdAt)),
+    db.select({ count: sql<number>`count(*)::int` }).from(availabilityCloseouts).where(where),
+    query.limit,
+    query.offset,
+  )
+}
+
+export async function getCloseoutById(db: PostgresJsDatabase, id: string) {
+  const [row] = await db
+    .select()
+    .from(availabilityCloseouts)
+    .where(eq(availabilityCloseouts.id, id))
+    .limit(1)
+  return row ?? null
+}
+
+export async function createCloseout(
+  db: PostgresJsDatabase,
+  data: CreateAvailabilityCloseoutInput,
+) {
+  const [row] = await db.insert(availabilityCloseouts).values(data).returning()
+  return row
+}
+
+export async function updateCloseout(
+  db: PostgresJsDatabase,
+  id: string,
+  data: UpdateAvailabilityCloseoutInput,
+) {
+  const [row] = await db
+    .update(availabilityCloseouts)
+    .set(data)
+    .where(eq(availabilityCloseouts.id, id))
+    .returning()
+  return row ?? null
+}
+
+export async function deleteCloseout(db: PostgresJsDatabase, id: string) {
+  const [row] = await db
+    .delete(availabilityCloseouts)
+    .where(eq(availabilityCloseouts.id, id))
+    .returning({ id: availabilityCloseouts.id })
+  return row ?? null
+}

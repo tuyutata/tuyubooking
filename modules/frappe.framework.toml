@@ -1,0 +1,32 @@
+id = "frappe"
+name = "Frappe Framework"
+version = "16.25.0-tuyu.1"
+integration_status = "postgresql_schema_runtime"
+
+[source]
+repository = "https://github.com/tuyutata/frappe"
+upstream_repository = "https://github.com/frappe/frappe"
+baseline_revision = "v16.25.0"
+baseline_commit = "9a8daf343db69a0127f470bad8be0af192cd80c8"
+commit = "efe1520babc9ed31be11a38fbad34c62188deb8d"
+branch = "codex/tuyubooking-postgresql-schema"
+path = "upstream/frappe"
+
+[runtime]
+language = "python"
+database = "postgresql"
+database_name = "tuyubooking"
+cache = "postgresql"
+queue = "postgresql"
+realtime = "postgresql_notify"
+redis_service = false
+
+[isolation]
+core_schema = "tuyu_core"
+module_schema_prefix = "module_"
+secure_search_path = true
+
+[profile]
+tuyu_single_database = true
+tuyu_postgres_backend = true
+db_type = "postgres"

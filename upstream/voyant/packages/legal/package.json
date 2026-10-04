@@ -1,0 +1,118 @@
+{
+  "name": "@voyantjs/legal",
+  "version": "0.104.1",
+  "license": "Apache-2.0",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./schema": "./src/schema.ts",
+    "./contracts": "./src/contracts/index.ts",
+    "./contracts/validation": "./src/contracts/validation.ts",
+    "./contracts/routes": "./src/contracts/routes.ts",
+    "./contracts/service": "./src/contracts/service.ts",
+    "./policies": "./src/policies/index.ts",
+    "./policies/validation": "./src/policies/validation.ts",
+    "./policies/routes": "./src/policies/routes.ts",
+    "./policies/service": "./src/policies/service.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "lint": "biome check src/",
+    "test": "vitest run",
+    "build": "tsc -p tsconfig.json",
+    "clean": "rm -rf dist tsconfig.tsbuildinfo",
+    "prepack": "pnpm run build"
+  },
+  "dependencies": {
+    "@voyantjs/bookings": "workspace:*",
+    "@voyantjs/core": "workspace:*",
+    "@voyantjs/crm": "workspace:*",
+    "@voyantjs/db": "workspace:*",
+    "@voyantjs/finance": "workspace:*",
+    "@voyantjs/hono": "workspace:*",
+    "@voyantjs/legal-contracts": "workspace:*",
+    "@voyantjs/storage": "workspace:*",
+    "@voyantjs/suppliers": "workspace:*",
+    "@voyantjs/utils": "workspace:*",
+    "drizzle-orm": "^0.45.2",
+    "hono": "^4.12.10",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@voyantjs/voyant-test-utils": "workspace:*",
+    "@voyantjs/voyant-typescript-config": "workspace:*",
+    "typescript": "^6.0.2",
+    "vitest": "^4.0.0"
+  },
+  "files": [
+    "dist"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "import": "./dist/index.js",
+        "default": "./dist/index.js"
+      },
+      "./schema": {
+        "types": "./dist/schema.d.ts",
+        "import": "./dist/schema.js",
+        "default": "./dist/schema.js"
+      },
+      "./contracts": {
+        "types": "./dist/contracts/index.d.ts",
+        "import": "./dist/contracts/index.js",
+        "default": "./dist/contracts/index.js"
+      },
+      "./contracts/validation": {
+        "types": "./dist/contracts/validation.d.ts",
+        "import": "./dist/contracts/validation.js",
+        "default": "./dist/contracts/validation.js"
+      },
+      "./contracts/routes": {
+        "types": "./dist/contracts/routes.d.ts",
+        "import": "./dist/contracts/routes.js",
+        "default": "./dist/contracts/routes.js"
+      },
+      "./contracts/service": {
+        "types": "./dist/contracts/service.d.ts",
+        "import": "./dist/contracts/service.js",
+        "default": "./dist/contracts/service.js"
+      },
+      "./policies": {
+        "types": "./dist/policies/index.d.ts",
+        "import": "./dist/policies/index.js",
+        "default": "./dist/policies/index.js"
+      },
+      "./policies/validation": {
+        "types": "./dist/policies/validation.d.ts",
+        "import": "./dist/policies/validation.js",
+        "default": "./dist/policies/validation.js"
+      },
+      "./policies/routes": {
+        "types": "./dist/policies/routes.d.ts",
+        "import": "./dist/policies/routes.js",
+        "default": "./dist/policies/routes.js"
+      },
+      "./policies/service": {
+        "types": "./dist/policies/service.d.ts",
+        "import": "./dist/policies/service.js",
+        "default": "./dist/policies/service.js"
+      }
+    },
+    "main": "./dist/index.js",
+    "types": "./dist/index.d.ts"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/voyantjs/voyant.git",
+    "directory": "packages/legal"
+  },
+  "voyant": {
+    "schema": "./schema",
+    "requiresSchemas": [
+      "@voyantjs/db"
+    ]
+  }
+}

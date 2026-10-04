@@ -1,0 +1,1027 @@
+{
+  "lock_sha256": "5fdf5c4c640f05a299838f248c9c4a9f4cf7e942fdd34bb35b9abb75a30e60a6",
+  "packages": [
+    {
+      "name": "amphp/amp",
+      "version": "v3.1.1",
+      "url": "https://api.github.com/repos/amphp/amp/zipball/fa0ab33a6f47a82929c38d03ca47ebb71086a93f",
+      "reference": "fa0ab33a6f47a82929c38d03ca47ebb71086a93f",
+      "sha256": "3ee29b9be3d9948499099414c7efb01741dd5d8a788d66b7c3a8f06c00b524f7"
+    },
+    {
+      "name": "amphp/byte-stream",
+      "version": "v2.1.2",
+      "url": "https://api.github.com/repos/amphp/byte-stream/zipball/55a6bd071aec26fa2a3e002618c20c35e3df1b46",
+      "reference": "55a6bd071aec26fa2a3e002618c20c35e3df1b46",
+      "sha256": "ad97288111ccc0abc3a80b801a21671bc6bbd05ccb7fe6e6a5272cb755a1b0cd"
+    },
+    {
+      "name": "amphp/cache",
+      "version": "v2.0.1",
+      "url": "https://api.github.com/repos/amphp/cache/zipball/46912e387e6aa94933b61ea1ead9cf7540b7797c",
+      "reference": "46912e387e6aa94933b61ea1ead9cf7540b7797c",
+      "sha256": "5e3a34ed7536737e1418b87a0d148bd3dfc389008f9f1c5cd1b2c5fa4b406a70"
+    },
+    {
+      "name": "amphp/dns",
+      "version": "v2.4.0",
+      "url": "https://api.github.com/repos/amphp/dns/zipball/78eb3db5fc69bf2fc0cb503c4fcba667bc223c71",
+      "reference": "78eb3db5fc69bf2fc0cb503c4fcba667bc223c71",
+      "sha256": "3d324cc6130eeb5a00976a2f837f5c7e2b34c4b1e1c9ec7165c06491223d65c4"
+    },
+    {
+      "name": "amphp/parallel",
+      "version": "v2.3.1",
+      "url": "https://api.github.com/repos/amphp/parallel/zipball/5113111de02796a782f5d90767455e7391cca190",
+      "reference": "5113111de02796a782f5d90767455e7391cca190",
+      "sha256": "835ad7dada759c5d182d2238063a743f337f91bd79ccf40e3f343267bfb1dc85"
+    },
+    {
+      "name": "amphp/parser",
+      "version": "v1.1.1",
+      "url": "https://api.github.com/repos/amphp/parser/zipball/3cf1f8b32a0171d4b1bed93d25617637a77cded7",
+      "reference": "3cf1f8b32a0171d4b1bed93d25617637a77cded7",
+      "sha256": "5957e324fdd005a669d926b50710e564ca664113392076c266c7acf17ea64714"
+    },
+    {
+      "name": "amphp/pipeline",
+      "version": "v1.2.3",
+      "url": "https://api.github.com/repos/amphp/pipeline/zipball/7b52598c2e9105ebcddf247fc523161581930367",
+      "reference": "7b52598c2e9105ebcddf247fc523161581930367",
+      "sha256": "64e6ebf35d8e0a8f27777bbc09795e3bd4911bed426b0d06f85c153d98dec563"
+    },
+    {
+      "name": "amphp/process",
+      "version": "v2.0.3",
+      "url": "https://api.github.com/repos/amphp/process/zipball/52e08c09dec7511d5fbc1fb00d3e4e79fc77d58d",
+      "reference": "52e08c09dec7511d5fbc1fb00d3e4e79fc77d58d",
+      "sha256": "5f5fe28256e8980dd0ec879f03ce8b0d71db9fad9d46eaf6d3b3a19b88a5f837"
+    },
+    {
+      "name": "amphp/serialization",
+      "version": "v1.0.0",
+      "url": "https://api.github.com/repos/amphp/serialization/zipball/693e77b2fb0b266c3c7d622317f881de44ae94a1",
+      "reference": "693e77b2fb0b266c3c7d622317f881de44ae94a1",
+      "sha256": "7d7235f241f2d7a80ea26d027ef088e08cdf182eac7d3d9d38e607074829bd92"
+    },
+    {
+      "name": "amphp/socket",
+      "version": "v2.3.1",
+      "url": "https://api.github.com/repos/amphp/socket/zipball/58e0422221825b79681b72c50c47a930be7bf1e1",
+      "reference": "58e0422221825b79681b72c50c47a930be7bf1e1",
+      "sha256": "d45761a00252f2db88ddcf67c697616c60b90845fa4a8e9a6a14fd0d41a3f720"
+    },
+    {
+      "name": "amphp/sync",
+      "version": "v2.3.0",
+      "url": "https://api.github.com/repos/amphp/sync/zipball/217097b785130d77cfcc58ff583cf26cd1770bf1",
+      "reference": "217097b785130d77cfcc58ff583cf26cd1770bf1",
+      "sha256": "e81a6e6202773d5de1f05269f4606aa28c546a14359801b0ceb7e9db91185d1d"
+    },
+    {
+      "name": "aws/aws-crt-php",
+      "version": "v1.2.7",
+      "url": "https://api.github.com/repos/awslabs/aws-crt-php/zipball/d71d9906c7bb63a28295447ba12e74723bd3730e",
+      "reference": "d71d9906c7bb63a28295447ba12e74723bd3730e",
+      "sha256": "82c04ea2c7985f06e5a1ef4ba56a231e8ac051d490796c406c821c253f6d38be"
+    },
+    {
+      "name": "aws/aws-sdk-php",
+      "version": "3.356.40",
+      "url": "https://api.github.com/repos/aws/aws-sdk-php/zipball/3c1d71932ed962810316930b327b3b71a7517cff",
+      "reference": "3c1d71932ed962810316930b327b3b71a7517cff",
+      "sha256": "975c9b7894ef9e09b6cf0cc122720abcfb412af7456df7c21fd225bbc6a9ba73"
+    },
+    {
+      "name": "barryvdh/laravel-dompdf",
+      "version": "v3.1.1",
+      "url": "https://api.github.com/repos/barryvdh/laravel-dompdf/zipball/8e71b99fc53bb8eb77f316c3c452dd74ab7cb25d",
+      "reference": "8e71b99fc53bb8eb77f316c3c452dd74ab7cb25d",
+      "sha256": "4486701fcca1782ad192f93264b2b6f0ac6de6ee2191cd64710298fc655fbdb4"
+    },
+    {
+      "name": "brick/math",
+      "version": "0.13.1",
+      "url": "https://api.github.com/repos/brick/math/zipball/fc7ed316430118cc7836bf45faff18d5dfc8de04",
+      "reference": "fc7ed316430118cc7836bf45faff18d5dfc8de04",
+      "sha256": "3d276a2cbc81916c639199616d5d4943bbf74256dc908efb2b3b628a9d38b775"
+    },
+    {
+      "name": "brick/money",
+      "version": "0.10.2",
+      "url": "https://api.github.com/repos/brick/money/zipball/4ee860c0371aabef5faaddcc28b27f208bb67b76",
+      "reference": "4ee860c0371aabef5faaddcc28b27f208bb67b76",
+      "sha256": "6256904fa2d961c70eaaf56a60244e9a0f4bd45f14dafe22ae8880673ac054d6"
+    },
+    {
+      "name": "carbonphp/carbon-doctrine-types",
+      "version": "2.1.0",
+      "url": "https://api.github.com/repos/CarbonPHP/carbon-doctrine-types/zipball/99f76ffa36cce3b70a4a6abce41dba15ca2e84cb",
+      "reference": "99f76ffa36cce3b70a4a6abce41dba15ca2e84cb",
+      "sha256": "5fc15b9b10fd1b8057b76087b6cfbc9aace6dd625ed9d9b8228f519cefe2706e"
+    },
+    {
+      "name": "composer/pcre",
+      "version": "3.3.2",
+      "url": "https://api.github.com/repos/composer/pcre/zipball/b2bed4734f0cc156ee1fe9c0da2550420d99a21e",
+      "reference": "b2bed4734f0cc156ee1fe9c0da2550420d99a21e",
+      "sha256": "c2b9daddc8d3341c50fc91eeecabb2b8f2a0fbd81e02b8b93ae22c35b61639b2"
+    },
+    {
+      "name": "composer/semver",
+      "version": "3.4.4",
+      "url": "https://api.github.com/repos/composer/semver/zipball/198166618906cb2de69b95d7d47e5fa8aa1b2b95",
+      "reference": "198166618906cb2de69b95d7d47e5fa8aa1b2b95",
+      "sha256": "f2058249711f728b6ab62d2251cce97905634cfa63fc553a6aad9a34676033c1"
+    },
+    {
+      "name": "daverandom/libdns",
+      "version": "v2.1.0",
+      "url": "https://api.github.com/repos/DaveRandom/LibDNS/zipball/b84c94e8fe6b7ee4aecfe121bfe3b6177d303c8a",
+      "reference": "b84c94e8fe6b7ee4aecfe121bfe3b6177d303c8a",
+      "sha256": "224409d0d4bd301ab8c1c31093094f0abbfb8c12b058d2975dee382a4cdc2ea6"
+    },
+    {
+      "name": "dflydev/dot-access-data",
+      "version": "v3.0.3",
+      "url": "https://api.github.com/repos/dflydev/dflydev-dot-access-data/zipball/a23a2bf4f31d3518f3ecb38660c95715dfead60f",
+      "reference": "a23a2bf4f31d3518f3ecb38660c95715dfead60f",
+      "sha256": "d400abe06f0fe14a8e20e87f5dd0b90c31199f15aeccf63c0041d9eb34f71948"
+    },
+    {
+      "name": "doctrine/cache",
+      "version": "2.2.0",
+      "url": "https://api.github.com/repos/doctrine/cache/zipball/1ca8f21980e770095a31456042471a57bc4c68fb",
+      "reference": "1ca8f21980e770095a31456042471a57bc4c68fb",
+      "sha256": "5a8799a67c97aab8a40b91eaa5a7af2db2e7c2b301a34ef60ae7e33a5e5211dd"
+    },
+    {
+      "name": "doctrine/dbal",
+      "version": "3.9.4",
+      "url": "https://api.github.com/repos/doctrine/dbal/zipball/ec16c82f20be1a7224e65ac67144a29199f87959",
+      "reference": "ec16c82f20be1a7224e65ac67144a29199f87959",
+      "sha256": "fed4935a1ce586ebbfd8084a01ec9c449e9276641deef9d0feccc0c4a828ed5e"
+    },
+    {
+      "name": "doctrine/deprecations",
+      "version": "1.1.5",
+      "url": "https://api.github.com/repos/doctrine/deprecations/zipball/459c2f5dd3d6a4633d3b5f46ee2b1c40f57d3f38",
+      "reference": "459c2f5dd3d6a4633d3b5f46ee2b1c40f57d3f38",
+      "sha256": "a69a0dc44219fe2cf123db50dcd8a2b80a026f186ad1f48afb0ed5f21e40ad3e"
+    },
+    {
+      "name": "doctrine/event-manager",
+      "version": "2.0.1",
+      "url": "https://api.github.com/repos/doctrine/event-manager/zipball/b680156fa328f1dfd874fd48c7026c41570b9c6e",
+      "reference": "b680156fa328f1dfd874fd48c7026c41570b9c6e",
+      "sha256": "517fd8f36bba72b95ed1eb1283850d7af92a87fec1e2d2c7fe5d46472d67bf8c"
+    },
+    {
+      "name": "doctrine/inflector",
+      "version": "2.1.0",
+      "url": "https://api.github.com/repos/doctrine/inflector/zipball/6d6c96277ea252fc1304627204c3d5e6e15faa3b",
+      "reference": "6d6c96277ea252fc1304627204c3d5e6e15faa3b",
+      "sha256": "2d57b5eb9b4a7e6c2820cd8dbfd0cfefcde194eb199327f69e890af050a16887"
+    },
+    {
+      "name": "doctrine/lexer",
+      "version": "3.0.1",
+      "url": "https://api.github.com/repos/doctrine/lexer/zipball/31ad66abc0fc9e1a1f2d9bc6a42668d2fbbcd6dd",
+      "reference": "31ad66abc0fc9e1a1f2d9bc6a42668d2fbbcd6dd",
+      "sha256": "45704eb5352caba856b7af3955e5d31f6e6c0d491d0a23641c10b5d06eb75ff9"
+    },
+    {
+      "name": "dompdf/dompdf",
+      "version": "v3.1.0",
+      "url": "https://api.github.com/repos/dompdf/dompdf/zipball/a51bd7a063a65499446919286fb18b518177155a",
+      "reference": "a51bd7a063a65499446919286fb18b518177155a",
+      "sha256": "d60e0451cf4c8e43f31c04e711d701d4716653a035d7bf43e9d14667147585ac"
+    },
+    {
+      "name": "dompdf/php-font-lib",
+      "version": "1.0.1",
+      "url": "https://api.github.com/repos/dompdf/php-font-lib/zipball/6137b7d4232b7f16c882c75e4ca3991dbcf6fe2d",
+      "reference": "6137b7d4232b7f16c882c75e4ca3991dbcf6fe2d",
+      "sha256": "7329bedf1f174c5179c4a1521c8892b9860bc35127ecf0f7d9f3d23d0def466b"
+    },
+    {
+      "name": "dompdf/php-svg-lib",
+      "version": "1.0.0",
+      "url": "https://api.github.com/repos/dompdf/php-svg-lib/zipball/eb045e518185298eb6ff8d80d0d0c6b17aecd9af",
+      "reference": "eb045e518185298eb6ff8d80d0d0c6b17aecd9af",
+      "sha256": "8cc606db6d9a82ed63e9bff03778f9155f50ec95dea94226fcd61921349b3ed9"
+    },
+    {
+      "name": "dragonmantank/cron-expression",
+      "version": "v3.4.0",
+      "url": "https://api.github.com/repos/dragonmantank/cron-expression/zipball/8c784d071debd117328803d86b2097615b457500",
+      "reference": "8c784d071debd117328803d86b2097615b457500",
+      "sha256": "c11ee7d6b26ef4588d72b564006a97ccd88b654ae1c452c0188273ec60f355fd"
+    },
+    {
+      "name": "egulias/email-validator",
+      "version": "4.0.4",
+      "url": "https://api.github.com/repos/egulias/EmailValidator/zipball/d42c8731f0624ad6bdc8d3e5e9a4524f68801cfa",
+      "reference": "d42c8731f0624ad6bdc8d3e5e9a4524f68801cfa",
+      "sha256": "76ab413a7b2a4331245bbc2a9bc447a3712ebdea969e6f7cd8dce4eff5c63f02"
+    },
+    {
+      "name": "ezyang/htmlpurifier",
+      "version": "v4.18.0",
+      "url": "https://api.github.com/repos/ezyang/htmlpurifier/zipball/cb56001e54359df7ae76dc522d08845dc741621b",
+      "reference": "cb56001e54359df7ae76dc522d08845dc741621b",
+      "sha256": "de92887dfa4a7aef573c9ec3672591a6ed332589f64b7faa0c12f729b2da8622"
+    },
+    {
+      "name": "fruitcake/php-cors",
+      "version": "v1.3.0",
+      "url": "https://api.github.com/repos/fruitcake/php-cors/zipball/3d158f36e7875e2f040f37bc0573956240a5a38b",
+      "reference": "3d158f36e7875e2f040f37bc0573956240a5a38b",
+      "sha256": "9cc729a830f46d57500e08a7b5f6e0e1570c42a3f9abe411919ec09a7b03b8dd"
+    },
+    {
+      "name": "graham-campbell/result-type",
+      "version": "v1.1.3",
+      "url": "https://api.github.com/repos/GrahamCampbell/Result-Type/zipball/3ba905c11371512af9d9bdd27d99b782216b6945",
+      "reference": "3ba905c11371512af9d9bdd27d99b782216b6945",
+      "sha256": "87a92c18d267415f6f07c22f2bfbaf69269b5149e788a6c597c4b1a71bf37a99"
+    },
+    {
+      "name": "guzzlehttp/guzzle",
+      "version": "7.10.0",
+      "url": "https://api.github.com/repos/guzzle/guzzle/zipball/b51ac707cfa420b7bfd4e4d5e510ba8008e822b4",
+      "reference": "b51ac707cfa420b7bfd4e4d5e510ba8008e822b4",
+      "sha256": "bb1961cc5df51f89e6d078f84f8394dcee1e8e3a5cc860428a4ca383fbdf80d8"
+    },
+    {
+      "name": "guzzlehttp/promises",
+      "version": "2.3.0",
+      "url": "https://api.github.com/repos/guzzle/promises/zipball/481557b130ef3790cf82b713667b43030dc9c957",
+      "reference": "481557b130ef3790cf82b713667b43030dc9c957",
+      "sha256": "4e03bff9b9335b428ae5f39325ea22b82646392db99806181c029d8c2d520e99"
+    },
+    {
+      "name": "guzzlehttp/psr7",
+      "version": "2.8.0",
+      "url": "https://api.github.com/repos/guzzle/psr7/zipball/21dc724a0583619cd1652f673303492272778051",
+      "reference": "21dc724a0583619cd1652f673303492272778051",
+      "sha256": "5fba2920fe8b47ea272cfa00e728fbdc3b612f96f10a8ea95859413de37a19c2"
+    },
+    {
+      "name": "guzzlehttp/uri-template",
+      "version": "v1.0.5",
+      "url": "https://api.github.com/repos/guzzle/uri-template/zipball/4f4bbd4e7172148801e76e3decc1e559bdee34e1",
+      "reference": "4f4bbd4e7172148801e76e3decc1e559bdee34e1",
+      "sha256": "e66940a6affe0eee52115a73507fa4d46bee8d340e5f8d3bb78f583ae7c63027"
+    },
+    {
+      "name": "hollodotme/fast-cgi-client",
+      "version": "v3.1.7",
+      "url": "https://api.github.com/repos/hollodotme/fast-cgi-client/zipball/062182d4eda73c161cc2839783acc83096ec0f37",
+      "reference": "062182d4eda73c161cc2839783acc83096ec0f37",
+      "sha256": "a4c0226b2f9e9467b49aef275ee41a9022c0aacc6e4b17159f5f93974600b1fd"
+    },
+    {
+      "name": "jean85/pretty-package-versions",
+      "version": "2.1.1",
+      "url": "https://api.github.com/repos/Jean85/pretty-package-versions/zipball/4d7aa5dab42e2a76d99559706022885de0e18e1a",
+      "reference": "4d7aa5dab42e2a76d99559706022885de0e18e1a",
+      "sha256": "b036daf6b54ae5b1643f9c5169fcda020d60d83ce5f37b37a81627fbf89590e9"
+    },
+    {
+      "name": "kelunik/certificate",
+      "version": "v1.1.3",
+      "url": "https://api.github.com/repos/kelunik/certificate/zipball/7e00d498c264d5eb4f78c69f41c8bd6719c0199e",
+      "reference": "7e00d498c264d5eb4f78c69f41c8bd6719c0199e",
+      "sha256": "12ea71ed74a973c05a9040ea83bdd8c59e8820fe6d7646140e3f61dfd1fd8db0"
+    },
+    {
+      "name": "lab404/laravel-impersonate",
+      "version": "1.7.7",
+      "url": "https://api.github.com/repos/404labfr/laravel-impersonate/zipball/5033f3433a55ca8bb2cc3e4a018a39dd8a327a9f",
+      "reference": "5033f3433a55ca8bb2cc3e4a018a39dd8a327a9f",
+      "sha256": "3f7434e4186bfcbf734bbf4cdb9e08af579f2833f5156963b9899c6651ba9935"
+    },
+    {
+      "name": "laravel/framework",
+      "version": "v12.34.0",
+      "url": "https://api.github.com/repos/laravel/framework/zipball/f9ec5a5d88bc8c468f17b59f88e05c8ac3c8d687",
+      "reference": "f9ec5a5d88bc8c468f17b59f88e05c8ac3c8d687",
+      "sha256": "0dabea606d4474aae6d4b5f7546611c7750c27927738a5eeeaface5f284161ce"
+    },
+    {
+      "name": "laravel/prompts",
+      "version": "v0.3.7",
+      "url": "https://api.github.com/repos/laravel/prompts/zipball/a1891d362714bc40c8d23b0b1d7090f022ea27cc",
+      "reference": "a1891d362714bc40c8d23b0b1d7090f022ea27cc",
+      "sha256": "193e05ddb638e347b49905463b2693aeb569b22eb2b118f79af0789abde53210"
+    },
+    {
+      "name": "laravel/sanctum",
+      "version": "v4.1.1",
+      "url": "https://api.github.com/repos/laravel/sanctum/zipball/a360a6a1fd2400ead4eb9b6a9c1bb272939194f5",
+      "reference": "a360a6a1fd2400ead4eb9b6a9c1bb272939194f5",
+      "sha256": "a0e1f65ab1659fb8e8d22b899efce90e17dad8ba353a4e56f34bd117c87d7357"
+    },
+    {
+      "name": "laravel/serializable-closure",
+      "version": "v2.0.6",
+      "url": "https://api.github.com/repos/laravel/serializable-closure/zipball/038ce42edee619599a1debb7e81d7b3759492819",
+      "reference": "038ce42edee619599a1debb7e81d7b3759492819",
+      "sha256": "897d7e4de31d2f4588a0a36db610fd83ba1a64f5b6694ef1dfa9856e037c14fb"
+    },
+    {
+      "name": "laravel/tinker",
+      "version": "v2.10.1",
+      "url": "https://api.github.com/repos/laravel/tinker/zipball/22177cc71807d38f2810c6204d8f7183d88a57d3",
+      "reference": "22177cc71807d38f2810c6204d8f7183d88a57d3",
+      "sha256": "54049561d4d1aa7fd0da20d7777e64cc0a714ffad978285bda3cd0e2dbc86a4c"
+    },
+    {
+      "name": "laravel/vapor-core",
+      "version": "v2.41.0",
+      "url": "https://api.github.com/repos/laravel/vapor-core/zipball/80faabfd88b6b93316e600ade54c5e97bab974fe",
+      "reference": "80faabfd88b6b93316e600ade54c5e97bab974fe",
+      "sha256": "55a7f7201394b9cec2dd0119e6ce2aee608cc2626d553444d3b64a00ad9ed5b4"
+    },
+    {
+      "name": "lcobucci/jwt",
+      "version": "5.5.0",
+      "url": "https://api.github.com/repos/lcobucci/jwt/zipball/a835af59b030d3f2967725697cf88300f579088e",
+      "reference": "a835af59b030d3f2967725697cf88300f579088e",
+      "sha256": "abd6674da91ed8012d2e700b470af1cf75c700dd49a26717ecfbfcfc047111d8"
+    },
+    {
+      "name": "league/commonmark",
+      "version": "2.7.1",
+      "url": "https://api.github.com/repos/thephpleague/commonmark/zipball/10732241927d3971d28e7ea7b5712721fa2296ca",
+      "reference": "10732241927d3971d28e7ea7b5712721fa2296ca",
+      "sha256": "094a3bfdf9a10fedf3ec973e702ce66e2c9659d8733c6aed38421fdb326575d4"
+    },
+    {
+      "name": "league/config",
+      "version": "v1.2.0",
+      "url": "https://api.github.com/repos/thephpleague/config/zipball/754b3604fb2984c71f4af4a9cbe7b57f346ec1f3",
+      "reference": "754b3604fb2984c71f4af4a9cbe7b57f346ec1f3",
+      "sha256": "1ad93a2858d4479e29d29b88d0d3e4ac4221631b06959454ae4061d058414b7a"
+    },
+    {
+      "name": "league/flysystem",
+      "version": "3.30.0",
+      "url": "https://api.github.com/repos/thephpleague/flysystem/zipball/2203e3151755d874bb2943649dae1eb8533ac93e",
+      "reference": "2203e3151755d874bb2943649dae1eb8533ac93e",
+      "sha256": "5b0c9ea38968d618f878e51618f78113bd3e3d29e8c3fd64228b4be2f962a001"
+    },
+    {
+      "name": "league/flysystem-aws-s3-v3",
+      "version": "3.29.0",
+      "url": "https://api.github.com/repos/thephpleague/flysystem-aws-s3-v3/zipball/c6ff6d4606e48249b63f269eba7fabdb584e76a9",
+      "reference": "c6ff6d4606e48249b63f269eba7fabdb584e76a9",
+      "sha256": "2105075cc7580d6318c3a51c262eaf086ed06157086c74b4fca708aabcd94ef5"
+    },
+    {
+      "name": "league/flysystem-local",
+      "version": "3.30.0",
+      "url": "https://api.github.com/repos/thephpleague/flysystem-local/zipball/6691915f77c7fb69adfb87dcd550052dc184ee10",
+      "reference": "6691915f77c7fb69adfb87dcd550052dc184ee10",
+      "sha256": "1c145289dc2789d653dfcd140a236e9697fe3ee3529433e095a2f7945a3bf29a"
+    },
+    {
+      "name": "league/mime-type-detection",
+      "version": "1.16.0",
+      "url": "https://api.github.com/repos/thephpleague/mime-type-detection/zipball/2d6702ff215bf922936ccc1ad31007edc76451b9",
+      "reference": "2d6702ff215bf922936ccc1ad31007edc76451b9",
+      "sha256": "1ba8d6434a2f3bcc9bfce729faf1581c7039fb73afa7119770272c465d9d2f44"
+    },
+    {
+      "name": "league/uri",
+      "version": "7.5.1",
+      "url": "https://api.github.com/repos/thephpleague/uri/zipball/81fb5145d2644324614cc532b28efd0215bda430",
+      "reference": "81fb5145d2644324614cc532b28efd0215bda430",
+      "sha256": "59154cf3f7c0a203366c12b3acc69968b7282564a3b62b38ce94edcbfdc45f2b"
+    },
+    {
+      "name": "league/uri-interfaces",
+      "version": "7.5.0",
+      "url": "https://api.github.com/repos/thephpleague/uri-interfaces/zipball/08cfc6c4f3d811584fb09c37e2849e6a7f9b0742",
+      "reference": "08cfc6c4f3d811584fb09c37e2849e6a7f9b0742",
+      "sha256": "4fe47a77c6bec97b7f57cde9eb76b01f8e879f988a487c89a1d6ed415d7ed0a1"
+    },
+    {
+      "name": "liquid/liquid",
+      "version": "1.4.44",
+      "url": "https://api.github.com/repos/kalimatas/php-liquid/zipball/1b74ad64001d21f27223849624f7aab0c379815a",
+      "reference": "1b74ad64001d21f27223849624f7aab0c379815a",
+      "sha256": "360c00aaf6675a2026258c22233c81536e3b58ad72fc944379b594e4f89c7916"
+    },
+    {
+      "name": "maatwebsite/excel",
+      "version": "3.1.67",
+      "url": "https://api.github.com/repos/SpartnerNL/Laravel-Excel/zipball/e508e34a502a3acc3329b464dad257378a7edb4d",
+      "reference": "e508e34a502a3acc3329b464dad257378a7edb4d",
+      "sha256": "f67111d65af9bba9ddd2b6caa90b7118b17cd692517ab2a1321881e465189243"
+    },
+    {
+      "name": "maennchen/zipstream-php",
+      "version": "3.1.2",
+      "url": "https://api.github.com/repos/maennchen/ZipStream-PHP/zipball/aeadcf5c412332eb426c0f9b4485f6accba2a99f",
+      "reference": "aeadcf5c412332eb426c0f9b4485f6accba2a99f",
+      "sha256": "dd50898b4261a04401481f1385dbfca991cc0ca9fdffca3f0f759a649eab3584"
+    },
+    {
+      "name": "markbaker/complex",
+      "version": "3.0.2",
+      "url": "https://api.github.com/repos/MarkBaker/PHPComplex/zipball/95c56caa1cf5c766ad6d65b6344b807c1e8405b9",
+      "reference": "95c56caa1cf5c766ad6d65b6344b807c1e8405b9",
+      "sha256": "d2cb46f939380a43a8c29a68dad5c17378d31032dc5891dba84967b635a83420"
+    },
+    {
+      "name": "markbaker/matrix",
+      "version": "3.0.1",
+      "url": "https://api.github.com/repos/MarkBaker/PHPMatrix/zipball/728434227fe21be27ff6d86621a1b13107a2562c",
+      "reference": "728434227fe21be27ff6d86621a1b13107a2562c",
+      "sha256": "e3a644daf6832baf51607b2c4b555e4361f8b77b3003f23eb6550199d6ee9c21"
+    },
+    {
+      "name": "masterminds/html5",
+      "version": "2.9.0",
+      "url": "https://api.github.com/repos/Masterminds/html5-php/zipball/f5ac2c0b0a2eefca70b2ce32a5809992227e75a6",
+      "reference": "f5ac2c0b0a2eefca70b2ce32a5809992227e75a6",
+      "sha256": "dd1191bc866e5bb3746aa6bb2d8f0aab5a3ab413b5afc5fd653ea7c3556571b9"
+    },
+    {
+      "name": "monolog/monolog",
+      "version": "3.9.0",
+      "url": "https://api.github.com/repos/Seldaek/monolog/zipball/10d85740180ecba7896c87e06a166e0c95a0e3b6",
+      "reference": "10d85740180ecba7896c87e06a166e0c95a0e3b6",
+      "sha256": "f51c6e93e5542a857d010c857bbac3a913796f0426d2dfbfeb4a4d62f00e582e"
+    },
+    {
+      "name": "mtdowling/jmespath.php",
+      "version": "2.8.0",
+      "url": "https://api.github.com/repos/jmespath/jmespath.php/zipball/a2a865e05d5f420b50cc2f85bb78d565db12a6bc",
+      "reference": "a2a865e05d5f420b50cc2f85bb78d565db12a6bc",
+      "sha256": "a1d36dac3388f46ae5b91565b54aa9f07df104e29486bc6ba6422c770a3f3b4b"
+    },
+    {
+      "name": "namshi/jose",
+      "version": "7.2.3",
+      "url": "https://api.github.com/repos/namshi/jose/zipball/89a24d7eb3040e285dd5925fcad992378b82bcff",
+      "reference": "89a24d7eb3040e285dd5925fcad992378b82bcff",
+      "sha256": "038e89c82ee227a6cab87b31b57b2e88a1e3255433036ae326d7aacbcee74cf1"
+    },
+    {
+      "name": "nesbot/carbon",
+      "version": "3.10.3",
+      "url": "https://api.github.com/repos/CarbonPHP/carbon/zipball/8e3643dcd149ae0fe1d2ff4f2c8e4bbfad7c165f",
+      "reference": "8e3643dcd149ae0fe1d2ff4f2c8e4bbfad7c165f",
+      "sha256": "2ec5879dc0616ec4fd197594a6ccf1b4799f1633ce80ee24bbc3b10818a78357"
+    },
+    {
+      "name": "nette/php-generator",
+      "version": "v4.1.8",
+      "url": "https://api.github.com/repos/nette/php-generator/zipball/42806049a7774a2bd316c958f5dcf01c6b5c56fa",
+      "reference": "42806049a7774a2bd316c958f5dcf01c6b5c56fa",
+      "sha256": "5a0149ff16ba01f253a523e2f2b72c158dab28b1ff8b746a48edf3fee9440e1f"
+    },
+    {
+      "name": "nette/schema",
+      "version": "v1.3.2",
+      "url": "https://api.github.com/repos/nette/schema/zipball/da801d52f0354f70a638673c4a0f04e16529431d",
+      "reference": "da801d52f0354f70a638673c4a0f04e16529431d",
+      "sha256": "bebb5ab97d6813af31ca413b935a1953efc328a19665fc17d920350f0e603e51"
+    },
+    {
+      "name": "nette/utils",
+      "version": "v4.0.8",
+      "url": "https://api.github.com/repos/nette/utils/zipball/c930ca4e3cf4f17dcfb03037703679d2396d2ede",
+      "reference": "c930ca4e3cf4f17dcfb03037703679d2396d2ede",
+      "sha256": "7b0b0380978d13e1dbf3429d8bde534f2cb8d3f842eef3115b66de6537a559bc"
+    },
+    {
+      "name": "nikic/php-parser",
+      "version": "v5.6.1",
+      "url": "https://api.github.com/repos/nikic/PHP-Parser/zipball/f103601b29efebd7ff4a1ca7b3eeea9e3336a2a2",
+      "reference": "f103601b29efebd7ff4a1ca7b3eeea9e3336a2a2",
+      "sha256": "1901928f7587463e2c9ff96681eda9a8589698b67164aa88cb79dd4fb1d161e6"
+    },
+    {
+      "name": "nunomaduro/termwind",
+      "version": "v2.3.1",
+      "url": "https://api.github.com/repos/nunomaduro/termwind/zipball/dfa08f390e509967a15c22493dc0bac5733d9123",
+      "reference": "dfa08f390e509967a15c22493dc0bac5733d9123",
+      "sha256": "96b41959e660ecc957f30fd1605ba223d71cf0a539212166e027332f97ed92bc"
+    },
+    {
+      "name": "nyholm/psr7",
+      "version": "1.8.2",
+      "url": "https://api.github.com/repos/Nyholm/psr7/zipball/a71f2b11690f4b24d099d6b16690a90ae14fc6f3",
+      "reference": "a71f2b11690f4b24d099d6b16690a90ae14fc6f3",
+      "sha256": "0d1dd73f054267f15f28a594e2514955e46bdf8a51d848226913c7ee12af7523"
+    },
+    {
+      "name": "php-open-source-saver/jwt-auth",
+      "version": "v2.8.2",
+      "url": "https://api.github.com/repos/PHP-Open-Source-Saver/jwt-auth/zipball/9af3bd953b5671247c330562183e159f10700533",
+      "reference": "9af3bd953b5671247c330562183e159f10700533",
+      "sha256": "ca7d320e9e2f1e034ae1726c911b3bfb108d42b12a8f7792cffefa972ccb1d59"
+    },
+    {
+      "name": "phpdocumentor/reflection",
+      "version": "6.3.0",
+      "url": "https://api.github.com/repos/phpDocumentor/Reflection/zipball/d91b3270832785602adcc24ae2d0974ba99a8ff8",
+      "reference": "d91b3270832785602adcc24ae2d0974ba99a8ff8",
+      "sha256": "02aee1f99c14c02946542652203e9f11caf3b05939b0dac47b3a092f72472ec4"
+    },
+    {
+      "name": "phpdocumentor/reflection-common",
+      "version": "2.2.0",
+      "url": "https://api.github.com/repos/phpDocumentor/ReflectionCommon/zipball/1d01c49d4ed62f25aa84a747ad35d5a16924662b",
+      "reference": "1d01c49d4ed62f25aa84a747ad35d5a16924662b",
+      "sha256": "39fca6dc8730bdc4f70c41e58e16595fc6695b4ae42327c32144c4131410a7f3"
+    },
+    {
+      "name": "phpdocumentor/reflection-docblock",
+      "version": "5.6.3",
+      "url": "https://api.github.com/repos/phpDocumentor/ReflectionDocBlock/zipball/94f8051919d1b0369a6bcc7931d679a511c03fe9",
+      "reference": "94f8051919d1b0369a6bcc7931d679a511c03fe9",
+      "sha256": "957b17fca5430cdc0bd13b59587ffe94de1a92c9d8d78c84ddb92b235f5e07df"
+    },
+    {
+      "name": "phpdocumentor/type-resolver",
+      "version": "1.10.0",
+      "url": "https://api.github.com/repos/phpDocumentor/TypeResolver/zipball/679e3ce485b99e84c775d28e2e96fade9a7fb50a",
+      "reference": "679e3ce485b99e84c775d28e2e96fade9a7fb50a",
+      "sha256": "38a1777ab48c901a6ea5b2fb15c43ee500684f2895afa44e03f8263a71ee06c7"
+    },
+    {
+      "name": "phpoffice/phpspreadsheet",
+      "version": "1.30.0",
+      "url": "https://api.github.com/repos/PHPOffice/PhpSpreadsheet/zipball/2f39286e0136673778b7a142b3f0d141e43d1714",
+      "reference": "2f39286e0136673778b7a142b3f0d141e43d1714",
+      "sha256": "e08dd21c766a6d6b78f692f0b50a4e5b15ee01c35a2db5b2188d277c0f5b11de"
+    },
+    {
+      "name": "phpoption/phpoption",
+      "version": "1.9.4",
+      "url": "https://api.github.com/repos/schmittjoh/php-option/zipball/638a154f8d4ee6a5cfa96d6a34dfbe0cffa9566d",
+      "reference": "638a154f8d4ee6a5cfa96d6a34dfbe0cffa9566d",
+      "sha256": "f74f40675f2707688f1596dae201c5ab89a83599adb4a77671d5c3d1e60943e0"
+    },
+    {
+      "name": "phpstan/phpdoc-parser",
+      "version": "2.3.0",
+      "url": "https://api.github.com/repos/phpstan/phpdoc-parser/zipball/1e0cd5370df5dd2e556a36b9c62f62e555870495",
+      "reference": "1e0cd5370df5dd2e556a36b9c62f62e555870495",
+      "sha256": "6a3de6706a1b2d593a90e5e0d86ce92a2ad0e1f8ba1414f6f8859396f67aeafb"
+    },
+    {
+      "name": "psr/cache",
+      "version": "3.0.0",
+      "url": "https://api.github.com/repos/php-fig/cache/zipball/aa5030cfa5405eccfdcb1083ce040c2cb8d253bf",
+      "reference": "aa5030cfa5405eccfdcb1083ce040c2cb8d253bf",
+      "sha256": "88d63083b654a7ca847e926fcf8e3c35b0a7dd1bde960d8674ba10b2b8f4361f"
+    },
+    {
+      "name": "psr/clock",
+      "version": "1.0.0",
+      "url": "https://api.github.com/repos/php-fig/clock/zipball/e41a24703d4560fd0acb709162f73b8adfc3aa0d",
+      "reference": "e41a24703d4560fd0acb709162f73b8adfc3aa0d",
+      "sha256": "72a2682083efc51108e5d7d0e880d45d85236100692c86d093c3f6f9205ae573"
+    },
+    {
+      "name": "psr/container",
+      "version": "2.0.2",
+      "url": "https://api.github.com/repos/php-fig/container/zipball/c71ecc56dfe541dbd90c5360474fbc405f8d5963",
+      "reference": "c71ecc56dfe541dbd90c5360474fbc405f8d5963",
+      "sha256": "3111f5b69d3a0f690f5f92d7aeacfb247f5ebd3c175088cce4b098e5d1b06ad7"
+    },
+    {
+      "name": "psr/event-dispatcher",
+      "version": "1.0.0",
+      "url": "https://api.github.com/repos/php-fig/event-dispatcher/zipball/dbefd12671e8a14ec7f180cab83036ed26714bb0",
+      "reference": "dbefd12671e8a14ec7f180cab83036ed26714bb0",
+      "sha256": "4d6a674cfd89a9957ead82e31ee4df785b2b1d215693add73184729a9a66d116"
+    },
+    {
+      "name": "psr/http-client",
+      "version": "1.0.3",
+      "url": "https://api.github.com/repos/php-fig/http-client/zipball/bb5906edc1c324c9a05aa0873d40117941e5fa90",
+      "reference": "bb5906edc1c324c9a05aa0873d40117941e5fa90",
+      "sha256": "5d3fc583e721d451a0cc2073680476236199cd1680a0d9da1756e8152496deb5"
+    },
+    {
+      "name": "psr/http-factory",
+      "version": "1.1.0",
+      "url": "https://api.github.com/repos/php-fig/http-factory/zipball/2b4765fddfe3b508ac62f829e852b1501d3f6e8a",
+      "reference": "2b4765fddfe3b508ac62f829e852b1501d3f6e8a",
+      "sha256": "a3c397252b6c1c15e60ad6fae927d61edbf4059f3473080bb1b3b40deabf80d2"
+    },
+    {
+      "name": "psr/http-message",
+      "version": "2.0",
+      "url": "https://api.github.com/repos/php-fig/http-message/zipball/402d35bcb92c70c026d1a6a9883f06b2ead23d71",
+      "reference": "402d35bcb92c70c026d1a6a9883f06b2ead23d71",
+      "sha256": "d561d2c36e2e3c0ee8b54e0e9652b3bfa13cd763e5e6f93400969001f3a7968d"
+    },
+    {
+      "name": "psr/log",
+      "version": "3.0.2",
+      "url": "https://api.github.com/repos/php-fig/log/zipball/f16e1d5863e37f8d8c2a01719f5b34baa2b714d3",
+      "reference": "f16e1d5863e37f8d8c2a01719f5b34baa2b714d3",
+      "sha256": "1e8dcf2df933fc3440b29146c5ca4e93ece51c5c7a9ac9653d926ec971c90892"
+    },
+    {
+      "name": "psr/simple-cache",
+      "version": "3.0.0",
+      "url": "https://api.github.com/repos/php-fig/simple-cache/zipball/764e0b3939f5ca87cb904f570ef9be2d78a07865",
+      "reference": "764e0b3939f5ca87cb904f570ef9be2d78a07865",
+      "sha256": "e899e363a85c26b3f1a621182b6eed2a37a71d823410ac949a1cbfd4b655ec41"
+    },
+    {
+      "name": "psy/psysh",
+      "version": "v0.12.8",
+      "url": "https://api.github.com/repos/bobthecow/psysh/zipball/85057ceedee50c49d4f6ecaff73ee96adb3b3625",
+      "reference": "85057ceedee50c49d4f6ecaff73ee96adb3b3625",
+      "sha256": "aa9f94b01ad78a62151f7680813ca5ee20437cc91a55e446085c9a2caa9f5153"
+    },
+    {
+      "name": "ralouphie/getallheaders",
+      "version": "3.0.3",
+      "url": "https://api.github.com/repos/ralouphie/getallheaders/zipball/120b605dfeb996808c31b6477290a714d356e822",
+      "reference": "120b605dfeb996808c31b6477290a714d356e822",
+      "sha256": "ef0165da5690da666ab4cb88bb4cec0d50372e3e7c922532c5795a3567b367af"
+    },
+    {
+      "name": "ramsey/collection",
+      "version": "2.1.1",
+      "url": "https://api.github.com/repos/ramsey/collection/zipball/344572933ad0181accbf4ba763e85a0306a8c5e2",
+      "reference": "344572933ad0181accbf4ba763e85a0306a8c5e2",
+      "sha256": "a9d0d7949173c4fb8735a019f0052d3f1910d58fb10ed19e8003cab70f462c72"
+    },
+    {
+      "name": "ramsey/uuid",
+      "version": "4.9.1",
+      "url": "https://api.github.com/repos/ramsey/uuid/zipball/81f941f6f729b1e3ceea61d9d014f8b6c6800440",
+      "reference": "81f941f6f729b1e3ceea61d9d014f8b6c6800440",
+      "sha256": "3c8b105284cd66ad54ea933cbd24e1cf866dff62cf36604a9ecd9638922acb6b"
+    },
+    {
+      "name": "revolt/event-loop",
+      "version": "v1.0.7",
+      "url": "https://api.github.com/repos/revoltphp/event-loop/zipball/09bf1bf7f7f574453efe43044b06fafe12216eb3",
+      "reference": "09bf1bf7f7f574453efe43044b06fafe12216eb3",
+      "sha256": "47754b6fb357c91c960a836b2a4ffd62ab700da9c8cfe88aeb7d62984d0c4698"
+    },
+    {
+      "name": "riverline/multipart-parser",
+      "version": "2.2.0",
+      "url": "https://api.github.com/repos/Riverline/multipart-parser/zipball/1410f23a8fd416a0cf5c8867ea9c95544016c831",
+      "reference": "1410f23a8fd416a0cf5c8867ea9c95544016c831",
+      "sha256": "ddbfa339ea770db3609c5bbedbfe7f5b697638ccaa6bed190558acd06a446051"
+    },
+    {
+      "name": "sabberworm/php-css-parser",
+      "version": "v8.8.0",
+      "url": "https://api.github.com/repos/MyIntervals/PHP-CSS-Parser/zipball/3de493bdddfd1f051249af725c7e0d2c38fed740",
+      "reference": "3de493bdddfd1f051249af725c7e0d2c38fed740",
+      "sha256": "c48dafb542d8f2ea18f17311982d6c1a92bf200e28b19c70dca91341848b7609"
+    },
+    {
+      "name": "sentry/sentry",
+      "version": "4.16.0",
+      "url": "https://api.github.com/repos/getsentry/sentry-php/zipball/c5b086e4235762da175034bc463b0d31cbb38d2e",
+      "reference": "c5b086e4235762da175034bc463b0d31cbb38d2e",
+      "sha256": "aa2f24be6753a1b6a8a292350fc6e601a7124d96a14f6332ffc833a30f865f68"
+    },
+    {
+      "name": "sentry/sentry-laravel",
+      "version": "4.16.0",
+      "url": "https://api.github.com/repos/getsentry/sentry-laravel/zipball/b33b2e487b02db02d92988228f142d7fa2be2bfa",
+      "reference": "b33b2e487b02db02d92988228f142d7fa2be2bfa",
+      "sha256": "11830c0b7505f8de4322a7fd379c4eaa5d1abefa506423e5b748edcfb082a085"
+    },
+    {
+      "name": "spatie/icalendar-generator",
+      "version": "3.0.0",
+      "url": "https://api.github.com/repos/spatie/icalendar-generator/zipball/32797f6e5afa3142d073f38d5f22ab377f4d8f90",
+      "reference": "32797f6e5afa3142d073f38d5f22ab377f4d8f90",
+      "sha256": "8baaa6661080a0b611ee0e746bb4fb72e550e5c78f0c84fc30dfcafe434dc08b"
+    },
+    {
+      "name": "spatie/laravel-data",
+      "version": "4.17.0",
+      "url": "https://api.github.com/repos/spatie/laravel-data/zipball/6b110d25ad4219774241b083d09695b20a7fb472",
+      "reference": "6b110d25ad4219774241b083d09695b20a7fb472",
+      "sha256": "594fe4c5a0e0348532050237198af0a08fd1a1a981d61607a144ccfd4d079591"
+    },
+    {
+      "name": "spatie/laravel-package-tools",
+      "version": "1.92.7",
+      "url": "https://api.github.com/repos/spatie/laravel-package-tools/zipball/f09a799850b1ed765103a4f0b4355006360c49a5",
+      "reference": "f09a799850b1ed765103a4f0b4355006360c49a5",
+      "sha256": "cec7764b8120606b406f416a6ae5b877b7a48da70a65fc0d5b1a130698929315"
+    },
+    {
+      "name": "spatie/laravel-webhook-server",
+      "version": "3.8.3",
+      "url": "https://api.github.com/repos/spatie/laravel-webhook-server/zipball/e3d8f24030bbb4087867cd0be681c028736b772f",
+      "reference": "e3d8f24030bbb4087867cd0be681c028736b772f",
+      "sha256": "dbe6651610dcdee3cac7905cfe8a426fde6d71fbc044ca9cfe2397d5b6a1b358"
+    },
+    {
+      "name": "spatie/php-structure-discoverer",
+      "version": "2.3.1",
+      "url": "https://api.github.com/repos/spatie/php-structure-discoverer/zipball/42f4d731d3dd4b3b85732e05a8c1928fcfa2f4bc",
+      "reference": "42f4d731d3dd4b3b85732e05a8c1928fcfa2f4bc",
+      "sha256": "5c0d9eac4fb6edcf3332ddca08009b123615f886205922469445759e1ab0ebff"
+    },
+    {
+      "name": "stripe/stripe-php",
+      "version": "v17.2.0",
+      "url": "https://api.github.com/repos/stripe/stripe-php/zipball/ff2364c75533b71116ea11994d6bd08989b7f67b",
+      "reference": "ff2364c75533b71116ea11994d6bd08989b7f67b",
+      "sha256": "388a21b774c03ed7cd488939a575b88a0761cc618a805ca1d6040568a3353b05"
+    },
+    {
+      "name": "symfony/clock",
+      "version": "v7.3.0",
+      "url": "https://api.github.com/repos/symfony/clock/zipball/b81435fbd6648ea425d1ee96a2d8e68f4ceacd24",
+      "reference": "b81435fbd6648ea425d1ee96a2d8e68f4ceacd24",
+      "sha256": "e43915e55e6f8e5af28cd77fcd95491567f62b9c5cfc83f35544d822fde3fe8c"
+    },
+    {
+      "name": "symfony/console",
+      "version": "v7.3.4",
+      "url": "https://api.github.com/repos/symfony/console/zipball/2b9c5fafbac0399a20a2e82429e2bd735dcfb7db",
+      "reference": "2b9c5fafbac0399a20a2e82429e2bd735dcfb7db",
+      "sha256": "576102d99825f0cc14e08e9e2a59dc8dfcb85e5ed6b4e9a41d5a5b8a67130836"
+    },
+    {
+      "name": "symfony/css-selector",
+      "version": "v7.3.0",
+      "url": "https://api.github.com/repos/symfony/css-selector/zipball/601a5ce9aaad7bf10797e3663faefce9e26c24e2",
+      "reference": "601a5ce9aaad7bf10797e3663faefce9e26c24e2",
+      "sha256": "dcce1e1bf2263ceae0d723a9c956c072795482c00f4864f69ac534516da7d6f3"
+    },
+    {
+      "name": "symfony/deprecation-contracts",
+      "version": "v3.6.0",
+      "url": "https://api.github.com/repos/symfony/deprecation-contracts/zipball/63afe740e99a13ba87ec199bb07bbdee937a5b62",
+      "reference": "63afe740e99a13ba87ec199bb07bbdee937a5b62",
+      "sha256": "7e357a38d42e163006ee3d5131aeabb81b3634167dc159023563a131ab969fae"
+    },
+    {
+      "name": "symfony/error-handler",
+      "version": "v7.3.4",
+      "url": "https://api.github.com/repos/symfony/error-handler/zipball/99f81bc944ab8e5dae4f21b4ca9972698bbad0e4",
+      "reference": "99f81bc944ab8e5dae4f21b4ca9972698bbad0e4",
+      "sha256": "f5aeb8773ffdb5de0da68351242f5cc45db69bd121662943f04457cc5d15e71c"
+    },
+    {
+      "name": "symfony/event-dispatcher",
+      "version": "v7.3.3",
+      "url": "https://api.github.com/repos/symfony/event-dispatcher/zipball/b7dc69e71de420ac04bc9ab830cf3ffebba48191",
+      "reference": "b7dc69e71de420ac04bc9ab830cf3ffebba48191",
+      "sha256": "a07083b7651d90b4e1244d638c02729da24f56399335ee50ce50a383d327f37f"
+    },
+    {
+      "name": "symfony/event-dispatcher-contracts",
+      "version": "v3.6.0",
+      "url": "https://api.github.com/repos/symfony/event-dispatcher-contracts/zipball/59eb412e93815df44f05f342958efa9f46b1e586",
+      "reference": "59eb412e93815df44f05f342958efa9f46b1e586",
+      "sha256": "ae27c69203ca917528252fa2fce2e05ce461befd2bfd698e32673bd26309d349"
+    },
+    {
+      "name": "symfony/finder",
+      "version": "v7.3.2",
+      "url": "https://api.github.com/repos/symfony/finder/zipball/2a6614966ba1074fa93dae0bc804227422df4dfe",
+      "reference": "2a6614966ba1074fa93dae0bc804227422df4dfe",
+      "sha256": "03e61b45b978b2fe34e4926ed17979c1ec74ea67b72309917f1f035e4262ae4f"
+    },
+    {
+      "name": "symfony/http-client",
+      "version": "v7.4.1",
+      "url": "https://api.github.com/repos/symfony/http-client/zipball/26cc224ea7103dda90e9694d9e139a389092d007",
+      "reference": "26cc224ea7103dda90e9694d9e139a389092d007",
+      "sha256": "6e284d7a0b35a0fd1a06a281a0adbd2863bfa6f21e6eb837236989e82d579d25"
+    },
+    {
+      "name": "symfony/http-client-contracts",
+      "version": "v3.6.0",
+      "url": "https://api.github.com/repos/symfony/http-client-contracts/zipball/75d7043853a42837e68111812f4d964b01e5101c",
+      "reference": "75d7043853a42837e68111812f4d964b01e5101c",
+      "sha256": "72e9c3486b2c399b6269de6444d0f546d0771e535ebf13a051f3dea5c2c7dc26"
+    },
+    {
+      "name": "symfony/http-foundation",
+      "version": "v7.3.4",
+      "url": "https://api.github.com/repos/symfony/http-foundation/zipball/c061c7c18918b1b64268771aad04b40be41dd2e6",
+      "reference": "c061c7c18918b1b64268771aad04b40be41dd2e6",
+      "sha256": "6cc71164d289acdcbb24fe9c407aa8e68eda1d34065fc4fc1cf44e6409634567"
+    },
+    {
+      "name": "symfony/http-kernel",
+      "version": "v7.3.4",
+      "url": "https://api.github.com/repos/symfony/http-kernel/zipball/b796dffea7821f035047235e076b60ca2446e3cf",
+      "reference": "b796dffea7821f035047235e076b60ca2446e3cf",
+      "sha256": "e765f2cc7c1ff26d4b4c7d4eef7784917a41cadcd5f99bc96fb13698d073803f"
+    },
+    {
+      "name": "symfony/mailer",
+      "version": "v7.3.4",
+      "url": "https://api.github.com/repos/symfony/mailer/zipball/ab97ef2f7acf0216955f5845484235113047a31d",
+      "reference": "ab97ef2f7acf0216955f5845484235113047a31d",
+      "sha256": "0ef32aac3d7b2f3c386f600e62b0fe9e08236a8c87ec6786094d50c78dfa043e"
+    },
+    {
+      "name": "symfony/mime",
+      "version": "v7.3.4",
+      "url": "https://api.github.com/repos/symfony/mime/zipball/b1b828f69cbaf887fa835a091869e55df91d0e35",
+      "reference": "b1b828f69cbaf887fa835a091869e55df91d0e35",
+      "sha256": "84d5019a95159090c19881986812b4e6981e4648fabd78723caf5bf6bdba02cd"
+    },
+    {
+      "name": "symfony/options-resolver",
+      "version": "v7.3.3",
+      "url": "https://api.github.com/repos/symfony/options-resolver/zipball/0ff2f5c3df08a395232bbc3c2eb7e84912df911d",
+      "reference": "0ff2f5c3df08a395232bbc3c2eb7e84912df911d",
+      "sha256": "34899a74662a8d20504bc9f372d5206d28e0708b09c11acb463630d7f4c5d8db"
+    },
+    {
+      "name": "symfony/polyfill-ctype",
+      "version": "v1.33.0",
+      "url": "https://api.github.com/repos/symfony/polyfill-ctype/zipball/a3cc8b044a6ea513310cbd48ef7333b384945638",
+      "reference": "a3cc8b044a6ea513310cbd48ef7333b384945638",
+      "sha256": "b661f9c228134e1bd7016f4f72debc81d5e5fb6288433c1bc56e8591c5a78abf"
+    },
+    {
+      "name": "symfony/polyfill-intl-grapheme",
+      "version": "v1.33.0",
+      "url": "https://api.github.com/repos/symfony/polyfill-intl-grapheme/zipball/380872130d3a5dd3ace2f4010d95125fde5d5c70",
+      "reference": "380872130d3a5dd3ace2f4010d95125fde5d5c70",
+      "sha256": "c63bd45587a23901739150a4cf5e3c123977844793a440abac3f05666ac29408"
+    },
+    {
+      "name": "symfony/polyfill-intl-idn",
+      "version": "v1.33.0",
+      "url": "https://api.github.com/repos/symfony/polyfill-intl-idn/zipball/9614ac4d8061dc257ecc64cba1b140873dce8ad3",
+      "reference": "9614ac4d8061dc257ecc64cba1b140873dce8ad3",
+      "sha256": "128052c78cb88f9b02ecff99dad282f9bce9128a0c42c3b1d4f759de22e5a79b"
+    },
+    {
+      "name": "symfony/polyfill-intl-normalizer",
+      "version": "v1.33.0",
+      "url": "https://api.github.com/repos/symfony/polyfill-intl-normalizer/zipball/3833d7255cc303546435cb650316bff708a1c75c",
+      "reference": "3833d7255cc303546435cb650316bff708a1c75c",
+      "sha256": "b23bbde26285237ee98cd84bb9c799874c6a888a9974740165ae9fc4ad113863"
+    },
+    {
+      "name": "symfony/polyfill-mbstring",
+      "version": "v1.33.0",
+      "url": "https://api.github.com/repos/symfony/polyfill-mbstring/zipball/6d857f4d76bd4b343eac26d6b539585d2bc56493",
+      "reference": "6d857f4d76bd4b343eac26d6b539585d2bc56493",
+      "sha256": "081c7103a35ff2ac92045f136914563aae81e4f7ce87bf69dcc73dc09a242a3d"
+    },
+    {
+      "name": "symfony/polyfill-php56",
+      "version": "v1.20.0",
+      "url": "https://api.github.com/repos/symfony/polyfill-php56/zipball/54b8cd7e6c1643d78d011f3be89f3ef1f9f4c675",
+      "reference": "54b8cd7e6c1643d78d011f3be89f3ef1f9f4c675",
+      "sha256": "86552aec66c93980974ba63ba4b4cfc88cad74ae6aaf37744081561bdd187c3d"
+    },
+    {
+      "name": "symfony/polyfill-php80",
+      "version": "v1.33.0",
+      "url": "https://api.github.com/repos/symfony/polyfill-php80/zipball/0cc9dd0f17f61d8131e7df6b84bd344899fe2608",
+      "reference": "0cc9dd0f17f61d8131e7df6b84bd344899fe2608",
+      "sha256": "935765283ec738aec6d0432f4d8fc9805e1d2b6d09aa92ce512c7d0cc155912e"
+    },
+    {
+      "name": "symfony/polyfill-php83",
+      "version": "v1.33.0",
+      "url": "https://api.github.com/repos/symfony/polyfill-php83/zipball/17f6f9a6b1735c0f163024d959f700cfbc5155e5",
+      "reference": "17f6f9a6b1735c0f163024d959f700cfbc5155e5",
+      "sha256": "e5620f1dfd2d19a445cf6d5f2d4dd530dca68e9b3c385f16da36b942007906c7"
+    },
+    {
+      "name": "symfony/polyfill-php84",
+      "version": "v1.33.0",
+      "url": "https://api.github.com/repos/symfony/polyfill-php84/zipball/d8ced4d875142b6a7426000426b8abc631d6b191",
+      "reference": "d8ced4d875142b6a7426000426b8abc631d6b191",
+      "sha256": "bdb9c0cec8ebbeb18196c6cee74c73f72d4b2865ddc19017d166f444f3a107d0"
+    },
+    {
+      "name": "symfony/polyfill-php85",
+      "version": "v1.33.0",
+      "url": "https://api.github.com/repos/symfony/polyfill-php85/zipball/d4e5fcd4ab3d998ab16c0db48e6cbb9a01993f91",
+      "reference": "d4e5fcd4ab3d998ab16c0db48e6cbb9a01993f91",
+      "sha256": "48a76a3ef4e30c1930777a362a8683eeae3130fae4ea138c84d711d283384ca4"
+    },
+    {
+      "name": "symfony/polyfill-uuid",
+      "version": "v1.33.0",
+      "url": "https://api.github.com/repos/symfony/polyfill-uuid/zipball/21533be36c24be3f4b1669c4725c7d1d2bab4ae2",
+      "reference": "21533be36c24be3f4b1669c4725c7d1d2bab4ae2",
+      "sha256": "09d42093d1adb870f2cf609802f6302ba6818ca722d58f0d53f0584ce9011d6d"
+    },
+    {
+      "name": "symfony/postmark-mailer",
+      "version": "v7.4.0",
+      "url": "https://api.github.com/repos/symfony/postmark-mailer/zipball/67eab9e06ff2adf74152df2ac95a07cef48eb7c5",
+      "reference": "67eab9e06ff2adf74152df2ac95a07cef48eb7c5",
+      "sha256": "da39bb0059d588918f514ffc9b4f7d470c84c124cb8cf6f923f210a014307231"
+    },
+    {
+      "name": "symfony/process",
+      "version": "v7.3.4",
+      "url": "https://api.github.com/repos/symfony/process/zipball/f24f8f316367b30810810d4eb30c543d7003ff3b",
+      "reference": "f24f8f316367b30810810d4eb30c543d7003ff3b",
+      "sha256": "7dc818834dc7c8742d56953755d8d1287efeb88dcb5a79e17921f5f57a162cd9"
+    },
+    {
+      "name": "symfony/psr-http-message-bridge",
+      "version": "v7.3.0",
+      "url": "https://api.github.com/repos/symfony/psr-http-message-bridge/zipball/03f2f72319e7acaf2a9f6fcbe30ef17eec51594f",
+      "reference": "03f2f72319e7acaf2a9f6fcbe30ef17eec51594f",
+      "sha256": "6ca9543f658474b2a9944ce53c184690ceeb41b8447d44c1f126005c0c554535"
+    },
+    {
+      "name": "symfony/routing",
+      "version": "v7.3.4",
+      "url": "https://api.github.com/repos/symfony/routing/zipball/8dc648e159e9bac02b703b9fbd937f19ba13d07c",
+      "reference": "8dc648e159e9bac02b703b9fbd937f19ba13d07c",
+      "sha256": "31dfd15e2b7d0d871c579d29516c779ecc6f526715114e67eb33a23549610126"
+    },
+    {
+      "name": "symfony/service-contracts",
+      "version": "v3.6.0",
+      "url": "https://api.github.com/repos/symfony/service-contracts/zipball/f021b05a130d35510bd6b25fe9053c2a8a15d5d4",
+      "reference": "f021b05a130d35510bd6b25fe9053c2a8a15d5d4",
+      "sha256": "67ac7a60f6ed6536dc2b24ea2ea2b083dd2e669d2ba5faf32cf695d3c5dbe63d"
+    },
+    {
+      "name": "symfony/string",
+      "version": "v7.3.4",
+      "url": "https://api.github.com/repos/symfony/string/zipball/f96476035142921000338bad71e5247fbc138872",
+      "reference": "f96476035142921000338bad71e5247fbc138872",
+      "sha256": "d9da39d28564907dfbec7f53cfef163cb5c532429745f92136b513e24b46b179"
+    },
+    {
+      "name": "symfony/translation",
+      "version": "v7.3.4",
+      "url": "https://api.github.com/repos/symfony/translation/zipball/ec25870502d0c7072d086e8ffba1420c85965174",
+      "reference": "ec25870502d0c7072d086e8ffba1420c85965174",
+      "sha256": "da96f9959b5bbfa382e02f755b3ba1185a32bebd4dff783fe49f7424729de8f0"
+    },
+    {
+      "name": "symfony/translation-contracts",
+      "version": "v3.6.0",
+      "url": "https://api.github.com/repos/symfony/translation-contracts/zipball/df210c7a2573f1913b2d17cc95f90f53a73d8f7d",
+      "reference": "df210c7a2573f1913b2d17cc95f90f53a73d8f7d",
+      "sha256": "c3977d4e0072c9a50b75523612261543ce67c8f613a467fe614e47af692fc126"
+    },
+    {
+      "name": "symfony/uid",
+      "version": "v7.3.1",
+      "url": "https://api.github.com/repos/symfony/uid/zipball/a69f69f3159b852651a6bf45a9fdd149520525bb",
+      "reference": "a69f69f3159b852651a6bf45a9fdd149520525bb",
+      "sha256": "585af27797bbd751f5be091ab0b636a81682a34c4d55a9808c07914f9f95656c"
+    },
+    {
+      "name": "symfony/var-dumper",
+      "version": "v7.3.4",
+      "url": "https://api.github.com/repos/symfony/var-dumper/zipball/b8abe7daf2730d07dfd4b2ee1cecbf0dd2fbdabb",
+      "reference": "b8abe7daf2730d07dfd4b2ee1cecbf0dd2fbdabb",
+      "sha256": "8e3abe0080583abb3d1c96b7e558d38af5bc4aecc318afb8fa11111c6c798284"
+    },
+    {
+      "name": "tijsverkoyen/css-to-inline-styles",
+      "version": "v2.3.0",
+      "url": "https://api.github.com/repos/tijsverkoyen/CssToInlineStyles/zipball/0d72ac1c00084279c1816675284073c5a337c20d",
+      "reference": "0d72ac1c00084279c1816675284073c5a337c20d",
+      "sha256": "fd5718177a3bb6c054390a80aa2f4bcc380377ac3fe39c8ddced97d9fbed3e54"
+    },
+    {
+      "name": "vlucas/phpdotenv",
+      "version": "v5.6.2",
+      "url": "https://api.github.com/repos/vlucas/phpdotenv/zipball/24ac4c74f91ee2c193fa1aaa5c249cb0822809af",
+      "reference": "24ac4c74f91ee2c193fa1aaa5c249cb0822809af",
+      "sha256": "530827bce20665f2d58922b24df4ed91df61ef5d8355c231abf544079424a3f5"
+    },
+    {
+      "name": "voku/portable-ascii",
+      "version": "2.0.3",
+      "url": "https://api.github.com/repos/voku/portable-ascii/zipball/b1d923f88091c6bf09699efcd7c8a1b1bfd7351d",
+      "reference": "b1d923f88091c6bf09699efcd7c8a1b1bfd7351d",
+      "sha256": "4ca943d22ad67fa94a34b9d598ca156b92a693d0c7214f2550fa548287a6bcf4"
+    },
+    {
+      "name": "webmozart/assert",
+      "version": "1.11.0",
+      "url": "https://api.github.com/repos/webmozarts/assert/zipball/11cb2199493b2f8a3b53e7f19068fc6aac760991",
+      "reference": "11cb2199493b2f8a3b53e7f19068fc6aac760991",
+      "sha256": "3dea7b980d4ba44fca74fbd1d068be28f1a771e1a1cb308e89b773eb83fa11a3"
+    }
+  ]
+}

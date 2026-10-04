@@ -1,0 +1,139 @@
+{
+  "schema_version": 3,
+  "captured_at": "2026-08-24",
+  "sources": [
+    {
+      "id": "erpnext",
+      "domain": "restaurant",
+      "repository": "https://github.com/tuyutata/erpnext",
+      "upstream_repository": "https://github.com/frappe/erpnext",
+      "commit": "2c0ff8a59d096f306ec0508c6cfb24a40b76e95b",
+      "revision": "version-16",
+      "license": "GPL-3.0-only",
+      "license_source": "upstream/erpnext/license.txt",
+      "license_copy": "scripts/licenses/erpnext-GPL-3.0.txt",
+      "module_manifest": "modules/ury.module.toml",
+      "required_files": [
+        "license.txt",
+        "pyproject.toml"
+      ]
+    },
+    {
+      "id": "frappe",
+      "domain": "framework",
+      "repository": "https://github.com/tuyutata/frappe",
+      "revision": "codex/tuyubooking-postgresql-schema",
+      "commit": "efe1520babc9ed31be11a38fbad34c62188deb8d",
+      "license": "MIT",
+      "license_source": "upstream/frappe/LICENSE",
+      "license_copy": "licenses/frappe-LICENSE",
+      "required_files": [
+        "README.md",
+        "pyproject.toml",
+        "package.json",
+        "LICENSE"
+      ],
+      "upstream_repository": "https://github.com/frappe/frappe",
+      "module_manifest": "modules/frappe.framework.toml"
+    },
+    {
+      "id": "hi_events",
+      "domain": "ticket",
+      "repository": "https://github.com/tuyutata/Hi.Events",
+      "revision": "048243e2a99a65c8e77fc6f3cb44de158169855e",
+      "commit": "048243e2a99a65c8e77fc6f3cb44de158169855e",
+      "license": "AGPL-3.0-with-additional-attribution",
+      "license_source": "upstream/hi_events/LICENCE",
+      "license_copy": "licenses/hi_events/LICENSE",
+      "required_files": [
+        "README.md",
+        "LICENCE",
+        "backend/composer.json",
+        "frontend/package.json"
+      ],
+      "upstream_repository": "https://github.com/HiEventsDev/hi.events",
+      "module_manifest": "modules/hi_events.module.toml"
+    },
+    {
+      "id": "hrms",
+      "domain": "restaurant",
+      "repository": "https://github.com/tuyutata/hrms",
+      "upstream_repository": "https://github.com/frappe/hrms",
+      "commit": "6fd318b404c0fddc2519d5cdc603c546fe081342",
+      "revision": "version-16",
+      "license": "GPL-3.0-only",
+      "license_source": "upstream/hrms/license.txt",
+      "license_copy": "scripts/licenses/hrms-GPL-3.0.txt",
+      "module_manifest": "modules/ury.module.toml",
+      "required_files": [
+        "license.txt",
+        "pyproject.toml",
+        "frappe-ui/package.json",
+        "frappe-ui/license.md"
+      ],
+      "nested_sources": [
+        {
+          "path": "frappe-ui",
+          "repository": "https://github.com/frappe/frappe-ui",
+          "commit": "863eaae9ada2edb287fc09fb21d05212bb5eebe9"
+        }
+      ]
+    },
+    {
+      "id": "kamra",
+      "domain": "hotel",
+      "repository": "https://github.com/tuyutata/kamra-pms",
+      "revision": "codex/tuyubooking-postgresql-schema",
+      "commit": "3d3c1eb96b1331769c1c110b15476801ecb2adce",
+      "license": "AGPL-3.0",
+      "license_source": "upstream/kamra/license.txt",
+      "license_copy": "licenses/kamra/LICENSE",
+      "required_files": [
+        "README.md",
+        "pyproject.toml",
+        "package.json",
+        "license.txt"
+      ],
+      "upstream_repository": "https://github.com/Kamra-PMS/kamra-pms",
+      "module_manifest": "modules/kamra.module.toml"
+    },
+    {
+      "id": "ury",
+      "domain": "restaurant",
+      "repository": "https://github.com/tuyutata/ury",
+      "revision": "4d2c559d3219cc61687cae6586af8560993ea70c",
+      "commit": "4d2c559d3219cc61687cae6586af8560993ea70c",
+      "license": "AGPL-3.0",
+      "license_source": "upstream/ury/LICENSE",
+      "license_copy": "licenses/ury/LICENSE",
+      "required_files": [
+        "README.md",
+        "INSTALLATION.md",
+        "pyproject.toml",
+        "package.json",
+        "LICENSE"
+      ],
+      "upstream_repository": "https://github.com/ury-erp/ury",
+      "module_manifest": "modules/ury.module.toml"
+    },
+    {
+      "id": "voyant",
+      "domain": "tour",
+      "repository": "https://github.com/tuyutata/voyant",
+      "revision": "ea7f1b1f858650ebcf3e66ae215d82d1ff09424f",
+      "commit": "ea7f1b1f858650ebcf3e66ae215d82d1ff09424f",
+      "license": "Apache-2.0",
+      "license_source": "upstream/voyant/LICENSE",
+      "license_copy": "licenses/voyant/LICENSE",
+      "required_files": [
+        "README.md",
+        "package.json",
+        "pnpm-lock.yaml",
+        "LICENSE"
+      ],
+      "upstream_repository": "https://github.com/voyant-travel/voyant",
+      "module_manifest": "modules/voyant.module.toml"
+    }
+  ],
+  "dependency_mode": "git_subtree"
+}

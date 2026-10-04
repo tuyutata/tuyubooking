@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "component": "postgresql",
+  "version": "17.11",
+  "distribution_revision": "1",
+  "platform": "windows-x86_64",
+  "publisher": "EnterpriseDB",
+  "source_url": "https://get.enterprisedb.com/postgresql/postgresql-17.11-1-windows-x64-binaries.zip",
+  "source_sha256": "6eabdf00d2893713b75db4336a23c3fdf505f056e217ec6e2e95d901750cfea3",
+  "source_size": 340719294,
+  "source_root": "pgsql",
+  "included": [
+    "bin",
+    "lib",
+    "share",
+    "server_license.txt",
+    "commandlinetools_3rd_party_licenses.txt"
+  ],
+  "excluded_capabilities": [
+    "pgAdmin 4",
+    "StackBuilder",
+    "PL/Perl",
+    "PL/Python",
+    "PL/Tcl"
+  ]
+}

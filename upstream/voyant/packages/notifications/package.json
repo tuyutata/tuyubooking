@@ -1,0 +1,115 @@
+{
+  "name": "@voyantjs/notifications",
+  "version": "0.104.1",
+  "license": "Apache-2.0",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./schema": "./src/schema.ts",
+    "./types": "./src/types.ts",
+    "./validation": "./src/validation.ts",
+    "./routes": "./src/routes.ts",
+    "./service": "./src/service.ts",
+    "./tasks": "./src/tasks/index.ts",
+    "./providers/local": "./src/providers/local.ts",
+    "./providers/voyant-cloud-email": "./src/providers/voyant-cloud-email.ts",
+    "./providers/voyant-cloud-sms": "./src/providers/voyant-cloud-sms.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "lint": "biome check src/",
+    "test": "vitest run",
+    "build": "tsc -p tsconfig.json",
+    "clean": "rm -rf dist tsconfig.tsbuildinfo",
+    "prepack": "pnpm run build"
+  },
+  "dependencies": {
+    "@voyantjs/bookings": "workspace:*",
+    "@voyantjs/cloud-sdk": "^0.8.0",
+    "@voyantjs/core": "workspace:*",
+    "@voyantjs/db": "workspace:*",
+    "@voyantjs/finance": "workspace:*",
+    "@voyantjs/hono": "workspace:*",
+    "@voyantjs/legal": "workspace:*",
+    "drizzle-orm": "^0.45.2",
+    "hono": "^4.12.10",
+    "liquidjs": "^10.24.0",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@voyantjs/voyant-typescript-config": "workspace:*",
+    "typescript": "^6.0.2",
+    "vitest": "^4.1.2"
+  },
+  "files": [
+    "dist"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "import": "./dist/index.js",
+        "default": "./dist/index.js"
+      },
+      "./schema": {
+        "types": "./dist/schema.d.ts",
+        "import": "./dist/schema.js",
+        "default": "./dist/schema.js"
+      },
+      "./types": {
+        "types": "./dist/types.d.ts",
+        "import": "./dist/types.js",
+        "default": "./dist/types.js"
+      },
+      "./validation": {
+        "types": "./dist/validation.d.ts",
+        "import": "./dist/validation.js",
+        "default": "./dist/validation.js"
+      },
+      "./routes": {
+        "types": "./dist/routes.d.ts",
+        "import": "./dist/routes.js",
+        "default": "./dist/routes.js"
+      },
+      "./service": {
+        "types": "./dist/service.d.ts",
+        "import": "./dist/service.js",
+        "default": "./dist/service.js"
+      },
+      "./tasks": {
+        "types": "./dist/tasks/index.d.ts",
+        "import": "./dist/tasks/index.js",
+        "default": "./dist/tasks/index.js"
+      },
+      "./providers/local": {
+        "types": "./dist/providers/local.d.ts",
+        "import": "./dist/providers/local.js",
+        "default": "./dist/providers/local.js"
+      },
+      "./providers/voyant-cloud-email": {
+        "types": "./dist/providers/voyant-cloud-email.d.ts",
+        "import": "./dist/providers/voyant-cloud-email.js",
+        "default": "./dist/providers/voyant-cloud-email.js"
+      },
+      "./providers/voyant-cloud-sms": {
+        "types": "./dist/providers/voyant-cloud-sms.d.ts",
+        "import": "./dist/providers/voyant-cloud-sms.js",
+        "default": "./dist/providers/voyant-cloud-sms.js"
+      }
+    },
+    "main": "./dist/index.js",
+    "types": "./dist/index.d.ts"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/voyantjs/voyant.git",
+    "directory": "packages/notifications"
+  },
+  "voyant": {
+    "schema": "./schema",
+    "requiresSchemas": [
+      "@voyantjs/db"
+    ]
+  }
+}

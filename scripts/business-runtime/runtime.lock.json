@@ -1,0 +1,204 @@
+{
+  "schema_version": 2,
+  "component": "tuyubooking-business-runtime",
+  "python": "3.14",
+  "network_install_allowed": false,
+  "tools": {
+    "node": {
+      "version": "25.2.1",
+      "url": "https://nodejs.org/dist/v25.2.1/node-v25.2.1-darwin-arm64.tar.gz",
+      "sha256": "be87e21bd235a451fad02c89e5bf7cb17e206e4cd89dd5664f20d19e7dfde6f9",
+      "archive": "node-v25.2.1-darwin-arm64.tar.gz",
+      "root": "node-v25.2.1-darwin-arm64"
+    },
+    "yarn": {
+      "version": "1.22.22",
+      "url": "https://registry.npmjs.org/yarn/-/yarn-1.22.22.tgz",
+      "sha256": "c17d3797fb9a9115bf375e31bfd30058cac6bc9c3b8807a3d8cb2094794b51ca",
+      "archive": "yarn-1.22.22.tgz",
+      "root": "package"
+    },
+    "pnpm": {
+      "version": "10.18.0",
+      "url": "https://registry.npmjs.org/pnpm/-/pnpm-10.18.0.tgz",
+      "sha256": "3967a3efe2909df305fec4b833a304dfca17c380b6bb77672f4dac4f2cdd3788",
+      "archive": "pnpm-10.18.0.tgz",
+      "root": "package"
+    },
+    "composer": {
+      "version": "2.10.3",
+      "url": "https://getcomposer.org/download/2.10.3/composer.phar",
+      "sha256": "7a2d379d5b8ffdaa028580ef26494c36d2feef4b178d3dd1473a4dbc5e17c8d6",
+      "archive": "composer-2.10.3.phar"
+    }
+  },
+  "database": "postgresql",
+  "database_name": "tuyubooking",
+  "redis_service": false,
+  "frappe_commit": "efe1520babc9ed31be11a38fbad34c62188deb8d",
+  "erpnext_commit": "2c0ff8a59d096f306ec0508c6cfb24a40b76e95b",
+  "hrms_commit": "6fd318b404c0fddc2519d5cdc603c546fe081342",
+  "kamra_commit": "3d3c1eb96b1331769c1c110b15476801ecb2adce",
+  "ury_commit": "4d2c559d3219cc61687cae6586af8560993ea70c",
+  "apps": [
+    "frappe",
+    "erpnext",
+    "hrms",
+    "kamra",
+    "ury"
+  ],
+  "frappe_assets": {
+    "output": "bench/sites/assets",
+    "build_apps": [
+      "frappe",
+      "erpnext",
+      "hrms"
+    ],
+    "public_apps": [
+      "kamra",
+      "ury"
+    ],
+    "air_datepicker_commit": "ed37b94d95c68d8544357e330be0c89d044a3eea",
+    "runtime_node_modules": false,
+    "shared_immutable": true,
+    "https_static_application": "tuyu_frappe_wsgi:application"
+  },
+  "install_order": [
+    "erpnext",
+    "hrms",
+    "kamra",
+    "ury"
+  ],
+  "required_python_modules": [
+    "unidecode",
+    "barcodenumber",
+    "rapidfuzz",
+    "holidays",
+    "googlemaps",
+    "plaid",
+    "pyyoutube",
+    "png",
+    "mt940",
+    "pdfplumber"
+  ],
+  "node": {
+    "tool": "node",
+    "distribution": "embedded-offline"
+  },
+  "voyant": {
+    "source": "tuyutata/voyant",
+    "commit": "ea7f1b1f858650ebcf3e66ae215d82d1ff09424f",
+    "application": "templates/operator",
+    "build": "tuyu-node-nitro",
+    "schema": "module_voyant"
+  },
+  "https_ports": {
+    "frappe": 58443,
+    "voyant": 58444,
+    "voyant_loopback": 59445
+  },
+  "employee_gateway": {
+    "https_port": 58460,
+    "default_bind": "127.0.0.1",
+    "administrator_enabled_bind": "0.0.0.0",
+    "discovery_service": "_tuyubooking._tcp.local",
+    "discovery_protocol": "TUYU/1",
+    "tls_minimum": "1.2",
+    "routes": {
+      "/hotel": "hotel",
+      "/restaurant": "restaurant",
+      "/tour": "tour",
+      "/ticket": "ticket"
+    }
+  },
+  "php": {
+    "major": 8,
+    "minor": 4,
+    "mode": "embedded-offline"
+  },
+  "nginx": {
+    "mode": "embedded-offline-fastcgi-gateway"
+  },
+  "hi_events": {
+    "source": "tuyutata/Hi.Events",
+    "commit": "048243e2a99a65c8e77fc6f3cb44de158169855e",
+    "backend": "Laravel 12",
+    "frontend": "React SSR",
+    "database": "tuyubooking",
+    "schema": "module_hi_events"
+  },
+  "ports": {
+    "hi_events_https": 58446,
+    "hi_events_gateway": 59448,
+    "hi_events_fastcgi": 59447,
+    "hi_events_frontend": 59449
+  },
+  "runtime_contract": {
+    "database": "tuyubooking",
+    "frappe_distribution": "shared_immutable_payload",
+    "frappe_sites": {
+      "hotel": {
+        "site": "hotel.localhost",
+        "schema": "module_kamra",
+        "role": "tuyu_kamra_app",
+        "apps": [
+          "frappe",
+          "kamra"
+        ],
+        "install_order": [
+          "kamra"
+        ],
+        "https_port": 58443
+      },
+      "restaurant": {
+        "site": "restaurant.localhost",
+        "schema": "module_ury",
+        "role": "tuyu_ury_app",
+        "apps": [
+          "frappe",
+          "erpnext",
+          "hrms",
+          "ury"
+        ],
+        "install_order": [
+          "erpnext",
+          "hrms",
+          "ury"
+        ],
+        "https_port": 58450
+      }
+    },
+    "standalone_modules": {
+      "tour": {
+        "schema": "module_voyant",
+        "role": "tuyu_voyant_app",
+        "https_port": 58444
+      },
+      "ticket": {
+        "schema": "module_hi_events",
+        "role": "tuyu_hi_events_app",
+        "https_port": 58446
+      }
+    }
+  },
+  "macos_runtime": {
+    "platform": "macos",
+    "python": "3.14.3",
+    "php": "8.4.24",
+    "nginx": "1.30.4",
+    "openssl": "3.6.3",
+    "database": "PostgreSQL 17.11",
+    "source_build_verified": false,
+    "materialization_verified": false,
+    "runtime_launch_verified": false,
+    "e2e_verified": false,
+    "network_install_allowed": false,
+    "source_checksums": {
+      "python": "d7fe130d0501ae047ca318fa92aa642603ab6f217901015a1df6ce650d5470cd",
+      "php": "e127be09a8506f4327c5cfa78a614b00d210714484ec215ce0011b4a03c00731",
+      "nginx": "4261dc90e9e47c1c4041276e9aaa3d48ebe2e664f728e14fa95ae6c67d57a08b",
+      "libiconv": "3b08f5f4f9b4eb82f151a7040bfd6fe6c6fb922efe4b1659c66ea933276965e8",
+      "libsodium": "ebb65ef6ca439333c2bb41a0c1990587288da07f6c7fd07cb3a18cc18d30ce19"
+    }
+  }
+}

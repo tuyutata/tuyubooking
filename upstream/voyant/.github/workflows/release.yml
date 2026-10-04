@@ -1,0 +1,206 @@
+name: Release
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      release_assets:
+        description: "Create or refresh the GitHub release and starter assets for the current checked-in version"
+        required: false
+        default: false
+        type: boolean
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release-assets:
+    if: github.event_name == 'workflow_dispatch' && inputs.release_assets
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write
+    env:
+      HUSKY: 0
+      # Turbo remote cache. Configure in GitHub Settings → Secrets and variables
+      # → Actions; without them turbo silently falls back to no remote cache.
+      TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+      TURBO_TEAM: ${{ vars.TURBO_TEAM }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      # `--concurrency=4` caps peak parallelism so a cold-cache cascade rebuild
+      # can't OOM the runner (kernel SIGKILLs the heaviest tsc — exit 137).
+      - name: Build publishable workspaces
+        run: pnpm turbo build --filter='./packages/**' --filter='./apps/workflows-node-step-container' --continue --concurrency=4
+
+      - name: Build registry artifacts
+        run: pnpm registry:build
+
+      # Rescue hatch for when the auto-release loop falls behind npm — devs
+      # land changesets faster than the release PR can merge, so the `release`
+      # job stays in "create release PR" mode and never publishes the
+      # version bumps that already shipped to main's package.json.
+      # `changeset publish` is a no-op for packages whose version is already
+      # on npm, so this is safe to re-run.
+      - name: Verify release train
+        run: pnpm verify:release-train
+
+      - name: Verify package exports
+        run: pnpm verify:package-exports
+
+      - name: Verify publish tarballs
+        env:
+          VOYANT_PACK_REUSE_DIST: "1"
+        run: pnpm verify:publish-tarballs
+
+      - name: Publish pending versions to npm
+        run: pnpm release
+
+      - name: Determine release version
+        id: version
+        run: |
+          VERSION=$(node scripts/print-release-version.cjs)
+          echo "value=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Package starter archives
+        run: pnpm package:starters -- --version ${{ steps.version.outputs.value }} --out-dir .release/starters
+
+      - name: Ensure repo tag exists
+        run: |
+          if git rev-parse -q --verify refs/tags/v${{ steps.version.outputs.value }} >/dev/null; then
+            echo "Tag v${{ steps.version.outputs.value }} already exists"
+          else
+            git tag v${{ steps.version.outputs.value }}
+            git push origin v${{ steps.version.outputs.value }}
+          fi
+
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.version.outputs.value }}
+          name: v${{ steps.version.outputs.value }}
+          generate_release_notes: true
+          files: .release/starters/*.tar.gz
+
+  release:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      id-token: write
+    env:
+      HUSKY: 0
+      # Turbo remote cache. Configure in GitHub Settings → Secrets and variables
+      # → Actions; without them turbo silently falls back to no remote cache.
+      TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+      TURBO_TEAM: ${{ vars.TURBO_TEAM }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      # `--concurrency=4` caps peak parallelism so a cold-cache cascade rebuild
+      # can't OOM the runner (kernel SIGKILLs the heaviest tsc — exit 137).
+      - name: Build publishable workspaces
+        run: pnpm turbo build --filter='./packages/**' --filter='./apps/workflows-node-step-container' --continue --concurrency=4
+
+      - name: Build registry artifacts
+        run: pnpm registry:build
+
+      - name: Verify release train
+        run: pnpm verify:release-train
+
+      - name: Verify package exports
+        run: pnpm verify:package-exports
+
+      - name: Verify publish tarballs
+        # `Build packages` above already produced fresh dist via turbo; skip
+        # the per-package clean+rebuild inside the verifier.
+        env:
+          VOYANT_PACK_REUSE_DIST: "1"
+        run: pnpm verify:publish-tarballs
+
+      - name: Detect pending npm publication
+        id: pending_publish
+        run: node scripts/detect-pending-publication.cjs
+
+      - name: Create Release PR or Publish
+        id: changesets
+        if: steps.pending_publish.outputs.has_releasable_changesets == 'true'
+        uses: changesets/action@v1
+        with:
+          createGithubReleases: false
+          version: pnpm version-packages
+          publish: pnpm release
+          commit: "chore: release packages"
+          title: "chore: release packages"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publish pending release train
+        id: publish_pending
+        if: steps.pending_publish.outputs.has_releasable_changesets != 'true' && steps.pending_publish.outputs.pending == 'true'
+        run: |
+          pnpm release
+          echo "published=true" >> "$GITHUB_OUTPUT"
+
+      - name: No release action needed
+        if: steps.pending_publish.outputs.has_releasable_changesets != 'true' && steps.pending_publish.outputs.pending != 'true'
+        run: echo "No releasable changesets and npm is already up to date."
+
+      - name: Determine release version
+        if: steps.changesets.outputs.published == 'true' || steps.publish_pending.outputs.published == 'true'
+        id: version
+        run: |
+          VERSION=$(node scripts/print-release-version.cjs)
+          echo "value=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Package starter archives
+        if: steps.changesets.outputs.published == 'true' || steps.publish_pending.outputs.published == 'true'
+        run: pnpm package:starters -- --version ${{ steps.version.outputs.value }} --out-dir .release/starters
+
+      - name: Ensure repo tag exists
+        if: steps.changesets.outputs.published == 'true' || steps.publish_pending.outputs.published == 'true'
+        run: |
+          if git rev-parse -q --verify refs/tags/v${{ steps.version.outputs.value }} >/dev/null; then
+            echo "Tag v${{ steps.version.outputs.value }} already exists"
+          else
+            git tag v${{ steps.version.outputs.value }}
+            git push origin v${{ steps.version.outputs.value }}
+          fi
+
+      - name: Create GitHub release
+        if: steps.changesets.outputs.published == 'true' || steps.publish_pending.outputs.published == 'true'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.version.outputs.value }}
+          name: v${{ steps.version.outputs.value }}
+          generate_release_notes: true
+          files: .release/starters/*.tar.gz

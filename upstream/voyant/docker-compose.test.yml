@@ -1,0 +1,12 @@
+services:
+  test-db:
+    container_name: voyant-test-db
+    image: postgres:16-alpine
+    ports:
+      - "${TEST_DATABASE_PORT:-5436}:5432"
+    environment:
+      POSTGRES_USER: test
+      POSTGRES_PASSWORD: test
+      POSTGRES_DB: voyant_test
+    tmpfs:
+      - /var/lib/postgresql/data

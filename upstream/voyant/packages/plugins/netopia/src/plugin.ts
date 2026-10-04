@@ -1,0 +1,245 @@
+import type { Extension, ModuleContainer } from "@voyantjs/core"
+import { FINANCE_ROUTE_RUNTIME_CONTAINER_KEY, type FinanceRouteRuntime } from "@voyantjs/finance"
+import { defineHonoBundle, type HonoBundle, parseJsonBody } from "@voyantjs/hono"
+import type { HonoExtension } from "@voyantjs/hono/module"
+import type { PostgresJsDatabase } from "drizzle-orm/postgres-js"
+import { Hono } from "hono"
+
+import { resolveNetopiaRuntimeOptions } from "./client.js"
+import { netopiaService } from "./service.js"
+import type { NetopiaRuntimeOptions, ResolvedNetopiaRuntimeOptions } from "./types.js"
+import {
+  netopiaCollectBookingGuaranteeSchema,
+  netopiaCollectBookingScheduleSchema,
+  netopiaCollectInvoiceSchema,
+  netopiaStartPaymentSessionSchema,
+  netopiaWebhookPayloadSchema,
+} from "./validation.js"
+
+type Env = {
+  Bindings: Record<string, unknown>
+  Variables: {
+    container: ModuleContainer
+    db: PostgresJsDatabase
+    userId?: string
+  }
+}
+
+export const NETOPIA_RUNTIME_CONTAINER_KEY = "providers.netopia.runtime"
+
+function getNetopiaRuntime(
+  bindings: Record<string, unknown>,
+  options: NetopiaRuntimeOptions,
+  resolveFromContainer?: <T>(key: string) => T,
+): ResolvedNetopiaRuntimeOptions {
+  if (resolveFromContainer) {
+    try {
+      return resolveFromContainer<ResolvedNetopiaRuntimeOptions>(NETOPIA_RUNTIME_CONTAINER_KEY)
+    } catch {
+      // Fall through to per-request resolution when bootstrap has not run.
+    }
+  }
+
+  return resolveNetopiaRuntimeOptions(bindings, options)
+}
+
+export function createNetopiaFinanceRoutes(options: NetopiaRuntimeOptions = {}) {
+  const handleNetopiaError = (message: string) => {
+    if (
+      message.includes("not found") ||
+      message.includes("Payment schedule not found") ||
+      message.includes("Booking guarantee not found") ||
+      message.includes("Invoice not found")
+    ) {
+      return { status: 404 as const, message }
+    }
+    if (message.includes("not startable") || message.includes("already assigned")) {
+      return { status: 409 as const, message }
+    }
+    if (
+      message.includes("Cannot create payment session") ||
+      message.includes("outstanding balance") ||
+      message.includes("No recipient available")
+    ) {
+      return { status: 409 as const, message }
+    }
+    if (message.includes("Missing Netopia config")) {
+      return { status: 500 as const, message }
+    }
+    return { status: 502 as const, message }
+  }
+  const resolveRuntime = (c: {
+    env: Record<string, unknown>
+    var: { container: ModuleContainer }
+  }) => getNetopiaRuntime(c.env, options, (key) => c.var.container.resolve(key))
+
+  return new Hono<Env>()
+    .post("/providers/netopia/payment-sessions/:sessionId/start", async (c) => {
+      try {
+        const data = await parseJsonBody(c, netopiaStartPaymentSessionSchema)
+        const runtime = resolveRuntime(c)
+        const result = await netopiaService.startPaymentSession(
+          c.get("db"),
+          c.req.param("sessionId"),
+          data,
+          runtime,
+          undefined,
+        )
+        return c.json({ data: result }, 201)
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Failed to start Netopia payment"
+        if (message.includes("Payment session not found")) {
+          return c.json({ error: message }, 404)
+        }
+        if (message.includes("not startable") || message.includes("already assigned")) {
+          return c.json({ error: message }, 409)
+        }
+        if (message.includes("Missing Netopia config")) {
+          return c.json({ error: message }, 500)
+        }
+        return c.json({ error: message }, 502)
+      }
+    })
+    .post(
+      "/providers/netopia/bookings/:bookingId/payment-schedules/:scheduleId/collect",
+      async (c) => {
+        try {
+          const data = await parseJsonBody(c, netopiaCollectBookingScheduleSchema)
+          const runtime = resolveRuntime(c)
+          const result = await netopiaService.collectBookingSchedule(
+            c.get("db"),
+            c.req.param("scheduleId"),
+            data,
+            runtime,
+            undefined,
+            undefined,
+            c.env,
+          )
+          return c.json({ data: result }, 201)
+        } catch (error) {
+          const message =
+            error instanceof Error ? error.message : "Failed to collect schedule payment"
+          const response = handleNetopiaError(message)
+          return c.json({ error: response.message }, response.status)
+        }
+      },
+    )
+    .post("/providers/netopia/bookings/:bookingId/guarantees/:guaranteeId/collect", async (c) => {
+      try {
+        const data = await parseJsonBody(c, netopiaCollectBookingGuaranteeSchema)
+        const runtime = resolveRuntime(c)
+        const result = await netopiaService.collectBookingGuarantee(
+          c.get("db"),
+          c.req.param("guaranteeId"),
+          data,
+          runtime,
+          undefined,
+          undefined,
+          c.env,
+        )
+        return c.json({ data: result }, 201)
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : "Failed to collect guarantee payment"
+        const response = handleNetopiaError(message)
+        return c.json({ error: response.message }, response.status)
+      }
+    })
+    .post("/providers/netopia/invoices/:invoiceId/collect", async (c) => {
+      try {
+        const data = await parseJsonBody(c, netopiaCollectInvoiceSchema)
+        const runtime = resolveRuntime(c)
+        const result = await netopiaService.collectInvoice(
+          c.get("db"),
+          c.req.param("invoiceId"),
+          data,
+          runtime,
+          undefined,
+          undefined,
+          c.env,
+        )
+        return c.json({ data: result }, 201)
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Failed to collect invoice payment"
+        const response = handleNetopiaError(message)
+        return c.json({ error: response.message }, response.status)
+      }
+    })
+    .post("/providers/netopia/callback", async (c) => {
+      const payload = await parseJsonBody(c, netopiaWebhookPayloadSchema)
+      const runtime = resolveRuntime(c)
+      const financeRuntime = (() => {
+        try {
+          return c.var.container?.resolve<FinanceRouteRuntime>(FINANCE_ROUTE_RUNTIME_CONTAINER_KEY)
+        } catch {
+          return undefined
+        }
+      })()
+      const result = await netopiaService.handleCallback(
+        c.get("db"),
+        payload,
+        runtime,
+        c.env,
+        financeRuntime ? { eventBus: financeRuntime.eventBus } : undefined,
+      )
+      return c.json({ data: result })
+    })
+    .get("/providers/netopia/config", async (c) => {
+      try {
+        const runtime = resolveRuntime(c)
+        return c.json({
+          data: {
+            apiUrl: runtime.apiUrl,
+            notifyUrl: runtime.notifyUrl,
+            redirectUrl: runtime.redirectUrl,
+            emailTemplate: runtime.emailTemplate,
+            language: runtime.language,
+            successStatuses: runtime.successStatuses,
+            processingStatuses: runtime.processingStatuses,
+          },
+        })
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Missing Netopia config"
+        return c.json({ error: message }, 500)
+      }
+    })
+}
+
+const netopiaFinanceExtensionDef: Extension = {
+  name: "netopia-finance",
+  module: "finance",
+}
+
+export function createNetopiaFinanceExtension(options: NetopiaRuntimeOptions = {}): HonoExtension {
+  return {
+    extension: netopiaFinanceExtensionDef,
+    routes: createNetopiaFinanceRoutes(options),
+  }
+}
+
+export function netopiaHonoBundle(options: NetopiaRuntimeOptions = {}): HonoBundle {
+  return defineHonoBundle({
+    name: "netopia",
+    version: "0.1.0",
+    bootstrap: ({ bindings, container }) => {
+      try {
+        container.register(
+          NETOPIA_RUNTIME_CONTAINER_KEY,
+          resolveNetopiaRuntimeOptions(bindings as Record<string, unknown> | undefined, options),
+        )
+      } catch (error) {
+        // Defer resolution to per-request handlers. Missing env should only fail
+        // Netopia-owned routes, not the whole app — `getNetopiaRuntime` will retry
+        // from bindings on each request and surface the same error on Netopia calls.
+        const message = error instanceof Error ? error.message : String(error)
+        console.warn(`[netopia] Runtime bootstrap skipped: ${message}`)
+      }
+    },
+    extensions: [createNetopiaFinanceExtension(options)],
+  })
+}
+
+/** @deprecated Prefer {@link netopiaHonoBundle}. */
+export const netopiaHonoPlugin = netopiaHonoBundle
+
+export const netopiaFinanceExtension = createNetopiaFinanceExtension()

@@ -1,0 +1,49 @@
+{
+ "add_total_row": 0,
+ "columns": [],
+ "creation": "2024-01-05 15:05:51.590275",
+ "disable_prepared_report": 0,
+ "disabled": 0,
+ "docstatus": 0,
+ "doctype": "Report",
+ "filters": [
+  {
+   "fieldname": "date",
+   "fieldtype": "Date",
+   "label": "Date",
+   "mandatory": 1,
+   "wildcard_filter": 0
+  },
+  {
+   "fieldname": "branch",
+   "fieldtype": "Link",
+   "label": "Branch",
+   "mandatory": 1,
+   "options": "Branch",
+   "wildcard_filter": 0
+  }
+ ],
+ "idx": 0,
+ "is_standard": "Yes",
+ "modified": "2024-01-05 15:14:38.448441",
+ "modified_by": "Administrator",
+ "module": "URY",
+ "name": "Time Wise Sales",
+ "owner": "Administrator",
+ "prepared_report": 0,
+ "query": "WITH intervals(label, sequence, start_hour) AS (\n    VALUES\n        ('12 AM - 02 AM', 1, 0), ('02 AM - 04 AM', 2, 2),\n        ('04 AM - 06 AM', 3, 4), ('06 AM - 08 AM', 4, 6),\n        ('08 AM - 10 AM', 5, 8), ('10 AM - 12 PM', 6, 10),\n        ('12 PM - 02 PM', 7, 12), ('02 PM - 04 PM', 8, 14),\n        ('04 PM - 06 PM', 9, 16), ('06 PM - 08 PM', 10, 18),\n        ('08 PM - 10 PM', 11, 20), ('10 PM - 12 AM', 12, 22)\n)\nSELECT\n    intervals.label AS \"Time Interval\",\n    COALESCE(SUM(invoice.\"grand_total\"), 0) AS \"Sales\",\n    COUNT(invoice.\"name\") AS \"Bills\"\nFROM intervals\nLEFT JOIN \"tabPOS Invoice\" invoice ON (\n    FLOOR(EXTRACT(HOUR FROM invoice.\"posting_time\") / 2) * 2 = intervals.start_hour\n    AND invoice.\"posting_date\" = %(date)s::date\n    AND invoice.\"branch\" = %(branch)s\n    AND invoice.\"docstatus\" = 1\n    AND invoice.\"status\" IN ('Consolidated', 'Paid')\n)\nGROUP BY intervals.label, intervals.sequence\nORDER BY intervals.sequence",
+ "ref_doctype": "POS Invoice",
+ "report_name": "Time Wise Sales",
+ "report_type": "Query Report",
+ "roles": [
+  {
+   "role": "Accounts Manager"
+  },
+  {
+   "role": "Accounts User"
+  },
+  {
+   "role": "URY Manager"
+  }
+ ]
+}

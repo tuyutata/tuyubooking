@@ -1,0 +1,15 @@
+[package]
+name = "tuyubooking-source-intake-test"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[dependencies]
+serde = { version = "=1.0.229", features = ["derive"] }
+serde_json = "=1.0.151"
+sha2 = "=0.10.9"
+walkdir = "2"
+
+# 测试入口直接保存在crate根，避免单文件src包装层。
+[lib]
+path = "lib.rs"

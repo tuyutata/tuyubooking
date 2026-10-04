@@ -1,0 +1,59 @@
+import { describe, expect, it } from "vitest"
+
+import { buildOwnedProductDraftShape } from "../../src/booking-engine/handler.js"
+
+describe("buildOwnedProductDraftShape", () => {
+  it("returns the canonical defaults when no options are passed", () => {
+    const shape = buildOwnedProductDraftShape()
+    expect(shape.showsConfigure).toBe(true)
+    expect(shape.showsTravelers).toBe(true)
+    expect(shape.showsPayment).toBe(true)
+    expect(shape.showsReview).toBe(true)
+    expect(shape.showsAddons).toBe(false)
+    expect(shape.travelerFields.length).toBeGreaterThan(0)
+    expect(shape.paymentIntents).toContain("hold")
+  })
+
+  it("widens travelerFields with caller-supplied requirements", () => {
+    const shape = buildOwnedProductDraftShape({
+      travelerFields: [
+        { key: "firstName", label: "First name", type: "text", required: true },
+        { key: "passportNumber", label: "Passport", type: "text", required: true },
+      ],
+    })
+    expect(shape.travelerFields.map((f) => f.key)).toEqual(["firstName", "passportNumber"])
+  })
+
+  it("flips showsAddons on when the catalog is non-empty", () => {
+    const shape = buildOwnedProductDraftShape({
+      addonCatalog: [
+        { id: "x_1", name: "Lunch", kind: "extras" },
+        { id: "x_2", name: "Insurance", kind: "insurance" },
+      ],
+    })
+    expect(shape.showsAddons).toBe(true)
+    expect(shape.addons?.catalog).toHaveLength(2)
+  })
+
+  it("exposes product options as configure variants", () => {
+    const shape = buildOwnedProductDraftShape({
+      productOptions: [
+        { id: "opt_std", name: "Standard double", code: "STD", isDefault: true },
+        { id: "opt_suite", name: "Junior suite upgrade", code: "STE" },
+      ],
+    })
+    expect(shape.configureSubSteps?.[0]).toEqual({
+      kind: "product-option",
+      options: [
+        { id: "opt_std", name: "Standard double", code: "STD", isDefault: true },
+        { id: "opt_suite", name: "Junior suite upgrade", code: "STE" },
+      ],
+    })
+  })
+
+  it("omits addons when the catalog is empty", () => {
+    const shape = buildOwnedProductDraftShape({ addonCatalog: [] })
+    expect(shape.showsAddons).toBe(false)
+    expect(shape.addons).toBeUndefined()
+  })
+})

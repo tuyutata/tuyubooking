@@ -1,0 +1,186 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+@import "@fontsource-variable/inter";
+
+/* Tailwind v4 auto-detection does not scan published package code under
+   node_modules. Voyant UI components emit Tailwind utility classes from
+   those packages, so include them explicitly. The in-package styles.css
+   files imported below also declare @source globs, but those globs are
+   relative to src/ trees that don't ship in published tarballs (upstream
+   issue #416), so the dist scans below are still required. */
+@source "../node_modules/@voyantjs/admin/dist/**/*.{js,mjs}";
+@source "../node_modules/@voyantjs/allocation-ui/dist/**/*.{js,mjs}";
+@source "../node_modules/@voyantjs/auth-ui/dist/**/*.{js,mjs}";
+@source "../node_modules/@voyantjs/ui/dist/**/*.{js,mjs}";
+@source "../node_modules/@voyantjs/availability-ui/dist/**/*.{js,mjs}";
+@source "../node_modules/@voyantjs/bookings-ui/dist/**/*.{js,mjs}";
+@source "../node_modules/@voyantjs/catalog-ui/dist/**/*.{js,mjs}";
+@source "../node_modules/@voyantjs/crm-ui/dist/**/*.{js,mjs}";
+@source "../node_modules/@voyantjs/extras-ui/dist/**/*.{js,mjs}";
+@source "../node_modules/@voyantjs/finance-ui/dist/**/*.{js,mjs}";
+@source "../node_modules/@voyantjs/flights-ui/dist/**/*.{js,mjs}";
+@source "../node_modules/@voyantjs/legal-ui/dist/**/*.{js,mjs}";
+@source "../node_modules/@voyantjs/products-ui/dist/**/*.{js,mjs}";
+@source "../node_modules/@voyantjs/resources-ui/dist/**/*.{js,mjs}";
+@source "../node_modules/@voyantjs/suppliers-ui/dist/**/*.{js,mjs}";
+/* In the monorepo, package `exports` point at `./src/*.ts(x)` so dev/SSR
+   runs from live source, not the package `dist/`. The dist scans above
+   only help published consumers and can lag behind src during local dev,
+   so also scan workspace src trees directly. */
+@source "../../../packages/admin/src/**/*.{ts,tsx}";
+@source "../../../packages/allocation-ui/src/**/*.{ts,tsx}";
+@source "../../../packages/auth-ui/src/**/*.{ts,tsx}";
+@source "../../../packages/ui/src/**/*.{ts,tsx}";
+@source "../../../packages/availability-ui/src/**/*.{ts,tsx}";
+@source "../../../packages/bookings-ui/src/**/*.{ts,tsx}";
+@source "../../../packages/catalog-ui/src/**/*.{ts,tsx}";
+@source "../../../packages/crm-ui/src/**/*.{ts,tsx}";
+@source "../../../packages/extras-ui/src/**/*.{ts,tsx}";
+@source "../../../packages/finance-ui/src/**/*.{ts,tsx}";
+@source "../../../packages/flights-ui/src/**/*.{ts,tsx}";
+@source "../../../packages/legal-ui/src/**/*.{ts,tsx}";
+@source "../../../packages/products-ui/src/**/*.{ts,tsx}";
+@source "../../../packages/resources-ui/src/**/*.{ts,tsx}";
+@source "../../../packages/suppliers-ui/src/**/*.{ts,tsx}";
+
+@import "@voyantjs/ui/styles.css";
+@import "@voyantjs/admin/styles.css";
+@import "@voyantjs/auth-ui/styles.css";
+@import "@voyantjs/availability-ui/styles.css";
+@import "@voyantjs/bookings-ui/styles.css";
+@import "@voyantjs/crm-ui/styles.css";
+@import "@voyantjs/finance-ui/styles.css";
+@import "@voyantjs/legal-ui/styles.css";
+@import "@voyantjs/products-ui/styles.css";
+@import "@voyantjs/resources-ui/styles.css";
+@import "@voyantjs/suppliers-ui/styles.css";
+@import "@voyantjs/catalog-ui/styles.css";
+@import "@voyantjs/extras-ui/styles.css";
+@import "@voyantjs/flights-ui/styles.css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+    --font-heading: var(--font-sans);
+    --font-sans: 'Inter Variable', sans-serif;
+    --color-sidebar-ring: var(--sidebar-ring);
+    --color-sidebar-border: var(--sidebar-border);
+    --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+    --color-sidebar-accent: var(--sidebar-accent);
+    --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+    --color-sidebar-primary: var(--sidebar-primary);
+    --color-sidebar-foreground: var(--sidebar-foreground);
+    --color-sidebar: var(--sidebar);
+    --color-chart-5: var(--chart-5);
+    --color-chart-4: var(--chart-4);
+    --color-chart-3: var(--chart-3);
+    --color-chart-2: var(--chart-2);
+    --color-chart-1: var(--chart-1);
+    --color-ring: var(--ring);
+    --color-input: var(--input);
+    --color-border: var(--border);
+    --color-destructive: var(--destructive);
+    --color-accent-foreground: var(--accent-foreground);
+    --color-accent: var(--accent);
+    --color-muted-foreground: var(--muted-foreground);
+    --color-muted: var(--muted);
+    --color-secondary-foreground: var(--secondary-foreground);
+    --color-secondary: var(--secondary);
+    --color-primary-foreground: var(--primary-foreground);
+    --color-primary: var(--primary);
+    --color-popover-foreground: var(--popover-foreground);
+    --color-popover: var(--popover);
+    --color-card-foreground: var(--card-foreground);
+    --color-card: var(--card);
+    --color-foreground: var(--foreground);
+    --color-background: var(--background);
+    --radius-sm: calc(var(--radius) * 0.6);
+    --radius-md: calc(var(--radius) * 0.8);
+    --radius-lg: var(--radius);
+    --radius-xl: calc(var(--radius) * 1.4);
+    --radius-2xl: calc(var(--radius) * 1.8);
+    --radius-3xl: calc(var(--radius) * 2.2);
+    --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+:root {
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.145 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.145 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.145 0 0);
+  --primary: oklch(0.205 0 0);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.97 0 0);
+  --secondary-foreground: oklch(0.205 0 0);
+  --muted: oklch(0.97 0 0);
+  --muted-foreground: oklch(0.556 0 0);
+  --accent: oklch(0.97 0 0);
+  --accent-foreground: oklch(0.205 0 0);
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: oklch(0.922 0 0);
+  --input: oklch(0.922 0 0);
+  --ring: oklch(0.708 0 0);
+  --chart-1: oklch(0.87 0 0);
+  --chart-2: oklch(0.556 0 0);
+  --chart-3: oklch(0.439 0 0);
+  --chart-4: oklch(0.371 0 0);
+  --chart-5: oklch(0.269 0 0);
+  --radius: 0.625rem;
+  --sidebar: oklch(0.985 0 0);
+  --sidebar-foreground: oklch(0.145 0 0);
+  --sidebar-primary: oklch(0.205 0 0);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.97 0 0);
+  --sidebar-accent-foreground: oklch(0.205 0 0);
+  --sidebar-border: oklch(0.922 0 0);
+  --sidebar-ring: oklch(0.708 0 0);
+}
+
+.dark {
+  --background: oklch(0.145 0 0);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.205 0 0);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.205 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.922 0 0);
+  --primary-foreground: oklch(0.205 0 0);
+  --secondary: oklch(0.269 0 0);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.269 0 0);
+  --muted-foreground: oklch(0.708 0 0);
+  --accent: oklch(0.269 0 0);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.556 0 0);
+  --chart-1: oklch(0.87 0 0);
+  --chart-2: oklch(0.556 0 0);
+  --chart-3: oklch(0.439 0 0);
+  --chart-4: oklch(0.371 0 0);
+  --chart-5: oklch(0.269 0 0);
+  --sidebar: oklch(0.205 0 0);
+  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar-primary: oklch(0.488 0.243 264.376);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.269 0 0);
+  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.556 0 0);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  html {
+    @apply font-sans;
+  }
+}

@@ -1,0 +1,5 @@
+{"schema_version":1,"domain":"ticket","scenarios":[
+{"id":"ticket-capacity","given":"票种只剩一张","when":"两个订单并发确认","then":"只有一个成功"},
+{"id":"ticket-duplicate-checkin","given":"票据已验票","when":"同一列表再次扫码","then":"拒绝并保存重复扫描记录"},
+{"id":"ticket-partial-refund","given":"订单包含多名参与者","when":"部分退款","then":"只撤销对应票据并更新状态"},
+{"id":"ticket-waitlist","given":"票种售罄","when":"登记候补","then":"不直接创建已确认订单"}]}

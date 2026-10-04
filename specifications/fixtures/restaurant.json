@@ -1,0 +1,5 @@
+{"schema_version":1,"domain":"restaurant","scenarios":[
+{"id":"restaurant-shift-required","given":"营业班次未开启","when":"选择桌台开始点餐","then":"拒绝操作"},
+{"id":"restaurant-kot-history","given":"订单项已发送后厨","when":"修改或取消","then":"保留旧版本并记录原因"},
+{"id":"restaurant-table-session","given":"桌台存在活动会话","when":"创建第二张账单","then":"保持同一桌台会话"},
+{"id":"restaurant-closed-order","given":"订单已结账","when":"请求修改金额","then":"要求冲正或退款"}]}

@@ -1,0 +1,13 @@
+[Desktop Entry]
+Type=Application
+Name=TuyuBooking
+Name[zh]=途遇商家端
+Name[zh_CN]=途遇商家端
+Name[zh_TW]=途遇商家端
+Comment=Hotel, restaurant, tour, and ticket operations
+Comment[zh_CN]=酒店、餐厅、旅行团活动和票务统一商家系统
+Exec=/opt/tuyubooking/tuyubooking
+Icon=com.tuyulove.tuyubooking.host
+Terminal=false
+Categories=Office;
+StartupWMClass=com.tuyulove.tuyubooking.host

@@ -1,0 +1,86 @@
+"use client"
+
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+
+import { fetchWithValidation } from "../client.js"
+import { useVoyantBookingsContext } from "../provider.js"
+import { bookingsQueryKeys } from "../query-keys.js"
+import { getBookingTravelerDocumentsQueryOptions } from "../query-options.js"
+import {
+  bookingSingleResponse,
+  bookingTravelerDocumentsResponse,
+  successEnvelope,
+} from "../schemas.js"
+
+export interface UseBookingTravelerDocumentsOptions {
+  enabled?: boolean
+}
+
+export function useBookingTravelerDocuments(
+  bookingId: string | null | undefined,
+  options: UseBookingTravelerDocumentsOptions = {},
+) {
+  const { baseUrl, fetcher } = useVoyantBookingsContext()
+  const { enabled = true } = options
+
+  return useQuery({
+    ...getBookingTravelerDocumentsQueryOptions({ baseUrl, fetcher }, bookingId),
+    enabled: enabled && Boolean(bookingId),
+  })
+}
+
+export interface CreateBookingTravelerDocumentInput {
+  type: string
+  fileName: string
+  fileUrl: string
+  travelerId?: string | null
+  expiresAt?: string | null
+  notes?: string | null
+}
+
+export function useBookingTravelerDocumentMutation(bookingId: string) {
+  const { baseUrl, fetcher } = useVoyantBookingsContext()
+  const queryClient = useQueryClient()
+
+  const invalidate = () => {
+    void queryClient.invalidateQueries({ queryKey: bookingsQueryKeys.documents(bookingId) })
+  }
+
+  const create = useMutation({
+    mutationFn: async (input: CreateBookingTravelerDocumentInput) => {
+      const { data } = await fetchWithValidation(
+        `/v1/bookings/${bookingId}/documents`,
+        bookingSingleResponse.extend({
+          data: bookingTravelerDocumentsResponse.shape.data.element,
+        }),
+        { baseUrl, fetcher },
+        {
+          method: "POST",
+          body: JSON.stringify({
+            type: input.type,
+            fileName: input.fileName,
+            fileUrl: input.fileUrl,
+            travelerId: input.travelerId,
+            expiresAt: input.expiresAt,
+            notes: input.notes,
+          }),
+        },
+      )
+      return data
+    },
+    onSuccess: invalidate,
+  })
+
+  const remove = useMutation({
+    mutationFn: async (documentId: string) =>
+      fetchWithValidation(
+        `/v1/bookings/${bookingId}/documents/${documentId}`,
+        successEnvelope,
+        { baseUrl, fetcher },
+        { method: "DELETE" },
+      ),
+    onSuccess: invalidate,
+  })
+
+  return { create, remove }
+}
