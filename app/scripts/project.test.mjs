@@ -2,10 +2,40 @@ import { execFileSync, spawnSync } from 'node:child_process';
 import assert from 'node:assert/strict';
 import { existsSync, lstatSync, mkdirSync, mkdtempSync, readFileSync, realpathSync,
   rmSync, symlinkSync, writeFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
+import { dirname, join, isAbsolute, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
 import test from 'node:test';
-import { createProject, platformEntries, verifyProject, resolveFirstPartyDependencies } from './project.mjs';
+import { createHash } from 'node:crypto';
+import { createProject, platformEntries, verifyProject, resolveFirstPartyDependencies, sourceGitEnvironment, nativeResourceStage } from './project.mjs';
+
+test('本轮SDK归档按SDK锁验真，拒绝旧原生输出并隔离Cargo资源',t=>{
+ const root=mkdtempSync(join(realpathSync(tmpdir()),'booking-native-resources-'));t.after(()=>rmSync(root,{recursive:true,force:true}));
+ const sdk=join(root,'sdk'),work=join(root,'work'),archive=Buffer.from('locked-native-archive');
+ const sha256=createHash('sha256').update(archive).digest('hex');
+ mkdirSync(join(sdk,'scripts'),{recursive:true});mkdirSync(join(work,'sdk-native/sources/archives'),{recursive:true});
+ writeFileSync(join(sdk,'scripts/dependencies.lock.json'),JSON.stringify({environment:{'zxing-cpp':{sha256,url:'https://example.invalid/zxing.tar.gz'}},native:{sources:{}}}));
+ const file=join(work,'sdk-native/sources/archives',sha256+'.tar.gz');writeFileSync(file,archive);
+ const cargo=join(work,'sdk-cargo'),own=join(work,'own-cargo');mkdirSync(cargo);mkdirSync(own);
+ const env={TUYUBOOKING_OFFLINE:'true',CITIZENSDK_CARGO_HOME:cargo,CARGO_HOME:own};
+ assert.equal(nativeResourceStage(sdk,work,'macOS',env).CARGO_HOME,cargo);
+ assert.throws(()=>nativeResourceStage(sdk,work,'macOS',{...env,CITIZENSDK_CARGO_HOME:own}),/隔离/);
+ writeFileSync(file,'changed');assert.throws(()=>nativeResourceStage(sdk,work,'macOS',env),/SHA/);writeFileSync(file,archive);
+ mkdirSync(join(work,'sdk-native/output'));assert.throws(()=>nativeResourceStage(sdk,work,'macOS',env),/旧编译/);
+});
+
+// Release赋值片段仍由真实Bash执行；准确路径和版本由调用方交付，不查找系统命令。
+function testBash(environment = process.env) {
+  const path = environment.PRODUCT_BASH_BIN;
+  assert.equal(typeof path, 'string', '测试必须交付PRODUCT_BASH_BIN');
+  assert.ok(isAbsolute(path) && resolve(path) === path && !/[\x00-\x1f]/u.test(path));
+  const info = lstatSync(path);
+  assert.ok(info.isFile() && !info.isSymbolicLink() && (info.mode & 0o111));
+  assert.equal(realpathSync(path), path);
+  const env = { HOME: environment.HOME, LANG: 'C', LC_ALL: 'C', PATH: dirname(path) };
+  assert.match(execFileSync(path, ['--version'], { env, encoding: 'utf8', timeout: 20000 })
+    .split(/\r?\n/u)[0], /^GNU bash, version 5\.3\.20\([1-9]\d*\)-release\b/u);
+  return { path, env };
+}
 
 // 使用源码外最小夹具验证路径与归属；不运行Flutter、不下载工具、不接触真实账户。
 function fixture(t) {
@@ -30,9 +60,9 @@ function fixture(t) {
     "export function createFlutterSourceView(source,output) {mkdirSync(join(output,'lib'),{recursive:true});" +
     "symlinkSync(join(source,'lib/citizen_sdk.dart'),join(output,'lib/citizen_sdk.dart'));" +
     "for(const name of ['pubspec.yaml','pubspec.lock'])copyFileSync(join(source,name),join(output,name));return output;}\n");
-  const git = args => execFileSync('git', ['-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid',
+  const git = args => execFileSync(sourceGitEnvironment().path, ['-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid',
     '-c', 'commit.gpgsign=false', '-c', 'core.hooksPath=/dev/null', '-C', provider, ...args],
-    { encoding: 'utf8', env: { ...process.env, GIT_CONFIG_NOSYSTEM: '1', GIT_CONFIG_GLOBAL: '/dev/null' } }).trim();
+    { encoding: 'utf8', env: sourceGitEnvironment().env }).trim();
   git(['init', '--quiet']); git(['remote', 'add', 'origin', 'https://github.com/crcfrcn/citizensdk.git']);
   git(['add', '.']); git(['commit', '--quiet', '-m', 'fixture']);
   const sha = git(['rev-parse', 'HEAD']);
@@ -142,11 +172,23 @@ for (const entry of ["../../scripts/client/release/android/client-android/execut
     const end = lines.findIndex((line, index) => index >= start && line.startsWith('printf '));
     assert.ok(start >= 0 && end > start);
     const fragment = lines.slice(start, end).join('\n');
+    const bash = testBash();
     for (const status of [0, 17]) {
       const script = 'set -euo pipefail\nGITHUB_WORKSPACE=/fixture/source\nproject_work=/fixture/work\nnode() { return ' + status + '; }\n' + fragment + '\nprintf reached';
-      const result = spawnSync('/bin/bash', ['--noprofile', '--norc', '-c', script], {encoding: 'utf8'});
+      const result = spawnSync(bash.path, ['--noprofile', '--norc', '-c', script], {encoding: 'utf8', env: bash.env});
       assert.equal(result.status, status, result.stderr);
       assert.equal(result.stdout, status === 0 ? 'reached' : '');
     }
   });
 }
+
+// 生产来源读取和临时Git夹具使用同一准确交付；目录、链接和其它版本不能冒充正式Git。
+test('固定源码Git入口拒绝缺失相对链接及错版本', t => {
+  const f=fixture(t), actual=sourceGitEnvironment();
+  assert.equal(actual.path,process.env.PRODUCT_GIT_BIN);
+  assert.equal(actual.env.PATH,dirname(actual.path));
+  const link=join(f.root,'git-link');symlinkSync(actual.path,link);
+  for(const path of [undefined,'git','/tmp/../git',f.root,link,process.execPath]) {
+    assert.throws(()=>sourceGitEnvironment({...process.env,PRODUCT_GIT_BIN:path}), /Git/u);
+  }
+});

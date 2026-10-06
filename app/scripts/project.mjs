@@ -6,6 +6,7 @@ import { chmodSync, copyFileSync, existsSync, lstatSync, mkdirSync, readFileSync
   readdirSync, realpathSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { dirname, isAbsolute, join, parse, relative, resolve, sep } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { createHash } from 'node:crypto';
 
 
 
@@ -27,13 +28,24 @@ function dependencyField(block, key) {
   return value.startsWith('"') && value.endsWith('"') ? JSON.parse(value)
     : value.startsWith("'") && value.endsWith("'") ? value.slice(1, -1) : value;
 }
+// 固定Git版本与普通绝对入口一起验证；不从PATH或系统目录选择替代执行器。
+export function sourceGitEnvironment(environment = process.env) {
+  const path = environment.PRODUCT_GIT_BIN;
+  if (typeof path !== 'string' || !isAbsolute(path) || resolve(path) !== path || /[\x00-\x1f]/u.test(path)) fail('Git必须显式交付规范绝对路径');
+  const info = lstatSync(path);
+  if (!info.isFile() || info.isSymbolicLink() || !(info.mode & 0o111) || realpathSync(path) !== path) fail('Git必须是准确普通执行器');
+  const env = { HOME: environment.HOME, PATH: dirname(path), LANG: 'C', LC_ALL: 'C',
+    GIT_CONFIG_NOSYSTEM: '1', GIT_CONFIG_GLOBAL: '/dev/null', GIT_TERMINAL_PROMPT: '0' };
+  if (execFileSync(path, ['--version'], { env, encoding: 'utf8', timeout: 20000, stdio: ['ignore', 'pipe', 'pipe'] }).trim() !== 'git version 2.54.0') fail('Git版本不符');
+  return { path, env };
+}
 function sourceGit(root, args) {
-  return execFileSync(process.platform === 'win32' ? 'git' : '/usr/bin/git', ['-c', 'credential.helper=', '-c', 'core.hooksPath=/dev/null',
+  const { path, env } = sourceGitEnvironment();
+  return execFileSync(path, ['-c', 'credential.helper=', '-c', 'core.hooksPath=/dev/null',
     '-c', 'protocol.file.allow=never', '-c', 'gc.auto=0', '-C', root, ...args], {
     encoding: 'utf8', timeout: 180000, maxBuffer: 1024 * 1024,
     stdio: ['ignore', 'pipe', 'pipe'],
-    env: { HOME: process.env.HOME, PATH: process.env.PATH, LANG: 'C',
-      GIT_CONFIG_NOSYSTEM: '1', GIT_CONFIG_GLOBAL: '/dev/null', GIT_TERMINAL_PROMPT: '0' },
+    env,
   }).trim();
 }
 function verifyGitDirectory(root) {
@@ -378,6 +390,28 @@ export function verifyProject(options) {
 
 
 // 编译只消费锁定的Git原件；原生安装件归本轮SDK视图，源码与声明/锁均保持只读。
+// 只接收同轮归档，不接管旧编译目录；原件SHA仍由锁定SDK自己的声明决定。
+export function nativeResourceStage(sdk,work,platform,environment={}) {
+  const stage=join(work,'sdk-native'),sources=join(stage,'sources');
+  const lock=JSON.parse(readFileSync(join(sdk,'scripts/dependencies.lock.json'),'utf8'));
+  const expected=[lock.environment['zxing-cpp'],...(['LinuxARM','LinuxAMD'].includes(platform)?Object.values(lock.native.sources):platform==='Windows'?[lock.native.sources.sqlite]:[])];
+  const present=lstatSync(stage,{throwIfNoEntry:false});
+  if(present){directory(stage,'本轮SDK资源');
+    if(readdirSync(stage).some(name=>name!=='sources')||readdirSync(sources).some(name=>name!=='archives'))fail('SDK资源包含旧编译目录或未知项');
+  }
+  if(environment.CITIZENSDK_OFFLINE==='true'||environment.TUYUBOOKING_OFFLINE==='true'||present){
+    const archiveDirectory=join(sources,'archives');directory(archiveDirectory,'SDK归档资源');
+    const filenames=expected.map(item=>item.sha256+(new URL(item.url).pathname.endsWith('.zip')?'.zip':'.tar.gz'));
+    if(readdirSync(archiveDirectory).sort().join(',')!==filenames.sort().join(','))fail('SDK归档集合与锁不符');
+    for(const name of filenames){const file=join(archiveDirectory,name),s=lstatSync(file);
+      if(!s.isFile()||s.isSymbolicLink()||realpathSync(file)!==file||createHash('sha256').update(readFileSync(file)).digest('hex')!==name.split('.')[0])fail('SDK归档缺失或SHA不符');}
+  }
+  const cargo=environment.CITIZENSDK_CARGO_HOME;
+  if(cargo){directory(cargo,'SDK Cargo资源');if(!cargo.startsWith(work+sep)||cargo===environment.CARGO_HOME)fail('SDK与主产品Cargo资源必须隔离');}
+  if(!present)mkdirSync(stage);
+  return {stage,sources,...(cargo?{CARGO_HOME:cargo}:{})};
+}
+
 export async function prepareNativeProject(options, environment = process.env) {
   const p = parameters(options);
   verifyProject(p);
@@ -385,18 +419,15 @@ export async function prepareNativeProject(options, environment = process.env) {
   const sdk = dependency.root, view = join(p.output, '.source-packages/citizen_sdk');
   const api = await import(pathToFileURL(join(sdk, 'scripts/release.mjs')).href);
   api.assertFlutterSourceView(sdk, view);
-  const stage = join(p.work, 'sdk-native');
-  if (lstatSync(stage, { throwIfNoEntry: false })) fail('SDK原生工作目录已存在');
-  mkdirSync(stage);
-  const owned = lstatSync(stage);
-  const nativeWork = join(stage, 'work'), nativeOutput = join(stage, 'output');
-  const sources = join(stage, 'sources');
   const target = { ios: 'apple', macos: 'apple', android: 'android', windows: 'Windows',
     'linux-arm': 'LinuxARM', 'linux-amd': 'LinuxAMD' }[p.platform];
   const dependencyPlatform = { ios: 'macOS', macos: 'macOS', android: 'Android',
     windows: 'Windows', 'linux-arm': 'LinuxARM', 'linux-amd': 'LinuxAMD' }[p.platform];
   if (!target) fail('SDK原生平台未登记');
-  const child = { ...environment, CITIZENSDK_WORK_DIR: nativeWork,
+  const resources=nativeResourceStage(sdk,p.work,dependencyPlatform,environment);
+  const {stage,sources}=resources,owned=lstatSync(stage);
+  const nativeWork=join(stage,'work'),nativeOutput=join(stage,'output');
+  const child = { ...environment, ...(resources.CARGO_HOME?{CARGO_HOME:resources.CARGO_HOME}:{}), CITIZENSDK_WORK_DIR: nativeWork,
     CITIZENSDK_NATIVE_OUTPUT_DIR: nativeOutput, CITIZENSDK_SOURCE_SHA: dependency.sha,
     CITIZENSDK_VERSION: '1.0.0', CITIZENSDK_FLUTTER_ROOT: environment.FLUTTER_ROOT,
     CITIZENSDK_GRADLE: p.platform === 'android' ? (environment.CITIZENSDK_GRADLE || join(p.output, 'android/gradlew')) : environment.CITIZENSDK_GRADLE };
