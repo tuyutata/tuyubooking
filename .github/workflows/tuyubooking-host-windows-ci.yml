@@ -110,7 +110,6 @@ jobs:
           dart-pub
           flutter-build
         CI_CACHE_LINKS: |
-          tuyubooking/target=cargo-target
           tuyubooking/app/build=flutter-build
         CI_CACHE_FINALS: 'flutter-build/release-candidate
 

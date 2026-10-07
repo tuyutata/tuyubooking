@@ -4,7 +4,7 @@ import { test } from 'node:test';
 import { createHash } from 'node:crypto';
 import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, realpathSync, rmSync, symlinkSync } from 'node:fs';
 import { join } from 'node:path';
-import { tmpdir } from 'node:os';
+import { testRoot as tmpdir } from '../build.mjs';
 import { verifyPostgresInput, preparePostgresRuntime } from './postgres-runtime.mjs';
 const hash = bytes => createHash('sha256').update(bytes).digest('hex');
 function fixture(t, platform = 'macos') {

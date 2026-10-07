@@ -13,11 +13,28 @@ if (-not $TuyuServeUrl -or $TuyuServeUrl -notmatch '^https://') {
 
 $root = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
 $workRoot = if ($env:TUYUBOOKING_WORK_DIR) { $env:TUYUBOOKING_WORK_DIR } else {
-  Join-Path ([System.IO.Path]::GetTempPath()) 'tuyubooking\host\windows'
+  Join-Path $root 'target\host-windows\build\runtime'
 }
 $buildRoot = if ($env:TUYUBOOKING_BUILD_DIR) { $env:TUYUBOOKING_BUILD_DIR } else { Join-Path $workRoot 'build' }
 $dependencyRoot = if ($env:TUYUBOOKING_DEPENDENCY_DIR) { $env:TUYUBOOKING_DEPENDENCY_DIR } else { Join-Path $workRoot 'dependencies' }
 $artifactRoot = if ($env:TUYUBOOKING_ARTIFACT_DIR) { $env:TUYUBOOKING_ARTIFACT_DIR } else { Join-Path $workRoot 'artifacts' }
+# 当前可写路径必须归产品host-windows的target，并逐级拒绝重解析点。
+$targetBoundary = [System.IO.Path]::GetFullPath((Join-Path $root 'target\host-windows'))
+foreach ($value in @($workRoot, $buildRoot, $dependencyRoot, $artifactRoot)) {
+  $full = [System.IO.Path]::GetFullPath($value)
+  if (![System.IO.Path]::IsPathRooted($value) -or $full -ne $value -or !$full.StartsWith($targetBoundary + [System.IO.Path]::DirectorySeparatorChar, [StringComparison]::OrdinalIgnoreCase)) { throw '产品可写目录必须归本平台target' }
+  $ancestor = $full
+  while ($ancestor) {
+    if (Test-Path -LiteralPath $ancestor) {
+      $item = Get-Item -LiteralPath $ancestor -Force
+      if (!$item.PSIsContainer -or ($item.Attributes -band [System.IO.FileAttributes]::ReparsePoint)) { throw '产品输出路径不能经过链接或非目录' }
+    }
+    $ancestor = [System.IO.Path]::GetDirectoryName($ancestor)
+  }
+}
+$env:TEMP = Join-Path $workRoot 'tmp'
+$env:TMP = $env:TEMP
+New-Item -ItemType Directory -Force -Path $env:TEMP | Out-Null
 $desktop = Join-Path $workRoot 'flutter-project'
 $businessSource = if ($env:TUYU_BUSINESS_RUNTIME_SOURCE) { $env:TUYU_BUSINESS_RUNTIME_SOURCE } else {
   Join-Path $artifactRoot 'business\windows-x86_64'

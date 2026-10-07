@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+import { remoteEnvironment as productRemoteEnvironment } from '../../../build.mjs';
+if(process.env.GITHUB_ACTIONS==='true'&&String(process.env.GITHUB_WORKFLOW||'').startsWith('tuyubooking.'))Object.assign(process.env,productRemoteEnvironment());
 // RELEASE_BUILD: full; CARGO_INCREMENTAL=0
 // TUYUBOOKING_APP_ROOT_CONTRACT: 主机端 Release 只使用途遇商家主机端打包入口。
 import { execFileSync, spawnSync } from 'node:child_process';

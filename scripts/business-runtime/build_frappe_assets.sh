@@ -24,7 +24,19 @@ require_file "$BENCH/apps/erpnext/yarn.lock"
 require_file "$BENCH/apps/hrms/yarn.lock"
 
 export PATH="$SOURCE/node/bin:$(dirname "$YARN"):$PATH"
-BUILD_TMP_ROOT="${TUYU_BUILD_TMPDIR:-${TMPDIR:-/tmp}}"
+# 所有独立入口的工具临时状态归本产品target；宿主已交付的产品工作根继续归当前任务。
+PRODUCT_TEMP_SCRIPT="${BASH_SOURCE[0]}"
+while [[ -L "$PRODUCT_TEMP_SCRIPT" ]]; do
+  PRODUCT_TEMP_LINK="$(readlink "$PRODUCT_TEMP_SCRIPT")"
+  [[ "$PRODUCT_TEMP_LINK" == /* ]] || PRODUCT_TEMP_LINK="$(cd "$(dirname "$PRODUCT_TEMP_SCRIPT")" && pwd -P)/$PRODUCT_TEMP_LINK"
+  PRODUCT_TEMP_SCRIPT="$PRODUCT_TEMP_LINK"
+done
+PRODUCT_TEMP_SOURCE="$(cd "$(dirname "$PRODUCT_TEMP_SCRIPT")/../.." && pwd -P)"
+PRODUCT_TARGET_TEMP_ROOT="$("${PRODUCT_NODE_BIN:-${NODE:-node}}" "$PRODUCT_TEMP_SOURCE/scripts/build.mjs" temporary-root "${PLATFORM:-${platform:-}}" 'host-macos')" || exit 1
+if [[ -z "${PRODUCT_WORK_DIR:-}" && "${TMPDIR:-}" != "$PRODUCT_TEMP_SOURCE/target/"* ]]; then
+  export TMPDIR="$PRODUCT_TARGET_TEMP_ROOT/"
+fi
+BUILD_TMP_ROOT="${TUYU_BUILD_TMPDIR:-${TMPDIR:-$PRODUCT_TARGET_TEMP_ROOT}}"
 mkdir -p "$BUILD_TMP_ROOT"
 BUILD_TMP="$(mktemp -d "$BUILD_TMP_ROOT/tuyubooking-frappe-assets.XXXXXX")"
 export TMPDIR="$BUILD_TMP"
@@ -80,7 +92,7 @@ if test -n "$ASSET_CACHE"; then
 fi
 
 # Yarn版本由TuyuBooking runtime锁固定，依赖闭包由各上游yarn.lock决定。
-YARN_CACHE_FOLDER="${YARN_CACHE_FOLDER:-${TUYUBOOKING_DEPENDENCY_DIR:-${TMPDIR:-/tmp}/tuyubooking/dependencies}/package-managers/yarn}"
+YARN_CACHE_FOLDER="${YARN_CACHE_FOLDER:-${TUYUBOOKING_DEPENDENCY_DIR:-${TMPDIR:-$PRODUCT_TARGET_TEMP_ROOT}/tuyubooking/dependencies}/package-managers/yarn}"
 mkdir -p "$YARN_CACHE_FOLDER"
 YARN_NETWORK_ARGS=()
 case "${TUYUBOOKING_OFFLINE:-false}" in

@@ -9,7 +9,19 @@ while [[ -L "$SCRIPT_PATH" ]]; do
 done
 SCRIPT_DIR="$(cd "$(dirname "$SCRIPT_PATH")" && pwd -P)"
 ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
-WORK_DIR="${TUYUBOOKING_WORK_DIR:-${TMPDIR:-/tmp}/tuyubooking/host/macos}"
+# 所有独立入口的工具临时状态归本产品target；宿主已交付的产品工作根继续归当前任务。
+PRODUCT_TEMP_SCRIPT="${BASH_SOURCE[0]}"
+while [[ -L "$PRODUCT_TEMP_SCRIPT" ]]; do
+  PRODUCT_TEMP_LINK="$(readlink "$PRODUCT_TEMP_SCRIPT")"
+  [[ "$PRODUCT_TEMP_LINK" == /* ]] || PRODUCT_TEMP_LINK="$(cd "$(dirname "$PRODUCT_TEMP_SCRIPT")" && pwd -P)/$PRODUCT_TEMP_LINK"
+  PRODUCT_TEMP_SCRIPT="$PRODUCT_TEMP_LINK"
+done
+PRODUCT_TEMP_SOURCE="$(cd "$(dirname "$PRODUCT_TEMP_SCRIPT")/../.." && pwd -P)"
+PRODUCT_TARGET_TEMP_ROOT="$("${PRODUCT_NODE_BIN:-${NODE:-node}}" "$PRODUCT_TEMP_SOURCE/scripts/build.mjs" temporary-root "${PLATFORM:-${platform:-}}" 'host-macos')" || exit 1
+if [[ -z "${PRODUCT_WORK_DIR:-}" && "${TMPDIR:-}" != "$PRODUCT_TEMP_SOURCE/target/"* ]]; then
+  export TMPDIR="$PRODUCT_TARGET_TEMP_ROOT/"
+fi
+WORK_DIR="${TUYUBOOKING_WORK_DIR:-${TMPDIR:-$PRODUCT_TARGET_TEMP_ROOT}/tuyubooking/host/macos}"
 BUILD_WORK_DIR="${TUYUBOOKING_BUILD_DIR:-$WORK_DIR/build}"
 DEPENDENCY_WORK_DIR="${TUYUBOOKING_DEPENDENCY_DIR:-$WORK_DIR/dependencies}"
 ARTIFACT_DIR="${TUYUBOOKING_ARTIFACT_DIR:-$WORK_DIR/artifacts}"
@@ -21,8 +33,8 @@ import sys
 source = Path(sys.argv[1]).resolve()
 for value in sys.argv[2:]:
     raw, target = Path(value), Path(value).resolve()
-    if not raw.is_absolute() or target == source or source in target.parents:
-        raise SystemExit(f'TuyuBooking可写目录必须是源码外绝对路径：{value}')
+    if not raw.is_absolute() or source / 'target' not in target.parents:
+        raise SystemExit(f'TuyuBooking可写目录必须是本产品target内绝对路径：{value}')
 CHECK_PATHS
 mkdir -p "$WORK_DIR" "$BUILD_WORK_DIR" "$DEPENDENCY_WORK_DIR" "$ARTIFACT_DIR"
 rm -rf -- "$FLUTTER_APP"
@@ -104,7 +116,7 @@ trap cleanup EXIT
 # never used when CI/Release supplies a real Apple signing identity.
 if [ "$IDENTITY" = "-" ]; then
   if [[ "${CI:-}" == true ]]; then
-    LOCAL_APP_ENTITLEMENTS="$(mktemp "${TMPDIR:-/tmp}/tuyubooking-adhoc-entitlements.XXXXXX")"
+    LOCAL_APP_ENTITLEMENTS="$(mktemp "${TMPDIR:-$PRODUCT_TARGET_TEMP_ROOT}/tuyubooking-adhoc-entitlements.XXXXXX")"
   else
     LOCAL_APP_ENTITLEMENTS="$WORK_DIR/local.entitlements"
     assert_local_work_path "$LOCAL_APP_ENTITLEMENTS"
@@ -119,7 +131,7 @@ fi
 
 if [ -z "$BUSINESS_SOURCE" ]; then
   if [[ "${CI:-}" == true ]]; then
-    BUSINESS_BUILD="$(mktemp -d "${TMPDIR:-/tmp}/tuyubooking-release-runtime.XXXXXX")"
+    BUSINESS_BUILD="$(mktemp -d "${TMPDIR:-$PRODUCT_TARGET_TEMP_ROOT}/tuyubooking-release-runtime.XXXXXX")"
   else
     BUSINESS_BUILD="$WORK_DIR/runtime/business"
     assert_local_work_path "$BUSINESS_BUILD"

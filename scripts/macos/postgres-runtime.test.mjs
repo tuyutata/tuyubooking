@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { mkdtemp, mkdir, readFile, writeFile, symlink, rm, realpath } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
+import { testRoot as tmpdir } from '../build.mjs';
 import { join, dirname, basename } from 'node:path';
 import { relocateRuntime, copyPerlRuntime, buildPostgres } from './postgres-runtime.mjs';
 

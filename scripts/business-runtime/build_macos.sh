@@ -7,18 +7,30 @@ DESTINATION="${1:?usage: build_macos.sh DESTINATION}"
 # 原件输入在创建或清理任何本轮目录前验证；没有交付组件就保持源码与既有候选不变。
 "${NODE:?缺少Node准确入口}" --input-type=module - "$ROOT" <<'COMPONENT_INPUTS'
 import { lstatSync, realpathSync } from 'node:fs';
-import { isAbsolute, resolve, sep } from 'node:path';
+import { isAbsolute, join, resolve, sep } from 'node:path';
 const source = realpathSync(process.argv[2]);
 for (const name of ['TUYU_PHP_PREFIX', 'TUYU_OPENSSL_PREFIX', 'TUYU_PCRE2_PREFIX']) {
   const path = process.env[name];
   if (!path || !isAbsolute(path) || resolve(path) !== path || realpathSync(path) !== path
-    || !lstatSync(path).isDirectory() || path === source || path.startsWith(source + sep)
+    || !lstatSync(path).isDirectory() || path === source || (path.startsWith(source + sep) && !path.startsWith(join(source, 'target') + sep))
     || source.startsWith(path + sep)) throw Error('编译组件未交付或目录身份无效：' + name);
 }
 COMPONENT_INPUTS
 
-DEPENDENCY_WORK_DIR="${TUYUBOOKING_DEPENDENCY_DIR:-${TMPDIR:-/tmp}/tuyubooking/dependencies}"
-BUILD_ROOT="${TUYUBOOKING_BUILD_DIR:-${TMPDIR:-/tmp}/tuyubooking/build}"
+# 所有独立入口的工具临时状态归本产品target；宿主已交付的产品工作根继续归当前任务。
+PRODUCT_TEMP_SCRIPT="${BASH_SOURCE[0]}"
+while [[ -L "$PRODUCT_TEMP_SCRIPT" ]]; do
+  PRODUCT_TEMP_LINK="$(readlink "$PRODUCT_TEMP_SCRIPT")"
+  [[ "$PRODUCT_TEMP_LINK" == /* ]] || PRODUCT_TEMP_LINK="$(cd "$(dirname "$PRODUCT_TEMP_SCRIPT")" && pwd -P)/$PRODUCT_TEMP_LINK"
+  PRODUCT_TEMP_SCRIPT="$PRODUCT_TEMP_LINK"
+done
+PRODUCT_TEMP_SOURCE="$(cd "$(dirname "$PRODUCT_TEMP_SCRIPT")/../.." && pwd -P)"
+PRODUCT_TARGET_TEMP_ROOT="$("${PRODUCT_NODE_BIN:-${NODE:-node}}" "$PRODUCT_TEMP_SOURCE/scripts/build.mjs" temporary-root "${PLATFORM:-${platform:-}}" 'host-macos')" || exit 1
+if [[ -z "${PRODUCT_WORK_DIR:-}" && "${TMPDIR:-}" != "$PRODUCT_TEMP_SOURCE/target/"* ]]; then
+  export TMPDIR="$PRODUCT_TARGET_TEMP_ROOT/"
+fi
+DEPENDENCY_WORK_DIR="${TUYUBOOKING_DEPENDENCY_DIR:-${TMPDIR:-$PRODUCT_TARGET_TEMP_ROOT}/tuyubooking/dependencies}"
+BUILD_ROOT="${TUYUBOOKING_BUILD_DIR:-${TMPDIR:-$PRODUCT_TARGET_TEMP_ROOT}/tuyubooking/build}"
 CACHE="$DEPENDENCY_WORK_DIR/runtime"
 VOYANT_OUTPUT="${TUYU_VOYANT_OUTPUT_DIR:-$BUILD_ROOT/voyant-output}"
 "${PYTHON:?缺少Python准确入口}" - "$ROOT" "$DEPENDENCY_WORK_DIR" "$BUILD_ROOT" "$DESTINATION" "$VOYANT_OUTPUT" <<'CHECK_PATHS'
@@ -27,8 +39,8 @@ import sys
 source = Path(sys.argv[1]).resolve()
 for value in sys.argv[2:]:
     raw, target = Path(value), Path(value).resolve()
-    if not raw.is_absolute() or target == source or source in target.parents:
-        raise SystemExit(f'TuyuBooking可写目录必须是源码外绝对路径：{value}')
+    if not raw.is_absolute() or source / 'target' not in target.parents:
+        raise SystemExit(f'TuyuBooking可写目录必须是本产品target内绝对路径：{value}')
 CHECK_PATHS
 mkdir -p "$CACHE" "$BUILD_ROOT"
 WORK="$(mktemp -d "$BUILD_ROOT/business-build.XXXXXX")"

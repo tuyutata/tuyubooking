@@ -1,11 +1,14 @@
 #!/usr/bin/env node
+import { remoteEnvironment as productRemoteEnvironment } from '../../../build.mjs';
+if(process.env.GITHUB_ACTIONS==='true'&&String(process.env.GITHUB_WORKFLOW||'').startsWith('tuyubooking.'))Object.assign(process.env,productRemoteEnvironment());
 // CI_BUILD: incremental
 // TUYUBOOKING_APP_ROOT_CONTRACT: 分机端 CI 只从 tuyubooking/app 的明确入口构建。
 
 import { execFileSync } from 'node:child_process';
 import { lstatSync, mkdtempSync, realpathSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
-import { tmpdir } from 'node:os';
+import { temporaryRoot } from '../../../build.mjs';
+const tmpdir=()=>temporaryRoot('host-macos','ci');
 import { pathToFileURL } from 'node:url';
 
 function run(command, args, cwd) {

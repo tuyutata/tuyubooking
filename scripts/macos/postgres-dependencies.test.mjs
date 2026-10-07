@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { createHash } from 'node:crypto';
 import { mkdtemp, mkdir, readFile, writeFile, symlink, rm, realpath } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
+import { testRoot as tmpdir } from '../build.mjs';
 import { join, basename } from 'node:path';
 import { archivePlan, applyReadlinePatch, buildLibraries } from './postgres-dependencies.mjs';
 

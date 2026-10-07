@@ -1,10 +1,13 @@
 #!/usr/bin/env node
+import { remoteEnvironment as productRemoteEnvironment } from '../../../build.mjs';
+if(process.env.GITHUB_ACTIONS==='true'&&String(process.env.GITHUB_WORKFLOW||'').startsWith('tuyubooking.'))Object.assign(process.env,productRemoteEnvironment());
 // CI_BUILD: incremental
 // 分机端 macOS CI 必须显式选择分机入口。
 import { execFileSync } from 'node:child_process';
 import { lstatSync, mkdtempSync, realpathSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
-import { tmpdir } from 'node:os';
+import { temporaryRoot } from '../../../build.mjs';
+const tmpdir=()=>temporaryRoot('host-macos','ci');
 import { pathToFileURL } from 'node:url';
 
 function required(value, message) { if (!value) throw new Error(message); }

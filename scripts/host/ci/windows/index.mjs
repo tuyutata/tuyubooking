@@ -1,11 +1,14 @@
 #!/usr/bin/env node
+import { remoteEnvironment as productRemoteEnvironment } from '../../../build.mjs';
+if(process.env.GITHUB_ACTIONS==='true'&&String(process.env.GITHUB_WORKFLOW||'').startsWith('tuyubooking.'))Object.assign(process.env,productRemoteEnvironment());
 // CI_BUILD: incremental
 // TUYUBOOKING_APP_ROOT_CONTRACT: 主机端 CI 显式选择 tuyubooking/app 的主机入口。
 
 import { execFileSync } from 'node:child_process';
 import { lstatSync, mkdtempSync, realpathSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
-import { tmpdir } from 'node:os';
+import { temporaryRoot } from '../../../build.mjs';
+const tmpdir=()=>temporaryRoot('host-macos','ci');
 import { preparePostgresRuntime } from '../../postgres-runtime.mjs';
 
 function required(value, message) { if (!value) throw new Error(message); }

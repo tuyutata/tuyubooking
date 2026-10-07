@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { mkdirSync, mkdtempSync, realpathSync, readdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { tmpdir } from 'node:os';
+import { testRoot as tmpdir } from '../build.mjs';
 import { peImports, verifyRuntime } from './verify-source.mjs';
 
 // 人工PE保留真实节表和导入表布局；校验器读取完整二进制结构而非脚本字符串。

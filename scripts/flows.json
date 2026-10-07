@@ -76,6 +76,18 @@
         {
           "id": "posix",
           "version": "27.0"
+        },
+        {
+          "id": "bash",
+          "version": "5.3.20"
+        },
+        {
+          "id": "grep",
+          "version": "3.12"
+        },
+        {
+          "id": "sed",
+          "version": "4.10"
         }
       ],
       "locks": [
@@ -232,8 +244,31 @@
             "id": "openssl",
             "version": "3.6.3"
           }
-        ]
-      }
+        ],
+        "version_source": {
+          "kind": "pubspec",
+          "path": "app/pubspec.yaml"
+        },
+        "record_source": {
+          "kind": "manifest",
+          "asset_names": [],
+          "metadata_asset": "release-manifest.json",
+          "source_field": "git_commit_sha",
+          "version_field": "software_version",
+          "marker_prefix": "GMB",
+          "immutable": false
+        }
+      },
+      "completion": "macos-artifact",
+      "files": [
+        "TuyuBookingHost.app"
+      ],
+      "start": {
+        "entry": "scripts/start.mjs",
+        "artifact": "TuyuBookingHost.app",
+        "executable": "TuyuBooking Host"
+      },
+      "verificationPath": "Contents/MacOS/TuyuBooking Host"
     },
     "host-windows": {
       "tools": [
@@ -280,6 +315,18 @@
         {
           "id": "posix",
           "version": "27.0"
+        },
+        {
+          "id": "bash",
+          "version": "5.3.20"
+        },
+        {
+          "id": "grep",
+          "version": "3.12"
+        },
+        {
+          "id": "sed",
+          "version": "4.10"
         }
       ],
       "locks": [
@@ -380,8 +427,23 @@
             "id": "xcode",
             "version": "27.0"
           }
-        ]
-      }
+        ],
+        "version_source": {
+          "kind": "pubspec",
+          "path": "app/pubspec.yaml"
+        },
+        "record_source": {
+          "kind": "manifest",
+          "asset_names": [],
+          "metadata_asset": "release-manifest.json",
+          "source_field": "git_commit_sha",
+          "version_field": "software_version",
+          "marker_prefix": "GMB",
+          "immutable": false
+        }
+      },
+      "completion": "compile-only",
+      "files": []
     },
     "host-linux-arm": {
       "tools": [
@@ -428,6 +490,18 @@
         {
           "id": "posix",
           "version": "27.0"
+        },
+        {
+          "id": "bash",
+          "version": "5.3.20"
+        },
+        {
+          "id": "grep",
+          "version": "3.12"
+        },
+        {
+          "id": "sed",
+          "version": "4.10"
         }
       ],
       "locks": [
@@ -528,8 +602,23 @@
             "id": "xcode",
             "version": "27.0"
           }
-        ]
-      }
+        ],
+        "version_source": {
+          "kind": "pubspec",
+          "path": "app/pubspec.yaml"
+        },
+        "record_source": {
+          "kind": "manifest",
+          "asset_names": [],
+          "metadata_asset": "release-manifest.json",
+          "source_field": "git_commit_sha",
+          "version_field": "software_version",
+          "marker_prefix": "GMB",
+          "immutable": false
+        }
+      },
+      "completion": "compile-only",
+      "files": []
     },
     "host-linux-amd": {
       "tools": [
@@ -576,6 +665,18 @@
         {
           "id": "posix",
           "version": "27.0"
+        },
+        {
+          "id": "bash",
+          "version": "5.3.20"
+        },
+        {
+          "id": "grep",
+          "version": "3.12"
+        },
+        {
+          "id": "sed",
+          "version": "4.10"
         }
       ],
       "locks": [
@@ -676,8 +777,23 @@
             "id": "xcode",
             "version": "27.0"
           }
-        ]
-      }
+        ],
+        "version_source": {
+          "kind": "pubspec",
+          "path": "app/pubspec.yaml"
+        },
+        "record_source": {
+          "kind": "manifest",
+          "asset_names": [],
+          "metadata_asset": "release-manifest.json",
+          "source_field": "git_commit_sha",
+          "version_field": "software_version",
+          "marker_prefix": "GMB",
+          "immutable": false
+        }
+      },
+      "completion": "compile-only",
+      "files": []
     },
     "client-ios": {
       "tools": [
@@ -712,6 +828,18 @@
         {
           "id": "python",
           "version": "3.14.3"
+        },
+        {
+          "id": "bash",
+          "version": "5.3.20"
+        },
+        {
+          "id": "grep",
+          "version": "3.12"
+        },
+        {
+          "id": "sed",
+          "version": "4.10"
         }
       ],
       "locks": [
@@ -780,8 +908,25 @@
             "id": "rust",
             "version": "1.97.1"
           }
-        ]
-      }
+        ],
+        "version_source": {
+          "kind": "pubspec",
+          "path": "app/pubspec.yaml"
+        },
+        "record_source": {
+          "kind": "manifest",
+          "asset_names": [],
+          "metadata_asset": "release-manifest.json",
+          "source_field": "git_commit_sha",
+          "version_field": "software_version",
+          "marker_prefix": "GMB",
+          "immutable": false
+        }
+      },
+      "completion": "device-install",
+      "files": [
+        "ios.app.zip"
+      ]
     },
     "client-android": {
       "tools": [
@@ -836,6 +981,18 @@
         {
           "id": "xcode",
           "version": "27.0"
+        },
+        {
+          "id": "bash",
+          "version": "5.3.20"
+        },
+        {
+          "id": "grep",
+          "version": "3.12"
+        },
+        {
+          "id": "sed",
+          "version": "4.10"
         }
       ],
       "locks": [
@@ -936,8 +1093,25 @@
             "id": "rust",
             "version": "1.97.1"
           }
-        ]
-      }
+        ],
+        "version_source": {
+          "kind": "pubspec",
+          "path": "app/pubspec.yaml"
+        },
+        "record_source": {
+          "kind": "manifest",
+          "asset_names": [],
+          "metadata_asset": "release-manifest.json",
+          "source_field": "git_commit_sha",
+          "version_field": "software_version",
+          "marker_prefix": "GMB",
+          "immutable": false
+        }
+      },
+      "completion": "device-install",
+      "files": [
+        "android.apk"
+      ]
     },
     "client-macos": {
       "tools": [
@@ -972,6 +1146,18 @@
         {
           "id": "python",
           "version": "3.14.3"
+        },
+        {
+          "id": "bash",
+          "version": "5.3.20"
+        },
+        {
+          "id": "grep",
+          "version": "3.12"
+        },
+        {
+          "id": "sed",
+          "version": "4.10"
         }
       ],
       "locks": [
@@ -1040,8 +1226,31 @@
             "id": "rust",
             "version": "1.97.1"
           }
-        ]
-      }
+        ],
+        "version_source": {
+          "kind": "pubspec",
+          "path": "app/pubspec.yaml"
+        },
+        "record_source": {
+          "kind": "manifest",
+          "asset_names": [],
+          "metadata_asset": "release-manifest.json",
+          "source_field": "git_commit_sha",
+          "version_field": "software_version",
+          "marker_prefix": "GMB",
+          "immutable": false
+        }
+      },
+      "completion": "macos-artifact",
+      "files": [
+        "TuyuBookingClient.app"
+      ],
+      "start": {
+        "entry": "scripts/start.mjs",
+        "artifact": "TuyuBookingClient.app",
+        "executable": null
+      },
+      "verificationPath": "Contents/Info.plist"
     },
     "client-windows": {
       "tools": [
@@ -1076,6 +1285,18 @@
         {
           "id": "xcode",
           "version": "27.0"
+        },
+        {
+          "id": "bash",
+          "version": "5.3.20"
+        },
+        {
+          "id": "grep",
+          "version": "3.12"
+        },
+        {
+          "id": "sed",
+          "version": "4.10"
         }
       ],
       "locks": [
@@ -1136,8 +1357,202 @@
             "id": "rust",
             "version": "1.97.1"
           }
-        ]
-      }
+        ],
+        "version_source": {
+          "kind": "pubspec",
+          "path": "app/pubspec.yaml"
+        },
+        "record_source": {
+          "kind": "manifest",
+          "asset_names": [],
+          "metadata_asset": "release-manifest.json",
+          "source_field": "git_commit_sha",
+          "version_field": "software_version",
+          "marker_prefix": "GMB",
+          "immutable": false
+        }
+      },
+      "completion": "compile-only",
+      "files": []
     }
-  }
+  },
+  "remote_routes": [
+    {
+      "canonicalID": "tuyubooking.client-android.ci",
+      "repository": "tuyubooking",
+      "productID": "tuyubooking",
+      "productTitle": "途遇商家分机端",
+      "flow": "ci",
+      "platform": "client-android",
+      "expectedTitle": "途遇商家端 · CI · 分机 Android",
+      "tagPrefix": null,
+      "recordsFormalRelease": false
+    },
+    {
+      "canonicalID": "tuyubooking.client-android.release",
+      "repository": "tuyubooking",
+      "productID": "tuyubooking",
+      "productTitle": "途遇商家分机端",
+      "flow": "release",
+      "platform": "client-android",
+      "expectedTitle": "途遇商家端 · Release · 分机 Android",
+      "tagPrefix": "tuyubooking-client-android-v",
+      "recordsFormalRelease": true
+    },
+    {
+      "canonicalID": "tuyubooking.client-ios.ci",
+      "repository": "tuyubooking",
+      "productID": "tuyubooking",
+      "productTitle": "途遇商家分机端",
+      "flow": "ci",
+      "platform": "client-ios",
+      "expectedTitle": "途遇商家端 · CI · 分机 iOS",
+      "tagPrefix": null,
+      "recordsFormalRelease": false
+    },
+    {
+      "canonicalID": "tuyubooking.client-ios.release",
+      "repository": "tuyubooking",
+      "productID": "tuyubooking",
+      "productTitle": "途遇商家分机端",
+      "flow": "release",
+      "platform": "client-ios",
+      "expectedTitle": "途遇商家端 · Release · 分机 iOS",
+      "tagPrefix": "tuyubooking-client-ios-v",
+      "recordsFormalRelease": true
+    },
+    {
+      "canonicalID": "tuyubooking.client-macos.ci",
+      "repository": "tuyubooking",
+      "productID": "tuyubooking",
+      "productTitle": "途遇商家分机端",
+      "flow": "ci",
+      "platform": "client-macos",
+      "expectedTitle": "途遇商家端 · CI · 分机 macOS",
+      "tagPrefix": null,
+      "recordsFormalRelease": false
+    },
+    {
+      "canonicalID": "tuyubooking.client-macos.release",
+      "repository": "tuyubooking",
+      "productID": "tuyubooking",
+      "productTitle": "途遇商家分机端",
+      "flow": "release",
+      "platform": "client-macos",
+      "expectedTitle": "途遇商家端 · Release · 分机 macOS",
+      "tagPrefix": "tuyubooking-client-macos-v",
+      "recordsFormalRelease": true
+    },
+    {
+      "canonicalID": "tuyubooking.client-windows.ci",
+      "repository": "tuyubooking",
+      "productID": "tuyubooking",
+      "productTitle": "途遇商家分机端",
+      "flow": "ci",
+      "platform": "client-windows",
+      "expectedTitle": "途遇商家端 · CI · 分机 Windows",
+      "tagPrefix": null,
+      "recordsFormalRelease": false
+    },
+    {
+      "canonicalID": "tuyubooking.client-windows.release",
+      "repository": "tuyubooking",
+      "productID": "tuyubooking",
+      "productTitle": "途遇商家分机端",
+      "flow": "release",
+      "platform": "client-windows",
+      "expectedTitle": "途遇商家端 · Release · 分机 Windows",
+      "tagPrefix": "tuyubooking-client-windows-v",
+      "recordsFormalRelease": true
+    },
+    {
+      "canonicalID": "tuyubooking.host-linux-amd.ci",
+      "repository": "tuyubooking",
+      "productID": "tuyubooking",
+      "productTitle": "途遇商家主机端",
+      "flow": "ci",
+      "platform": "host-linux-amd",
+      "expectedTitle": "途遇商家端 · CI · 主机 LinuxAMD",
+      "tagPrefix": null,
+      "recordsFormalRelease": false
+    },
+    {
+      "canonicalID": "tuyubooking.host-linux-amd.release",
+      "repository": "tuyubooking",
+      "productID": "tuyubooking",
+      "productTitle": "途遇商家主机端",
+      "flow": "release",
+      "platform": "host-linux-amd",
+      "expectedTitle": "途遇商家端 · Release · 主机 LinuxAMD",
+      "tagPrefix": "tuyubooking-host-linux-amd-v",
+      "recordsFormalRelease": true
+    },
+    {
+      "canonicalID": "tuyubooking.host-linux-arm.ci",
+      "repository": "tuyubooking",
+      "productID": "tuyubooking",
+      "productTitle": "途遇商家主机端",
+      "flow": "ci",
+      "platform": "host-linux-arm",
+      "expectedTitle": "途遇商家端 · CI · 主机 LinuxARM",
+      "tagPrefix": null,
+      "recordsFormalRelease": false
+    },
+    {
+      "canonicalID": "tuyubooking.host-linux-arm.release",
+      "repository": "tuyubooking",
+      "productID": "tuyubooking",
+      "productTitle": "途遇商家主机端",
+      "flow": "release",
+      "platform": "host-linux-arm",
+      "expectedTitle": "途遇商家端 · Release · 主机 LinuxARM",
+      "tagPrefix": "tuyubooking-host-linux-arm-v",
+      "recordsFormalRelease": true
+    },
+    {
+      "canonicalID": "tuyubooking.host-macos.ci",
+      "repository": "tuyubooking",
+      "productID": "tuyubooking",
+      "productTitle": "途遇商家主机端",
+      "flow": "ci",
+      "platform": "host-macos",
+      "expectedTitle": "途遇商家端 · CI · 主机 macOS",
+      "tagPrefix": null,
+      "recordsFormalRelease": false
+    },
+    {
+      "canonicalID": "tuyubooking.host-macos.release",
+      "repository": "tuyubooking",
+      "productID": "tuyubooking",
+      "productTitle": "途遇商家主机端",
+      "flow": "release",
+      "platform": "host-macos",
+      "expectedTitle": "途遇商家端 · Release · 主机 macOS",
+      "tagPrefix": "tuyubooking-host-macos-v",
+      "recordsFormalRelease": true
+    },
+    {
+      "canonicalID": "tuyubooking.host-windows.ci",
+      "repository": "tuyubooking",
+      "productID": "tuyubooking",
+      "productTitle": "途遇商家主机端",
+      "flow": "ci",
+      "platform": "host-windows",
+      "expectedTitle": "途遇商家端 · CI · 主机 Windows",
+      "tagPrefix": null,
+      "recordsFormalRelease": false
+    },
+    {
+      "canonicalID": "tuyubooking.host-windows.release",
+      "repository": "tuyubooking",
+      "productID": "tuyubooking",
+      "productTitle": "途遇商家主机端",
+      "flow": "release",
+      "platform": "host-windows",
+      "expectedTitle": "途遇商家端 · Release · 主机 Windows",
+      "tagPrefix": "tuyubooking-host-windows-v",
+      "recordsFormalRelease": true
+    }
+  ],
+  "flow_entry": "scripts/flow.mjs"
 }

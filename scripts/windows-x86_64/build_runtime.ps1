@@ -28,11 +28,28 @@ if (Test-Path -LiteralPath $Destination) {
 # 产品锁决定PostgreSQL原件；普通开发者和CI使用同一依赖缓存合同。
 $root = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
 $workRoot = if ($env:TUYUBOOKING_WORK_DIR) { $env:TUYUBOOKING_WORK_DIR } else {
-  Join-Path ([System.IO.Path]::GetTempPath()) 'tuyubooking\windows'
+  Join-Path $root 'target\host-windows\build\runtime'
 }
 $dependencyRoot = if ($env:TUYUBOOKING_DEPENDENCY_DIR) { $env:TUYUBOOKING_DEPENDENCY_DIR } else {
   Join-Path $workRoot 'dependencies'
 }
+# 当前可写路径必须归产品host-windows的target，并逐级拒绝重解析点。
+$targetBoundary = [System.IO.Path]::GetFullPath((Join-Path $root 'target\host-windows'))
+foreach ($value in @($workRoot, $dependencyRoot, $Destination)) {
+  $full = [System.IO.Path]::GetFullPath($value)
+  if (![System.IO.Path]::IsPathRooted($value) -or $full -ne $value -or !$full.StartsWith($targetBoundary + [System.IO.Path]::DirectorySeparatorChar, [StringComparison]::OrdinalIgnoreCase)) { throw '产品可写目录必须归本平台target' }
+  $ancestor = $full
+  while ($ancestor) {
+    if (Test-Path -LiteralPath $ancestor) {
+      $item = Get-Item -LiteralPath $ancestor -Force
+      if (!$item.PSIsContainer -or ($item.Attributes -band [System.IO.FileAttributes]::ReparsePoint)) { throw '产品输出路径不能经过链接或非目录' }
+    }
+    $ancestor = [System.IO.Path]::GetDirectoryName($ancestor)
+  }
+}
+$env:TEMP = Join-Path $workRoot 'tmp'
+$env:TMP = $env:TEMP
+New-Item -ItemType Directory -Force -Path $env:TEMP | Out-Null
 $lock = Get-Content -LiteralPath (Join-Path $PSScriptRoot 'postgresql.runtime.lock.json') -Raw | ConvertFrom-Json
 $included = @('bin', 'lib', 'share', 'server_license.txt', 'commandlinetools_3rd_party_licenses.txt')
 if ($lock.component -ne 'postgresql' -or $lock.version -ne '17.11' -or
