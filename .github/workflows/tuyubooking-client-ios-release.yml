@@ -129,3 +129,7 @@ jobs:
       run: node "$GITHUB_WORKSPACE/scripts/client/release/ios/client-ios/execute.mjs" workflow-step 4
     - shell: bash
       run: node "$GITHUB_WORKSPACE/scripts/client/release/ios/client-ios/execute.mjs" workflow-step 5
+    - name: 清空本产品固定构建目录
+      if: always()
+      shell: bash
+      run: node "$GITHUB_WORKSPACE/scripts/target.mjs" finish build

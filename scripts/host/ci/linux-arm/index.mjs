@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import {fixedScratch} from '../../../target.mjs';
 import { remoteEnvironment as productRemoteEnvironment } from '../../../build.mjs';
 if(process.env.GITHUB_ACTIONS==='true'&&String(process.env.GITHUB_WORKFLOW||'').startsWith('tuyubooking.'))Object.assign(process.env,productRemoteEnvironment());
 // CI_BUILD: incremental
@@ -21,7 +22,7 @@ try {
   // 本身份独占源码外工程，Flutter工具只写本次任务目录。
   process.env.TUYUBOOKING_ROOT = realpathSync(process.cwd());
   const source = realpathSync('app');
-  projectWork = mkdtempSync(join(realpathSync(process.env.RUNNER_TEMP || tmpdir()), 'tuyubooking-host-linux-arm-ci-'));
+  projectWork = fixedScratch(join(realpathSync(process.env.RUNNER_TEMP || tmpdir()), 'tuyubooking-host-linux-arm-ci-'));
   projectOwned = lstatSync(projectWork);
   const project = execFileSync(process.execPath, [join(source, 'scripts/project.mjs'), 'create',
     '--source-root', source, '--work-root', projectWork, '--platform', 'linux-arm'],
