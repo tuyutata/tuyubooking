@@ -12,7 +12,7 @@ for required in \
   "$SCRIPT_DIR/verify_bundle.sh" \
   "$SCRIPT_DIR/postgresql.runtime.lock.json" \
   "$SCRIPT_DIR/control.template" \
-  "$SCRIPT_DIR/tuyubooking.desktop"; do
+  "$SCRIPT_DIR/../tuyubooking.desktop"; do
   test -f "$required" || { echo "missing Linux source contract: $required" >&2; exit 1; }
 done
 

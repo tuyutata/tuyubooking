@@ -83,7 +83,7 @@ cp -a "$bundle/." "$app/"
 cp "$native" "$app/lib/libtuyubooking_native.so"
 cp -a "$RUNTIME" "$app/postgresql"
 "$ROOT/scripts/business-runtime/materialize.sh" "$BUSINESS_SOURCE" "$app/business"
-cp "$SCRIPT_DIR/tuyubooking.desktop" "$stage/usr/share/applications/com.tuyulove.tuyubooking.host.desktop"
+cp "$SCRIPT_DIR/../tuyubooking.desktop" "$stage/usr/share/applications/com.tuyulove.tuyubooking.host.desktop"
 cp "$DESKTOP/macos/Runner/Assets.xcassets/AppIcon.appiconset/app_icon_256.png" \
   "$stage/usr/share/icons/hicolor/256x256/apps/com.tuyulove.tuyubooking.host.png"
 ln -s /opt/tuyubooking/tuyubooking "$stage/usr/bin/tuyubooking"
