@@ -21,6 +21,8 @@
   ],
   "node_tests": [
     "app/scripts/project.test.mjs",
+    "scripts/build-local.test.mjs",
+    "scripts/build.test.mjs",
     "scripts/client/ci/android/client-android/test.mjs",
     "scripts/client/ci/ios/client-ios/test.mjs",
     "scripts/client/ci/macos/client-macos/test.mjs",
@@ -29,17 +31,21 @@
     "scripts/client/release/ios/client-ios/test.mjs",
     "scripts/client/release/macos/client-macos/test.mjs",
     "scripts/client/release/windows/client-windows/test.mjs",
+    "scripts/flow.test.mjs",
     "scripts/host/ci/linux-amd/host-linux-amd/test.mjs",
     "scripts/host/ci/linux-arm/host-linux-arm/test.mjs",
     "scripts/host/ci/macos/host-macos/test.mjs",
     "scripts/host/ci/windows/host-windows/test.mjs",
+    "scripts/host/postgres-runtime.test.mjs",
     "scripts/host/release/linux-amd/host-linux-amd/test.mjs",
     "scripts/host/release/linux-arm/host-linux-arm/test.mjs",
     "scripts/host/release/macos/host-macos/test.mjs",
     "scripts/host/release/windows/host-windows/test.mjs",
     "scripts/macos/postgres-dependencies.test.mjs",
     "scripts/macos/postgres-runtime.test.mjs",
-    "scripts/host/postgres-runtime.test.mjs"
+    "scripts/resources.test.mjs",
+    "scripts/start.test.mjs",
+    "scripts/windows-x86_64/verify-source.test.mjs"
   ],
   "checks": [
     "repository-contracts"
@@ -53,5 +59,783 @@
     "macOS ARM64",
     "macos-arm64",
     "macos_arm64"
+  ],
+  "github_repository": "tuyutata/tuyubooking",
+  "functions": [
+    {
+      "function": "app/scripts/project.test",
+      "path": "app/scripts/project.test.mjs",
+      "runner": "node",
+      "target": "node"
+    },
+    {
+      "function": "app/test/client/application_entrypoint_contract_test",
+      "path": "app/test/client/application_entrypoint_contract_test.dart",
+      "runner": "flutter",
+      "target": "flutter"
+    },
+    {
+      "function": "app/test/client/business_mode_selection_test",
+      "path": "app/test/client/business_mode_selection_test.dart",
+      "runner": "flutter",
+      "target": "flutter"
+    },
+    {
+      "function": "app/test/client/citizen_sdk_dependency_contract_test",
+      "path": "app/test/client/citizen_sdk_dependency_contract_test.dart",
+      "runner": "flutter",
+      "target": "flutter"
+    },
+    {
+      "function": "app/test/client/client_initialization_test",
+      "path": "app/test/client/client_initialization_test.dart",
+      "runner": "flutter",
+      "target": "flutter"
+    },
+    {
+      "function": "app/test/client/client_lan_connection_test",
+      "path": "app/test/client/client_lan_connection_test.dart",
+      "runner": "flutter",
+      "target": "flutter"
+    },
+    {
+      "function": "app/test/client/client_package_boundary_test",
+      "path": "app/test/client/client_package_boundary_test.dart",
+      "runner": "flutter",
+      "target": "flutter"
+    },
+    {
+      "function": "app/test/client/client_release_contract_test",
+      "path": "app/test/client/client_release_contract_test.dart",
+      "runner": "flutter",
+      "target": "flutter"
+    },
+    {
+      "function": "app/test/client/employee_access/employee_auth_adapter_test",
+      "path": "app/test/client/employee_access/employee_auth_adapter_test.dart",
+      "runner": "flutter",
+      "target": "flutter"
+    },
+    {
+      "function": "app/test/client/employee_access/employee_bilingual_ui_test",
+      "path": "app/test/client/employee_access/employee_bilingual_ui_test.dart",
+      "runner": "flutter",
+      "target": "flutter"
+    },
+    {
+      "function": "app/test/client/employee_access_contract_test",
+      "path": "app/test/client/employee_access_contract_test.dart",
+      "runner": "flutter",
+      "target": "flutter"
+    },
+    {
+      "function": "app/test/client/employee_discovery_contract_test",
+      "path": "app/test/client/employee_discovery_contract_test.dart",
+      "runner": "flutter",
+      "target": "flutter"
+    },
+    {
+      "function": "app/test/client/hotel/hotel_controller_test",
+      "path": "app/test/client/hotel/hotel_controller_test.dart",
+      "runner": "flutter",
+      "target": "flutter"
+    },
+    {
+      "function": "app/test/client/hotel/hotel_repository_test",
+      "path": "app/test/client/hotel/hotel_repository_test.dart",
+      "runner": "flutter",
+      "target": "flutter"
+    },
+    {
+      "function": "app/test/client/restaurant/restaurant_controller_test",
+      "path": "app/test/client/restaurant/restaurant_controller_test.dart",
+      "runner": "flutter",
+      "target": "flutter"
+    },
+    {
+      "function": "app/test/client/restaurant/restaurant_repository_test",
+      "path": "app/test/client/restaurant/restaurant_repository_test.dart",
+      "runner": "flutter",
+      "target": "flutter"
+    },
+    {
+      "function": "app/test/client/runtime_boundary_contract_test",
+      "path": "app/test/client/runtime_boundary_contract_test.dart",
+      "runner": "flutter",
+      "target": "flutter"
+    },
+    {
+      "function": "app/test/client/ticket/ticket_controller_test",
+      "path": "app/test/client/ticket/ticket_controller_test.dart",
+      "runner": "flutter",
+      "target": "flutter"
+    },
+    {
+      "function": "app/test/client/ticket/ticket_repository_test",
+      "path": "app/test/client/ticket/ticket_repository_test.dart",
+      "runner": "flutter",
+      "target": "flutter"
+    },
+    {
+      "function": "app/test/client/tour/tour_controller_test",
+      "path": "app/test/client/tour/tour_controller_test.dart",
+      "runner": "flutter",
+      "target": "flutter"
+    },
+    {
+      "function": "app/test/client/tour/tour_repository_test",
+      "path": "app/test/client/tour/tour_repository_test.dart",
+      "runner": "flutter",
+      "target": "flutter"
+    },
+    {
+      "function": "app/test/host/administrator_bridge_test",
+      "path": "app/test/host/administrator_bridge_test.dart",
+      "runner": "flutter",
+      "target": "flutter"
+    },
+    {
+      "function": "app/test/host/administrator_initialization_test",
+      "path": "app/test/host/administrator_initialization_test.dart",
+      "runner": "flutter",
+      "target": "flutter"
+    },
+    {
+      "function": "app/test/host/administrator_login_ui_test",
+      "path": "app/test/host/administrator_login_ui_test.dart",
+      "runner": "flutter",
+      "target": "flutter"
+    },
+    {
+      "function": "app/test/host/administrator_management_test",
+      "path": "app/test/host/administrator_management_test.dart",
+      "runner": "flutter",
+      "target": "flutter"
+    },
+    {
+      "function": "app/test/host/business_database_provisioning_contract_test",
+      "path": "app/test/host/business_database_provisioning_contract_test.dart",
+      "runner": "flutter",
+      "target": "flutter"
+    },
+    {
+      "function": "app/test/host/business_module_selection_test",
+      "path": "app/test/host/business_module_selection_test.dart",
+      "runner": "flutter",
+      "target": "flutter"
+    },
+    {
+      "function": "app/test/host/desktop_qr_platform_contract_test",
+      "path": "app/test/host/desktop_qr_platform_contract_test.dart",
+      "runner": "flutter",
+      "target": "flutter"
+    },
+    {
+      "function": "app/test/host/desktop_window_contract_test",
+      "path": "app/test/host/desktop_window_contract_test.dart",
+      "runner": "flutter",
+      "target": "flutter"
+    },
+    {
+      "function": "app/test/host/ffi_boundary_test",
+      "path": "app/test/host/ffi_boundary_test.dart",
+      "runner": "flutter",
+      "target": "flutter"
+    },
+    {
+      "function": "app/test/host/frappe_postgres_backend_contract_test",
+      "path": "app/test/host/frappe_postgres_backend_contract_test.dart",
+      "runner": "flutter",
+      "target": "flutter"
+    },
+    {
+      "function": "app/test/host/host_package_boundary_test",
+      "path": "app/test/host/host_package_boundary_test.dart",
+      "runner": "flutter",
+      "target": "flutter"
+    },
+    {
+      "function": "app/test/host/linux_packaging_contract_test",
+      "path": "app/test/host/linux_packaging_contract_test.dart",
+      "runner": "flutter",
+      "target": "flutter"
+    },
+    {
+      "function": "app/test/host/macos_release_packaging_contract_test",
+      "path": "app/test/host/macos_release_packaging_contract_test.dart",
+      "runner": "flutter",
+      "target": "flutter"
+    },
+    {
+      "function": "app/test/host/packaged_smoke_timeout_contract_test",
+      "path": "app/test/host/packaged_smoke_timeout_contract_test.dart",
+      "runner": "flutter",
+      "target": "flutter"
+    },
+    {
+      "function": "app/test/host/postgres_socket_test",
+      "path": "app/test/host/postgres_socket_test.dart",
+      "runner": "flutter",
+      "target": "flutter"
+    },
+    {
+      "function": "app/test/host/python_runtime_immutability_contract_test",
+      "path": "app/test/host/python_runtime_immutability_contract_test.dart",
+      "runner": "flutter",
+      "target": "flutter"
+    },
+    {
+      "function": "app/test/host/runtime_secret_store_test",
+      "path": "app/test/host/runtime_secret_store_test.dart",
+      "runner": "flutter",
+      "target": "flutter"
+    },
+    {
+      "function": "app/test/host/unified_modules_test",
+      "path": "app/test/host/unified_modules_test.dart",
+      "runner": "flutter",
+      "target": "flutter"
+    },
+    {
+      "function": "app/test/host/windows_packaging_contract_test",
+      "path": "app/test/host/windows_packaging_contract_test.dart",
+      "runner": "flutter",
+      "target": "flutter"
+    },
+    {
+      "function": "app/test/shared/citizen_sdk_integration_contract_test",
+      "path": "app/test/shared/citizen_sdk_integration_contract_test.dart",
+      "runner": "flutter",
+      "target": "flutter"
+    },
+    {
+      "function": "app/test/shared/locale_test",
+      "path": "app/test/shared/locale_test.dart",
+      "runner": "flutter",
+      "target": "flutter"
+    },
+    {
+      "function": "app/test/shared/pinned_https_contract_test",
+      "path": "app/test/shared/pinned_https_contract_test.dart",
+      "runner": "flutter",
+      "target": "flutter"
+    },
+    {
+      "function": "app/test/shared/scale_encoding_test",
+      "path": "app/test/shared/scale_encoding_test.dart",
+      "runner": "flutter",
+      "target": "flutter"
+    },
+    {
+      "function": "host/src/application/startup",
+      "path": "host/src/application/startup.rs",
+      "runner": "cargo",
+      "target": "Cargo.toml",
+      "package": "tuyubooking-native",
+      "cases": [
+        "core_health_requires_a_successful_query",
+        "core_health_timeout_is_not_ready",
+        "startup_errors_expose_safe_categories_without_internal_details"
+      ]
+    },
+    {
+      "function": "host/src/runtime/process",
+      "path": "host/src/runtime/process.rs",
+      "runner": "cargo",
+      "target": "Cargo.toml",
+      "package": "tuyubooking-native",
+      "cases": [
+        "startup_timeout_covers_large_first_run_migrations",
+        "stopping_a_module_gracefully_terminates_its_process_group"
+      ]
+    },
+    {
+      "function": "host/src/subsystems",
+      "path": "host/src/subsystems.rs",
+      "runner": "cargo",
+      "target": "Cargo.toml",
+      "package": "tuyubooking-native",
+      "cases": [
+        "all_local_administrators_have_equal_platform_access"
+      ]
+    },
+    {
+      "function": "host/tests/administrator_identity_contracts",
+      "path": "host/tests/administrator_identity_contracts.rs",
+      "runner": "cargo",
+      "target": "Cargo.toml",
+      "package": "tuyubooking-native",
+      "cases": [
+        "shared_account_administrator_contains_only_public_identity_and_is_audited"
+      ]
+    },
+    {
+      "function": "host/tests/administrator_management_contracts",
+      "path": "host/tests/administrator_management_contracts.rs",
+      "runner": "cargo",
+      "target": "Cargo.toml",
+      "package": "tuyubooking-native",
+      "cases": [
+        "administrator_lifecycle_enforces_local_identity_policy"
+      ]
+    },
+    {
+      "function": "host/tests/application_services",
+      "path": "host/tests/application_services.rs",
+      "runner": "cargo",
+      "target": "Cargo.toml",
+      "package": "tuyubooking-native",
+      "cases": [
+        "one_verified_local_administrator_accesses_all_subsystems_and_commands_are_idempotent",
+        "startup_failure_never_returns_a_ready_runtime"
+      ]
+    },
+    {
+      "function": "host/tests/business_runtime_contracts",
+      "path": "host/tests/business_runtime_contracts.rs",
+      "runner": "cargo",
+      "target": "Cargo.toml",
+      "package": "tuyubooking-native",
+      "cases": [
+        "every_business_module_has_an_independent_schema_and_endpoint",
+        "a_missing_payload_does_not_change_another_modules_state",
+        "restarting_one_module_preserves_every_sibling_state",
+        "module_data_cannot_be_stored_inside_the_installation",
+        "only_selected_modules_are_enabled_and_started"
+      ]
+    },
+    {
+      "function": "host/tests/core_postgres_repository",
+      "path": "host/tests/core_postgres_repository.rs",
+      "runner": "cargo",
+      "target": "Cargo.toml",
+      "package": "tuyubooking-native",
+      "cases": [
+        "core_repository_persists_idempotency_claims"
+      ]
+    },
+    {
+      "function": "host/tests/domain_contracts",
+      "path": "host/tests/domain_contracts.rs",
+      "runner": "cargo",
+      "target": "Cargo.toml",
+      "package": "tuyubooking-native",
+      "cases": [
+        "money_uses_fixed_point_values",
+        "different_currencies_cannot_be_added",
+        "optimistic_lock_version_increments",
+        "embedded_schema_has_fixed_identity_and_hash",
+        "upstream_owned_business_scaffolding_is_absent"
+      ]
+    },
+    {
+      "function": "host/tests/ffi_contracts",
+      "path": "host/tests/ffi_contracts.rs",
+      "runner": "cargo",
+      "target": "Cargo.toml",
+      "package": "tuyubooking-native",
+      "cases": [
+        "contract_exposes_one_app_and_all_four_subsystems",
+        "runtime_controls_require_the_unified_runtime_to_be_started",
+        "qr_login_dto_rejects_private_key_material",
+        "qr_login_challenge_requires_the_unified_runtime_to_be_started",
+        "administrator_state_requires_the_unified_runtime_to_be_started",
+        "administrator_initialization_dto_rejects_extra_identity_material",
+        "production_ffi_contains_no_private_key_signing_entrypoint"
+      ]
+    },
+    {
+      "function": "host/tests/local_administrator_bridge_contracts",
+      "path": "host/tests/local_administrator_bridge_contracts.rs",
+      "runner": "cargo",
+      "target": "Cargo.toml",
+      "package": "tuyubooking-native",
+      "cases": [
+        "initial_schema_uses_only_local_administrator_bridge_identity",
+        "every_upstream_bridge_requires_an_active_local_administrator"
+      ]
+    },
+    {
+      "function": "host/tests/postgres_contracts",
+      "path": "host/tests/postgres_contracts.rs",
+      "runner": "cargo",
+      "target": "Cargo.toml",
+      "package": "tuyubooking-native",
+      "cases": [
+        "runtime_configuration_disables_external_listening",
+        "runtime_rejects_data_inside_installation",
+        "real_postgresql_applies_schema_once_and_rolls_back_failures",
+        "missing_packaged_perl_core_fails_before_writing_initialization_password"
+      ]
+    },
+    {
+      "function": "host/tests/postgres_runtime_recovery_contracts",
+      "path": "host/tests/postgres_runtime_recovery_contracts.rs",
+      "runner": "cargo",
+      "target": "Cargo.toml",
+      "package": "tuyubooking-native",
+      "cases": [
+        "existing_database_restores_process_scoped_runtime_directories"
+      ]
+    },
+    {
+      "function": "host/tests/public_api_contracts",
+      "path": "host/tests/public_api_contracts.rs",
+      "runner": "cargo",
+      "target": "Cargo.toml",
+      "package": "tuyubooking-native",
+      "cases": [
+        "traveler_quote_and_booking_contracts_are_signed_and_strict",
+        "modified_traveler_payload_is_rejected"
+      ]
+    },
+    {
+      "function": "host/tests/qr_login_contracts",
+      "path": "host/tests/qr_login_contracts.rs",
+      "runner": "cargo",
+      "target": "Cargo.toml",
+      "package": "tuyubooking-native",
+      "cases": [
+        "local_qr_login_accepts_one_authorized_signature_and_rejects_replay",
+        "local_qr_login_rejects_an_unregistered_public_key",
+        "every_active_administrator_can_login_and_a_disabled_one_cannot",
+        "altered_scope_nonce_identity_and_expiry_are_rejected"
+      ]
+    },
+    {
+      "function": "host/tests/schema_atomicity_contracts",
+      "path": "host/tests/schema_atomicity_contracts.rs",
+      "runner": "cargo",
+      "target": "Cargo.toml",
+      "package": "tuyubooking-native",
+      "cases": [
+        "core_schema_and_completion_marker_share_one_executor_transaction"
+      ]
+    },
+    {
+      "function": "host/tests/support",
+      "path": "host/tests/support.rs",
+      "runner": "cargo",
+      "target": "Cargo.toml",
+      "package": "tuyubooking-native",
+      "cases": [
+        "postgres_test_input_requires_complete_external_runtime"
+      ]
+    },
+    {
+      "function": "host/tests/use_cases",
+      "path": "host/tests/use_cases.rs",
+      "runner": "cargo",
+      "target": "Cargo.toml",
+      "package": "tuyubooking-native",
+      "cases": [
+        "fixed_clock_is_deterministic",
+        "in_memory_repository_enforces_optimistic_locking"
+      ]
+    },
+    {
+      "function": "scripts/build-local.test",
+      "path": "scripts/build-local.test.mjs",
+      "runner": "node",
+      "target": "node"
+    },
+    {
+      "function": "scripts/build.test",
+      "path": "scripts/build.test.mjs",
+      "runner": "node",
+      "target": "node"
+    },
+    {
+      "function": "scripts/business-runtime/test_step3_runtime",
+      "path": "scripts/business-runtime/test_step3_runtime.py",
+      "runner": "python",
+      "target": "unittest"
+    },
+    {
+      "function": "scripts/client/ci/android/client-android/test",
+      "path": "scripts/client/ci/android/client-android/test.mjs",
+      "runner": "node",
+      "target": "node"
+    },
+    {
+      "function": "scripts/client/ci/ios/client-ios/test",
+      "path": "scripts/client/ci/ios/client-ios/test.mjs",
+      "runner": "node",
+      "target": "node"
+    },
+    {
+      "function": "scripts/client/ci/macos/client-macos/test",
+      "path": "scripts/client/ci/macos/client-macos/test.mjs",
+      "runner": "node",
+      "target": "node"
+    },
+    {
+      "function": "scripts/client/ci/windows/client-windows/test",
+      "path": "scripts/client/ci/windows/client-windows/test.mjs",
+      "runner": "node",
+      "target": "node"
+    },
+    {
+      "function": "scripts/client/release/android/client-android/test",
+      "path": "scripts/client/release/android/client-android/test.mjs",
+      "runner": "node",
+      "target": "node"
+    },
+    {
+      "function": "scripts/client/release/ios/client-ios/test",
+      "path": "scripts/client/release/ios/client-ios/test.mjs",
+      "runner": "node",
+      "target": "node"
+    },
+    {
+      "function": "scripts/client/release/macos/client-macos/test",
+      "path": "scripts/client/release/macos/client-macos/test.mjs",
+      "runner": "node",
+      "target": "node"
+    },
+    {
+      "function": "scripts/client/release/windows/client-windows/test",
+      "path": "scripts/client/release/windows/client-windows/test.mjs",
+      "runner": "node",
+      "target": "node"
+    },
+    {
+      "function": "scripts/flow.test",
+      "path": "scripts/flow.test.mjs",
+      "runner": "node",
+      "target": "node"
+    },
+    {
+      "function": "scripts/host/ci/linux-amd/host-linux-amd/test",
+      "path": "scripts/host/ci/linux-amd/host-linux-amd/test.mjs",
+      "runner": "node",
+      "target": "node"
+    },
+    {
+      "function": "scripts/host/ci/linux-arm/host-linux-arm/test",
+      "path": "scripts/host/ci/linux-arm/host-linux-arm/test.mjs",
+      "runner": "node",
+      "target": "node"
+    },
+    {
+      "function": "scripts/host/ci/macos/host-macos/test",
+      "path": "scripts/host/ci/macos/host-macos/test.mjs",
+      "runner": "node",
+      "target": "node"
+    },
+    {
+      "function": "scripts/host/ci/windows/host-windows/test",
+      "path": "scripts/host/ci/windows/host-windows/test.mjs",
+      "runner": "node",
+      "target": "node"
+    },
+    {
+      "function": "scripts/host/postgres-runtime.test",
+      "path": "scripts/host/postgres-runtime.test.mjs",
+      "runner": "node",
+      "target": "node"
+    },
+    {
+      "function": "scripts/host/release/linux-amd/host-linux-amd/test",
+      "path": "scripts/host/release/linux-amd/host-linux-amd/test.mjs",
+      "runner": "node",
+      "target": "node"
+    },
+    {
+      "function": "scripts/host/release/linux-arm/host-linux-arm/test",
+      "path": "scripts/host/release/linux-arm/host-linux-arm/test.mjs",
+      "runner": "node",
+      "target": "node"
+    },
+    {
+      "function": "scripts/host/release/macos/host-macos/test",
+      "path": "scripts/host/release/macos/host-macos/test.mjs",
+      "runner": "node",
+      "target": "node"
+    },
+    {
+      "function": "scripts/host/release/windows/host-windows/test",
+      "path": "scripts/host/release/windows/host-windows/test.mjs",
+      "runner": "node",
+      "target": "node"
+    },
+    {
+      "function": "scripts/macos/postgres-dependencies.test",
+      "path": "scripts/macos/postgres-dependencies.test.mjs",
+      "runner": "node",
+      "target": "node"
+    },
+    {
+      "function": "scripts/macos/postgres-runtime.test",
+      "path": "scripts/macos/postgres-runtime.test.mjs",
+      "runner": "node",
+      "target": "node"
+    },
+    {
+      "function": "scripts/resources.test",
+      "path": "scripts/resources.test.mjs",
+      "runner": "node",
+      "target": "node"
+    },
+    {
+      "function": "scripts/start.test",
+      "path": "scripts/start.test.mjs",
+      "runner": "node",
+      "target": "node"
+    },
+    {
+      "function": "scripts/windows-x86_64/verify-source.test",
+      "path": "scripts/windows-x86_64/verify-source.test.mjs",
+      "runner": "node",
+      "target": "node"
+    },
+    {
+      "function": "test/frappe_postgresql/lib",
+      "path": "test/frappe_postgresql/lib.rs",
+      "runner": "cargo",
+      "target": "test/frappe_postgresql/Cargo.toml",
+      "package": "tuyubooking-frappe-postgresql-test",
+      "cases": [
+        "framework_uses_one_postgresql_database_without_redis_runtime",
+        "frappe_profile_routes_runtime_primitives_to_postgresql",
+        "kamra_has_postgresql_sql_and_chinese_defaults",
+        "packaged_kamra_runtime_is_offline_https_and_single_database",
+        "step4_acceptance_uses_real_kamra_and_ury_business_models"
+      ]
+    },
+    {
+      "function": "test/frappe_postgresql/tests/administrator_bridge",
+      "path": "test/frappe_postgresql/tests/administrator_bridge.rs",
+      "runner": "cargo",
+      "target": "test/frappe_postgresql/Cargo.toml",
+      "package": "tuyubooking-frappe-postgresql-test",
+      "cases": [
+        "bridge_is_https_one_time_scoped_and_audited"
+      ]
+    },
+    {
+      "function": "test/frappe_postgresql/tests/erpnext_postgresql",
+      "path": "test/frappe_postgresql/tests/erpnext_postgresql.rs",
+      "runner": "cargo",
+      "target": "test/frappe_postgresql/Cargo.toml",
+      "package": "tuyubooking-frappe-postgresql-test",
+      "cases": [
+        "pos_closing_combines_dates_with_the_database_mapper"
+      ]
+    },
+    {
+      "function": "test/frappe_postgresql/tests/hrms_postgresql",
+      "path": "test/frappe_postgresql/tests/hrms_postgresql.rs",
+      "runner": "cargo",
+      "target": "test/frappe_postgresql/Cargo.toml",
+      "package": "tuyubooking-frappe-postgresql-test",
+      "cases": [
+        "employee_advance_status_patch_uses_explicit_numeric_predicates"
+      ]
+    },
+    {
+      "function": "test/frappe_postgresql/tests/kamra_postgresql",
+      "path": "test/frappe_postgresql/tests/kamra_postgresql.rs",
+      "runner": "cargo",
+      "target": "test/frappe_postgresql/Cargo.toml",
+      "package": "tuyubooking-frappe-postgresql-test",
+      "cases": [
+        "kamra_sql_uses_postgresql_date_arithmetic",
+        "booking_flow_removes_security_deposits_before_reservations"
+      ]
+    },
+    {
+      "function": "test/frappe_postgresql/tests/postcss_temp_path",
+      "path": "test/frappe_postgresql/tests/postcss_temp_path.rs",
+      "runner": "cargo",
+      "target": "test/frappe_postgresql/Cargo.toml",
+      "package": "tuyubooking-frappe-postgresql-test",
+      "cases": [
+        "frappe_postcss_entry_points_are_confined_to_the_plugin_temp_directory"
+      ]
+    },
+    {
+      "function": "test/frappe_postgresql/tests/realtime_channel",
+      "path": "test/frappe_postgresql/tests/realtime_channel.rs",
+      "runner": "cargo",
+      "target": "test/frappe_postgresql/Cargo.toml",
+      "package": "tuyubooking-frappe-postgresql-test",
+      "cases": [
+        "realtime_channels_obey_postgresql_identifier_limit"
+      ]
+    },
+    {
+      "function": "test/frappe_postgresql/tests/ury_postgresql",
+      "path": "test/frappe_postgresql/tests/ury_postgresql.rs",
+      "runner": "cargo",
+      "target": "test/frappe_postgresql/Cargo.toml",
+      "package": "tuyubooking-frappe-postgresql-test",
+      "cases": [
+        "ury_end_to_end_fixture_bootstraps_its_company"
+      ]
+    },
+    {
+      "function": "test/frappe_postgresql/tests/ury_runtime",
+      "path": "test/frappe_postgresql/tests/ury_runtime.rs",
+      "runner": "cargo",
+      "target": "test/frappe_postgresql/Cargo.toml",
+      "package": "tuyubooking-frappe-postgresql-test",
+      "cases": [
+        "kamra_and_ury_use_one_distribution_but_independent_sites",
+        "erpnext_support_page_uses_postgresql_strict_grouping",
+        "postgresql_queue_keeps_scheduler_arguments_out_of_business_payloads"
+      ]
+    },
+    {
+      "function": "test/hi_events_postgresql/lib",
+      "path": "test/hi_events_postgresql/lib.rs",
+      "runner": "cargo",
+      "target": "test/hi_events_postgresql/Cargo.toml",
+      "package": "tuyubooking-hi-events-postgresql-test",
+      "cases": [
+        "hi_events_is_local_offline_and_postgresql_only",
+        "administrator_bridge_is_one_time_fragment_only_and_audited",
+        "chinese_and_english_are_the_only_locales",
+        "legacy_rust_tour_business_scaffold_is_absent",
+        "desktop_and_runtime_expose_ticket_https_port",
+        "step4_acceptance_uses_real_event_ticket_and_public_order_services"
+      ]
+    },
+    {
+      "function": "test/module_contract/lib",
+      "path": "test/module_contract/lib.rs",
+      "runner": "cargo",
+      "target": "test/module_contract/Cargo.toml",
+      "package": "tuyubooking-module-contract-test",
+      "cases": [
+        "modules_share_one_database_and_isolate_schemas",
+        "source_registry_rejects_wrong_owner_path_commit_and_duplicate_modules"
+      ]
+    },
+    {
+      "function": "test/source_intake/lib",
+      "path": "test/source_intake/lib.rs",
+      "runner": "cargo",
+      "target": "Cargo.toml",
+      "package": "tuyubooking-source-intake-test",
+      "cases": [
+        "fork_subtrees_are_pinned_and_licensed",
+        "source_module_and_runtime_pins_agree"
+      ]
+    },
+    {
+      "function": "test/voyant_postgresql/lib",
+      "path": "test/voyant_postgresql/lib.rs",
+      "runner": "cargo",
+      "target": "test/voyant_postgresql/Cargo.toml",
+      "package": "tuyubooking-voyant-postgresql-test",
+      "cases": [
+        "voyant_is_a_local_node_source_integrated",
+        "voyant_is_schema_isolated_and_has_no_runtime_installer",
+        "administrator_bridge_is_one_time_https_and_audited",
+        "chinese_is_default_and_english_is_supported",
+        "step4_acceptance_uses_voyant_product_slot_and_booking_routes"
+      ]
+    }
   ]
 }
