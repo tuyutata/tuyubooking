@@ -11,7 +11,7 @@ String _source(String path) {
 
 void main() {
   test('Frappe provisions its role and Schema before bootstrap', () {
-    final source = _source('scripts/business-runtime/tuyu_frappe_runtime.py');
+    final source = _source('modules/tuyu_frappe_runtime.py');
 
     expect(source, contains('CREATE ROLE \\"{role}\\" LOGIN'));
     expect(source, contains('CREATE SCHEMA'));
@@ -27,7 +27,7 @@ void main() {
 
   test('Hi.Events creates role and Schema before its extension', () {
     final source = _source(
-      'scripts/business-runtime/tuyu_hi_events_runtime.py',
+      'modules/tuyu_hi_events_runtime.py',
     );
 
     final role = source.indexOf('CREATE ROLE');
@@ -39,8 +39,8 @@ void main() {
   });
 
   test('macOS scripts rejects every non-system absolute dependency', () {
-    final relocator = _source('scripts/business-runtime/relocate_macos.sh');
-    final verifier = _source('scripts/macos/verify_bundle.sh');
+    final relocator = bookingBuildSource('shell', 'relocate');
+    final verifier = bookingBuildSource('shell', 'verify-host');
 
     expect(relocator, contains('canonical_path'));
     expect(relocator, contains('/System/Library/*|/usr/lib/*'));

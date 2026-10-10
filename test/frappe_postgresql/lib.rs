@@ -67,11 +67,11 @@ mod tests {
     #[test]
     fn packaged_kamra_runtime_is_offline_https_and_single_database() {
         let runtime = fs::read_to_string(
-            root().join("scripts/business-runtime/tuyu_frappe_runtime.py"),
+            root().join("modules/tuyu_frappe_runtime.py"),
         )
         .expect("read Kamra runtime supervisor");
         let lock = fs::read_to_string(
-            root().join("scripts/business-runtime/runtime.lock.json"),
+            root().join("modules/runtime.lock.json"),
         )
         .expect("read business runtime lock");
         assert!(runtime.contains("--certfile"));

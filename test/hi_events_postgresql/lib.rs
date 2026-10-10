@@ -15,14 +15,14 @@ mod tests {
     fn hi_events_is_local_offline_and_postgresql_only() {
         let manifest = read("modules/hi_events.module.toml");
         let database = read("upstream/hi_events/backend/config/database.php");
-        let runtime = read("scripts/business-runtime/tuyu_hi_events_runtime.py");
+        let runtime = read("modules/tuyu_hi_events_runtime.py");
         assert!(manifest.contains("integration_status = \"source_integrated\""));
         assert!(manifest.contains("database = \"tuyubooking\""));
         assert!(manifest.contains("schema = \"module_hi_events\""));
         assert!(database.contains("'default' => 'pgsql'"));
         assert!(!database.contains("'mysql' =>"));
         assert!(!database.contains("'sqlite' =>"));
-        assert!(runtime.contains("PHP 8.4") || read("scripts/business-runtime/materialize.sh").contains("PHP 8\\.4"));
+        assert!(runtime.contains("PHP 8.4") || read("scripts/build.mjs").contains("PHP 8\\.4"));
         assert!(runtime.contains("php-fpm"));
         assert!(runtime.contains("php-cgi"));
         assert!(runtime.contains("os.name == \"nt\""));
@@ -77,7 +77,7 @@ mod tests {
     fn desktop_and_runtime_expose_ticket_https_port() {
         let desktop = read("app/lib/desktop/workspace/merchant_home_page.dart");
         let native = read("host/src/runtime/ticket.rs");
-        let materialize = read("scripts/business-runtime/materialize.sh");
+        let materialize = read("scripts/build.mjs");
         assert!(desktop.contains("moduleOrigin(module.id)"));
         assert!(native.contains("tuyu_hi_events_runtime.py"));
         assert!(native.contains("entry.server.js"));

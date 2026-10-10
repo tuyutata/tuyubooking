@@ -11,7 +11,7 @@ void main() {
       File('${repository.path}/$relative').readAsStringSync();
 
   test('DNS-SD is limited to first client initialization', () {
-    final host = source('scripts/business-runtime/tuyu_https_proxy.py');
+    final host = source('modules/tuyu_https_proxy.py');
     final employee = source(
       'app/lib/client/host_connection/mdns_discovery.dart',
     );

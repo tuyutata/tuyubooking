@@ -37,7 +37,7 @@ mod tests {
         assert!(migrate.contains("search_path"));
         assert!(migrate.contains("replaceAll"));
         assert!(migrate.contains("/tuyubooking"));
-        let materialize = read("scripts/business-runtime/materialize.sh");
+        let materialize = read("scripts/build.mjs");
         assert!(materialize.contains("grep -q '^v24\\.'"));
         assert!(materialize.contains("voyant/operator/.output/server/index.mjs"));
         assert!(materialize.contains("voyant/operator/.output/migration/migrate.mjs"));

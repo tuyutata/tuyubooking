@@ -22,12 +22,12 @@ void main() {
 
   test('macOS final wrapping and base names precede the outer signature', () {
     final root = Platform.environment['TUYUBOOKING_ROOT'] ?? Directory.current.parent.path;
-    for (final name in ['build_release.sh', 'build_client_release.sh']) {
-      final script = File('$root/scripts/macos/$name').readAsStringSync();
+    for (final role in ['host', 'client']) {
+      final script = bookingBuildSource('shell', role);
       final display = script.indexOf('Set :CFBundleDisplayName');
       final shortName = script.indexOf('Set :CFBundleName');
-      final outer = script.lastIndexOf('codesign --force --sign');
-      final finalPath = name == 'build_release.sh'
+      final outer = script.lastIndexOf('--force --sign');
+      final finalPath = role == 'host'
           ? r'APP="$ARTIFACT_DIR/tuyubooking.app"'
           : r'APP="$OUTPUT"';
       expect(script.indexOf(finalPath), greaterThanOrEqualTo(0));
@@ -81,12 +81,10 @@ void main() {
     expect(windows, contains('IDS_TUYU_APPLICATION_NAME "途遇商家端"'));
   });
 
-  test('两个Linux架构使用相同的语言名称而非更改执行身份', () {
-    for (final platform in ['linux-arm', 'linux-amd']) {
-      final entry = source('scripts/$platform/tuyubooking.desktop');
-      expect(entry, contains('Name=TuyuBooking\n'));
-      expect(entry, contains('Name[zh]=途遇商家端\n'));
-    }
+  test('两个Linux架构使用同一主机桌面入口与语言名称', () {
+    final entry = source('host/tuyubooking.desktop');
+    expect(entry, contains('Name=TuyuBooking\n'));
+    expect(entry, contains('Name[zh]=途遇商家端\n'));
   });
 
   // 直接编译并渲染分机入口页面，避免仅检查打包脚本文本而漏掉 Dart 导入错误。
@@ -146,17 +144,16 @@ void main() {
   });
 
   test('macOS client package is thin and selects the client entrypoint', () {
-    final package = source('scripts/macos/build_client_release.sh');
+    final package = bookingBuildSource('shell', 'client');
 
     expect(package, contains('--target lib/main_client.dart'));
-    expect(package, isNot(contains('build_runtime.sh')));
-    expect(package, isNot(contains('business-runtime/materialize.sh')));
+    expect(package, isNot(contains('module postgres')));
+    expect(package, isNot(contains('shell materialize')));
     expect(package, isNot(contains('cargo build')));
     expect(package, contains('test ! -e'));
-    expect(package, contains('prepare-citizensdk'));
-    expect(package, contains('cleanup-citizensdk'));
-    expect(package.indexOf('flutter test'), lessThan(package.indexOf('prepare-citizensdk')));
-    expect(package.indexOf('prepare-citizensdk'), lessThan(package.indexOf('xcodebuild')));
+    expect(package, contains('module sdk prepare'));
+    expect(package, contains('project.mjs" native'));
+    expect(package.indexOf('module sdk prepare'), lessThan(package.indexOf('xcodebuild')));
     expect(
       package,
       contains('ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS=NO'),

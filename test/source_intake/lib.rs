@@ -147,7 +147,7 @@ mod tests {
             &fs::read(root().join("tuyubooking.sources.json")).expect("read source lock"),
         ).expect("parse source lock");
         let runtime: serde_json::Value = serde_json::from_slice(
-            &fs::read(root().join("scripts/business-runtime/runtime.lock.json")).expect("read runtime lock"),
+            &fs::read(root().join("modules/runtime.lock.json")).expect("read runtime lock"),
         ).expect("parse runtime lock");
         for source in lock.sources {
             let runtime_commit = match source.id.as_str() {

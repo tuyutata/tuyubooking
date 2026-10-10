@@ -12,15 +12,15 @@ void main() {
 
   test('host packages always select the host entrypoint', () {
     expect(
-      source('scripts/macos/build_release.sh'),
+      bookingBuildSource('shell', 'host'),
       contains('--target lib/main_host.dart'),
     );
     expect(
-      source('scripts/linux-arm/build_package.sh'),
+      bookingWorkflowSource('host-linux-arm', 'assemble'),
       contains('--target lib/main_host.dart'),
     );
     expect(
-      source('scripts/linux-amd/build_package.sh'),
+      bookingWorkflowSource('host-linux-amd', 'assemble'),
       contains('--target lib/main_host.dart'),
     );
   });
@@ -28,7 +28,7 @@ void main() {
   test('host identities and complete runtime boundary stay explicit', () {
     final macosHost = source('app/macos/Runner/Configs/Host.xcconfig');
     final linux = source('app/linux/CMakeLists.txt');
-    final macosRelease = source('scripts/macos/build_release.sh');
+    final macosRelease = bookingBuildSource('shell', 'host');
     final windows = source('app/windows/CMakeLists.txt');
 
     expect(macosHost, contains('com.tuyulove.tuyubooking.host'));

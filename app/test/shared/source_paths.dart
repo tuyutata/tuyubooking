@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 import 'package:yaml/yaml.dart';
 
@@ -46,3 +47,38 @@ File bookingSourceFile(String relative) {
 File bookingAppFile(String relative) => bookingSourceFile('app/$relative');
 Directory bookingAppDirectory(String relative) =>
     Directory(bookingAppFile(relative).path);
+
+/// 从唯一 Build 或所属 Workflow 的源码读取实际拥有的内嵌执行正文。
+String bookingBuildSource(String kind, String name) {
+  final text = bookingSourceFile('scripts/build.mjs').readAsStringSync();
+  final marker = switch (kind) {
+    'shell' => 'BUILD_SHELL_SOURCES',
+    'module' => 'BUILD_MODULE_SOURCES',
+    'python' => 'BUILD_PYTHON_SOURCES',
+    _ => throw ArgumentError.value(kind, 'kind'),
+  };
+  final match = RegExp(
+    'const $marker=Object\\.freeze\\((\\{[^\\n]*\\})\\);',
+  ).firstMatch(text);
+  if (match == null) throw StateError('Build正文未登记：$marker');
+  final sources = jsonDecode(match.group(1)!) as Map<String, dynamic>;
+  final source = sources[name];
+  if (source is! String) throw StateError('Build正文未登记：$name');
+  return source;
+}
+
+String bookingWorkflowSource(String platform, String action) {
+  final text = bookingSourceFile(
+    '.github/workflows/release-$platform.mjs',
+  ).readAsStringSync();
+  final match = RegExp(
+    r'const actions = Object\.freeze\((\{.*?\})\);\s*const shaPattern',
+    dotAll: true,
+  ).firstMatch(text);
+  if (match == null) throw StateError('自动化动作未登记：$platform');
+  final actions = jsonDecode(match.group(1)!) as Map<String, dynamic>;
+  final entry = actions[action] as Map<String, dynamic>?;
+  final source = entry?['source'];
+  if (source is! String) throw StateError('自动化正文未登记：$platform/$action');
+  return source;
+}

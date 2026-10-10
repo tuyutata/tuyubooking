@@ -11,7 +11,7 @@
       "revision": "version-16",
       "license": "GPL-3.0-only",
       "license_source": "upstream/erpnext/license.txt",
-      "license_copy": "scripts/licenses/erpnext-GPL-3.0.txt",
+      "license_copy": "licenses/erpnext-GPL-3.0.txt",
       "module_manifest": "modules/ury.module.toml",
       "required_files": [
         "license.txt",
@@ -63,7 +63,7 @@
       "revision": "version-16",
       "license": "GPL-3.0-only",
       "license_source": "upstream/hrms/license.txt",
-      "license_copy": "scripts/licenses/hrms-GPL-3.0.txt",
+      "license_copy": "licenses/hrms-GPL-3.0.txt",
       "module_manifest": "modules/ury.module.toml",
       "required_files": [
         "license.txt",

@@ -12,7 +12,7 @@ void main() {
 
   test('employee gateway is administrator controlled and HTTPS only', () {
     final native = source('host/src/ffi/mod.rs');
-    final proxy = source('scripts/business-runtime/tuyu_https_proxy.py');
+    final proxy = source('modules/tuyu_https_proxy.py');
     expect(native, contains('tuyubooking_enable_employee_gateway'));
     expect(native, contains('create_administrator_assertion'));
     expect(proxy, contains('ssl.PROTOCOL_TLS_SERVER'));
@@ -33,7 +33,7 @@ void main() {
   });
 
   test('one gateway exposes four stable module paths', () {
-    final lock = source('scripts/business-runtime/runtime.lock.json');
+    final lock = source('modules/runtime.lock.json');
     for (final route in ['/hotel', '/restaurant', '/tour', '/ticket']) {
       expect(lock, contains('"$route"'));
     }

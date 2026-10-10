@@ -78,10 +78,8 @@ void main() {
         "configuration.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '16.0'",
       ),
     );
-    final builder = bookingSourceFile(
-      'scripts/macos/build_client_release.sh',
-    ).readAsStringSync();
-    expect(builder, contains('CITIZENSDK_APPLE_FRAMEWORK_DIR'));
-    expect(builder, contains('scripts/build-native.sh'));
+    final builder = bookingBuildSource('shell', 'client');
+    expect(builder, contains('build.mjs" module sdk prepare'));
+    expect(builder, contains('Contents/Frameworks/CitizenSDK.framework'));
   });
 }

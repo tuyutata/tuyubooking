@@ -8,7 +8,7 @@ fn root() -> PathBuf {
 fn kamra_and_ury_use_one_distribution_but_independent_sites() {
     let root = root();
     let runtime = fs::read_to_string(
-        root.join("scripts/business-runtime/tuyu_frappe_runtime.py"),
+        root.join("modules/tuyu_frappe_runtime.py"),
     )
     .unwrap();
     assert!(runtime.contains("bench_apps"));
@@ -24,7 +24,7 @@ fn kamra_and_ury_use_one_distribution_but_independent_sites() {
     assert!(!manifest.contains("shared_frappe_site"));
 
     let lock = fs::read_to_string(
-        root.join("scripts/business-runtime/runtime.lock.json"),
+        root.join("modules/runtime.lock.json"),
     )
     .unwrap();
     assert!(lock.contains("hotel.localhost"));

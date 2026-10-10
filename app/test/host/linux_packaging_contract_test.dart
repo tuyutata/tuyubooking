@@ -7,19 +7,19 @@ import '../shared/source_paths.dart';
 void main() {
   final repository = bookingSource;
 
-  test('LinuxARM scripts contract is present', () {
+  test('LinuxARM Workflow contract is present', () {
     const requiredFiles = <String>[
       'app/linux/CMakeLists.txt',
       'app/linux/runner/my_application.cc',
-      'scripts/linux-arm/build_runtime.sh',
-      'scripts/linux-arm/build_package.sh',
-      'scripts/linux-arm/verify_bundle.sh',
-      'scripts/linux-arm/postgresql.runtime.lock.json',
-      'scripts/business-runtime/materialize.sh',
-      'scripts/business-runtime/runtime.lock.json',
-      'scripts/business-runtime/tuyu_runtime_common.py',
-      'scripts/business-runtime/tuyu_frappe_runtime.py',
-      'scripts/business-runtime/tuyu_voyant_runtime.py',
+      '.github/workflows/release-host-linux-arm.mjs',
+      '.github/workflows/release-host-linux-arm.mjs',
+      '.github/workflows/release-host-linux-arm.mjs',
+      'host/database/postgresql-linux-arm.lock.json',
+      'scripts/build.mjs',
+      'modules/runtime.lock.json',
+      'modules/tuyu_runtime_common.py',
+      'modules/tuyu_frappe_runtime.py',
+      'modules/tuyu_voyant_runtime.py',
     ];
     for (final relativePath in requiredFiles) {
       expect(
@@ -30,16 +30,16 @@ void main() {
     }
   });
 
-  test('LinuxAMD scripts contract is present', () {
+  test('LinuxAMD Workflow contract is present', () {
     const requiredFiles = <String>[
       'app/linux/CMakeLists.txt',
       'app/linux/runner/my_application.cc',
-      'scripts/linux-amd/build_runtime.sh',
-      'scripts/linux-amd/build_package.sh',
-      'scripts/linux-amd/verify_bundle.sh',
-      'scripts/linux-amd/postgresql.runtime.lock.json',
-      'scripts/business-runtime/materialize.sh',
-      'scripts/business-runtime/runtime.lock.json',
+      '.github/workflows/release-host-linux-amd.mjs',
+      '.github/workflows/release-host-linux-amd.mjs',
+      '.github/workflows/release-host-linux-amd.mjs',
+      'host/database/postgresql-linux-amd.lock.json',
+      'scripts/build.mjs',
+      'modules/runtime.lock.json',
     ];
     for (final relativePath in requiredFiles) {
       expect(

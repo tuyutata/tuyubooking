@@ -11,12 +11,11 @@ void main() {
       File('${repository.path}/$relative').readAsStringSync();
 
   test('macOS通过CitizenSDK产品入口准备唯一框架且Podfile保持标准接入', () {
-    final package = source('scripts/macos/build_release.sh');
+    final package = bookingBuildSource('shell', 'host');
     final podfile = source('app/macos/Podfile');
-    expect(package, contains('scripts/dependencies.mjs'));
-    expect(package, contains('scripts/build-native.sh'));
-    expect(package, contains('CITIZENSDK_APPLE_FRAMEWORK_DIR'));
-    expect(package.indexOf('build-native.sh'), lessThan(package.indexOf('pod install')));
+    expect(package, contains('build.mjs" module sdk prepare'));
+    expect(package, contains('app/scripts/project.mjs'));
+    expect(package.indexOf('module sdk prepare'), lessThan(package.indexOf('project.mjs" native')));
     expect(package, contains('Contents/Frameworks/CitizenSDK.framework'));
     expect(podfile, contains('flutter_install_all_macos_pods'));
     expect(podfile, isNot(contains('File.symlink')));
@@ -104,7 +103,7 @@ with patch.object(smoke.Path, "home", return_value=home), patch.object(
         assert container.is_dir(), "The container must use CFBundleIdentifier"
         assert not list(container.iterdir()), "Smoke temporary data must be removed"
 ''',
-        '${repository.path}/scripts/macos/smoke_bundle.py',
+        '${repository.path}/host/tests/smoke_bundle.py',
         stage.path,
         scenario,
       ]);
@@ -120,24 +119,24 @@ with patch.object(smoke.Path, "home", return_value=home), patch.object(
     'macOS release builds and embeds the business runtime automatically',
     () {
       const requiredFiles = [
-        'scripts/business-runtime/build_macos.sh',
-        'scripts/business-runtime/materialize.sh',
-        'scripts/macos/build_release.sh',
-        'scripts/macos/verify_bundle.sh',
-        'scripts/macos/smoke_bundle.py',
-        'scripts/macos/write_sha256_manifest.py',
+        'scripts/build.mjs',
+        'scripts/build.mjs',
+        'scripts/build.mjs',
+        'scripts/build.mjs',
+        'host/tests/smoke_bundle.py',
+        'scripts/build.mjs',
         'app/lib/host/infrastructure/runtime/packaged_smoke.dart',
       ];
       for (final relative in requiredFiles) {
         expect(File('${repository.path}/$relative').existsSync(), isTrue);
       }
-      final release = source('scripts/macos/build_release.sh');
-      final verifier = source('scripts/macos/verify_bundle.sh');
-      final releaseBuilder = source('scripts/macos/build_release.sh');
-      final materialize = source('scripts/business-runtime/materialize.sh');
-      expect(release, contains('build_macos.sh'));
+      final release = bookingBuildSource('shell', 'host');
+      final verifier = bookingBuildSource('shell', 'verify-host');
+      final releaseBuilder = bookingBuildSource('shell', 'host');
+      final materialize = bookingBuildSource('shell', 'materialize');
+      expect(release, contains('shell business'));
       expect(release, contains('smoke_bundle.py'));
-      expect(release, contains('write_sha256_manifest.py'));
+      expect(release, contains('python manifest'));
       expect(release, contains('mktemp -d'));
       expect(release, contains("-perm -111 -o -name '*.dylib'"));
       expect(release, contains('"\$APP/Contents/Resources/business"'));
@@ -156,7 +155,7 @@ with patch.object(smoke.Path, "home", return_value=home), patch.object(
       expect(verifier, isNot(contains('bench/apps/ury/license.txt')));
       expect(
         materialize,
-        contains('relocate_macos.sh" "\$DESTINATION" "\$SOURCE"'),
+        contains('shell relocate'),
       );
       expect(materialize, contains('DESTINATION/php/pecl'));
       expect(
@@ -196,7 +195,7 @@ with patch.object(smoke.Path, "home", return_value=home), patch.object(
   );
 
   test('macOS package uses the Voyant Nitro production entry', () {
-    final materialize = source('scripts/business-runtime/materialize.sh');
+    final materialize = bookingBuildSource('shell', 'materialize');
     final nativeTour = source('host/src/runtime/tour.rs');
     final voyantVite = source(
       'upstream/voyant/templates/operator/vite.config.ts',
@@ -207,7 +206,7 @@ with patch.object(smoke.Path, "home", return_value=home), patch.object(
     final voyantBuilder = source(
       'upstream/voyant/templates/operator/scripts/build-tuyu.mjs',
     );
-    final businessBuilder = source('scripts/business-runtime/build_macos.sh');
+    final businessBuilder = bookingBuildSource('shell', 'business');
     expect(materialize, contains('voyant/operator/.output/server/index.mjs'));
     expect(materialize, contains('rsync -a --delete'));
     expect(materialize, isNot(contains('ditto "\$source" "\$destination"')));
@@ -233,7 +232,7 @@ with patch.object(smoke.Path, "home", return_value=home), patch.object(
       businessBuilder,
       contains('VOYANT_OUTPUT="\$TUYU_VOYANT_OUTPUT_DIR"'),
     );
-    expect(businessBuilder, contains('preparePnpmDependencyEnvironment'));
+    expect(businessBuilder, contains('VOYANT_PNPM_STORE'));
     expect(businessBuilder, contains(r'"$VOYANT_PNPM" install --frozen-lockfile'));
     expect(businessBuilder, contains('VOYANT_BUILD_SOURCE'));
     expect(businessBuilder, contains(r'--store-dir "$VOYANT_PNPM_STORE"'));
@@ -253,8 +252,8 @@ with patch.object(smoke.Path, "home", return_value=home), patch.object(
     final debugEntitlements = source(
       'app/macos/Runner/DebugProfile.entitlements',
     );
-    final runtimeLock = source('scripts/business-runtime/runtime.lock.json');
-    final relocator = source('scripts/business-runtime/relocate_macos.sh');
+    final runtimeLock = source('modules/runtime.lock.json');
+    final relocator = bookingBuildSource('shell', 'relocate');
     expect(entitlements, isNot(contains('com.apple.security.app-sandbox')));
     expect(entitlements, isNot(contains('com.apple.security.network.server')));
     expect(entitlements, isNot(contains('keychain-access-groups')));
@@ -263,7 +262,7 @@ with patch.object(smoke.Path, "home", return_value=home), patch.object(
       entitlements,
       isNot(contains('com.apple.security.cs.disable-library-validation')),
     );
-    final verifier = source('scripts/macos/verify_bundle.sh');
+    final verifier = bookingBuildSource('shell', 'verify-host');
     expect(
       verifier,
       contains('App Sandbox is incompatible with embedded PostgreSQL'),
@@ -307,14 +306,14 @@ with patch.object(smoke.Path, "home", return_value=home), patch.object(
     );
     expect(packagedSmoke, isNot(contains('state.error')));
     expect(packagedSmoke, isNot(contains(r'modules=[$details]')));
-    final bundleSmoke = source('scripts/macos/smoke_bundle.py');
+    final bundleSmoke = source('host/tests/smoke_bundle.py');
     expect(bundleSmoke, contains('prefix="tuyubooking cold start-"'));
     final frappeRuntime = source(
-      'scripts/business-runtime/tuyu_frappe_runtime.py',
+      'modules/tuyu_frappe_runtime.py',
     );
     expect(frappeRuntime, contains('str(path.resolve())'));
     final hiEventsRuntime = source(
-      'scripts/business-runtime/tuyu_hi_events_runtime.py',
+      'modules/tuyu_hi_events_runtime.py',
     );
     expect(hiEventsRuntime, contains('access_log "'));
     expect(hiEventsRuntime, contains('error_log "'));
@@ -340,7 +339,7 @@ with patch.object(smoke.Path, "home", return_value=home), patch.object(
   });
 
   test('release embeds an isolated PostgreSQL-only Python runtime', () {
-    final builder = source('scripts/business-runtime/build_macos.sh');
+    final builder = bookingBuildSource('shell', 'business');
     final nativeProcess = source('host/src/runtime/process.rs');
     expect(
       builder,
@@ -354,9 +353,9 @@ with patch.object(smoke.Path, "home", return_value=home), patch.object(
     expect(builder, contains('PIP_CACHE_DIR="\$DEPENDENCY_WORK_DIR/package-managers/pip"'));
     expect(builder, isNot(contains('--no-cache-dir')));
     expect(builder, contains('unset PIP_NO_CACHE_DIR UV_NO_CACHE'));
-    expect(builder, contains(r'PIP_CACHE_DIR="$TASK_WORK/cache/package-managers/pip"'));
-    expect(builder, contains(r'UV_CACHE_DIR="$TASK_WORK/cache/package-managers/uv"'));
-    expect(builder, contains(r'--cache-dir "$PIP_CACHE_DIR" "$BENCH/apps/frappe"'));
+    expect(builder, contains(r'PIP_CACHE_DIR="$DEPENDENCY_WORK_DIR/package-managers/pip"'));
+    expect(builder, contains(r'UV_CACHE_DIR="$DEPENDENCY_WORK_DIR/package-managers/uv"'));
+    expect(builder, contains(r'--cache-dir "$PIP_CACHE_DIR"'));
     expect(builder, isNot(contains('preparePythonDependencyEnvironment')));
     expect(builder, isNot(contains('PYTHON_CONSTRAINTS')));
     expect(nativeProcess, contains('.env("PYTHONHOME", &python_home)'));
@@ -364,26 +363,26 @@ with patch.object(smoke.Path, "home", return_value=home), patch.object(
   });
 
   test('macOS package declares its real native runtime minimum', () {
-    final builder = source('scripts/business-runtime/build_macos.sh');
-    final postgresBuilder = source('scripts/macos/build_runtime.sh');
+    final builder = bookingBuildSource('shell', 'business');
+    final postgresBuilder = bookingBuildSource('module', 'postgres');
+    final sourcePlan = source('modules/macos.sources.plan.json');
     final project = source('app/macos/Runner.pbxproj');
     final podfile = source('app/macos/Podfile');
     expect(builder, contains('MACOSX_DEPLOYMENT_TARGET=26.0'));
     expect(
-      postgresBuilder,
+      sourcePlan,
       contains(
-        'https://ftp.postgresql.org/pub/source/v\${POSTGRES_VERSION}/'
-        'postgresql-\${POSTGRES_VERSION}.tar.bz2',
+        'https://ftp.postgresql.org/pub/source/v17.11/postgresql-17.11.tar.bz2',
       ),
     );
     expect(
-      postgresBuilder,
+      sourcePlan,
       contains(
         'dd27f2b3c59e73ed14aa3324901242bf69a032a6347805f274e6260322d42979',
       ),
     );
-    expect(postgresBuilder, contains('--prefix="\$DEST"'));
-    expect(postgresBuilder, contains('--datadir="\$DEST/share/postgresql"'));
+    expect(postgresBuilder, contains("'--prefix=' + destination"));
+    expect(postgresBuilder, contains("'--datadir=' + join(destination, 'share/postgresql')"));
     expect(postgresBuilder, isNot(contains('POSTGRES_SOURCE_PREFIX')));
     expect(podfile, contains("platform :osx, '26.0'"));
     expect(

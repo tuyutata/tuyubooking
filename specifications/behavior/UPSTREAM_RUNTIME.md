@@ -62,7 +62,7 @@ TuyuBooking runs on the merchant's own host. Cloudflare does not host these four
 
 ## Packaging boundary
 
-`scripts/business-runtime/materialize.sh` materializes pinned fork sources and the embedded language runtimes. The runtime supervisor scripts are:
+`scripts/build.mjs shell materialize` materializes pinned fork sources and the embedded language runtimes. The runtime supervisor scripts are:
 
 - `tuyu_runtime_common.py`
 - `tuyu_frappe_runtime.py`

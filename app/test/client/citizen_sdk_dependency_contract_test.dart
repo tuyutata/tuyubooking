@@ -24,19 +24,19 @@ void main() {
     expect(project, contains('resolveFirstPartyDependencies'));
     expect(project, contains('assertFlutterSourceView'));
     expect(project, contains('prepareNativeProject'));
-    final preparer = bookingSourceFile('scripts/sdk-dependencies.mjs').readAsStringSync();
+    final preparer = bookingBuildSource('module', 'sdk');
     expect(preparer, contains("command !== 'prepare'"));
     expect(preparer, isNot(contains("mode === 'local'")));
   });
 
-  test('全部分机CI消费同一SDK视图并保留未安全释放现场', () {
+  test('全部分机自动化独立消费锁定SDK来源', () {
     for (final platform in ['ios', 'android', 'macos', 'windows']) {
-      final script = bookingSourceFile('scripts/client/ci/$platform/index.mjs').readAsStringSync();
-      expect(script, contains('prepareNativeProject({ source, work: projectWork, output: project'));
-      expect(script, contains('platform: '+"'$platform'"+' }'));
-      expect(script, contains('error.retainSdkStage || error.status === 75'));
-      expect(script, contains('projectOwned = null; process.exitCode = 75'));
-      expect(script, contains('current.dev !== projectOwned.dev || current.ino !== projectOwned.ino'));
+      final script = bookingSourceFile(
+        '.github/workflows/release-client-$platform.mjs',
+      ).readAsStringSync();
+      expect(script, contains('--enforce-lockfile'));
+      expect(script, isNot(contains('scripts/build.mjs')));
+      expect(script, isNot(contains('scripts/publish.mjs')));
     }
   });
 
