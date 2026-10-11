@@ -937,7 +937,7 @@ TuyuBooking完整产品仓的七个上游源码路径已由 `tuyubooking/importe
 - iOS Bundle ID 与 Android Application ID 统一固定为 `com.tuyulove.tuyubooking`。
 - 一个 iOS 安装包同时支持 iPhone 和 iPad，一个 Android 安装包同时支持手机和平板。
 - Android Release 禁止使用 debug 签名；产品源码不保存正式证书、私钥、密码或 Keystore。
-- 本地构建和 CI 可以生成未签名验证产物，正式签名只允许由 Release 流程注入并验证。
+- 本地构建和 CI 生成未签名候选；正式签名材料由塔塔控制台保管，在本机最终确认后交给本仓发布接口签名并验真。
 - 移动端必须进入 `TuyuBookingMobileApp`，不得启动桌面端 PostgreSQL 和上游业务服务。
 - `test/mobile/mobile_release_contract_test.dart` 锁定应用标识、设备范围、签名边界、移动入口及 CitizenSDK 固定提交依赖。
 - `app/pubspec.yaml`与`app/pubspec.lock`统一消费CitizenSDK根包提交`0c442b4065ff1577e235cba76978749827d9f575`；离线源码只来自该已保存提交的登记Git原件，原生安装件必须使用同一来源。
@@ -1488,3 +1488,7 @@ Node 回归由所属 Build 或 Workflow 执行，门禁只读核对登记与源�
 本仓 GitHub 门禁接受 actions/checkout 的准确 HTTPS origin（同一仓库地址有或没有 `.git` 后缀），仓库、事件、提交和工作流身份仍逐项校验。
 
 门禁清理接口只对 URL 的路径部分拒绝越界，允许 created 查询中的时间范围分隔符；同文件回归直接执行正式 HTTP 参数校验，覆盖时间范围和越界拒绝。
+
+## 配置需求公开接口
+
+本仓 `scripts/config.mjs` 声明商家端 Android 的 APP_KEY、iOS 的 IOS_KEY 和 APP_PROFILE，均为本产品独立保密签名材料；旧控制台通用 Cloudflare 账户、数据库、桶与 R2 名称没有本仓现行消费者。两条分机 Workflow 只构建并交付带准确Run/SHA摘要的未签名候选，不读取 Repository Secrets，也不在 GitHub 签名或创建正式Release。本仓 `scripts/publish.mjs` 验真候选、按声明接收控制台瞬时交付的签名材料，在本机运行本仓唯一签名脚本、回读包身份并逐件上传正式资产；历史同类Run/Artifact在最终发布成功后由本仓接口清理。实际签名、发布和密钥迁移尚未执行。
