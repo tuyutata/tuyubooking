@@ -2,7 +2,6 @@
 // 本产品独立拥有资源需求、工程准备与编译；公开回执仅提供验真资源，不提供执行命令。
 import {spawn,spawnSync} from 'node:child_process';
 import {AsyncLocalStorage} from 'node:async_hooks';
-import {Socket} from 'node:net';
 import {rmSync,rmdirSync,chmodSync,closeSync,openSync,renameSync,readlinkSync,unlinkSync,copyFileSync,cpSync,existsSync,lstatSync,mkdirSync,readFileSync,readdirSync,realpathSync,symlinkSync,writeFileSync} from 'node:fs';
 import {basename,dirname,isAbsolute,join,parse,relative,resolve,sep} from 'node:path';
 import {fileURLToPath,pathToFileURL} from 'node:url';
@@ -283,7 +282,6 @@ export async function copyBuildOriginal(url,sha256,destination,environment=proce
  if(!isAbsolute(destination)||resolve(destination)!==destination||!destination.startsWith(work+sep))fail('运行时原件输出越界');
  const source=join(work,'dependencies/archives/runtime',sha256+'.blob');mkdirSync(dirname(destination),{recursive:true});
  if(existsSync(source)){if(realpathSync(source)!==source||!lstatSync(source).isFile())fail('运行时交付不是普通文件');if(source!==destination)copyFileSync(source,destination);return destination;}
- if(environment["TUYUBOOKING_RESOURCE_MODE"]==='provided')fail('控制台供给缺少运行时原件');
  const recipe=resourceInternals,prepared=await recipe.acquireArchive(wanted,{work,store:join(work,'dependencies/runtime-originals'),offline:environment[prefix+'_OFFLINE']==='true'});copyFileSync(prepared,destination);return destination;
 }
 
@@ -367,7 +365,7 @@ export function resourceEnvironment(platform,work,receipt,base={}) {
  env[prefix+'_PUB_OFFLINE']='true';env.GRADLE_OPTS='-Dorg.gradle.project.android.builder.sdkDownload=false';
  if(receipt.archives.native)env.CHATSERVER_NATIVE_ARCHIVE=receipt.archives.native[0].path;
  if(receipt.archives.protocol)env.CHATSERVER_PROTOCOL_ARCHIVE=receipt.archives.protocol[0].path;
- if(base.PRODUCT_RESOURCE_FD==='4')env["TUYUBOOKING_RESOURCE_MODE"]='provided';else env["TUYUBOOKING_RESOURCE_MODE"]??='independent';
+ env["TUYUBOOKING_RESOURCE_MODE"]??='independent';
  if(env["TUYUBOOKING_RESOURCE_MODE"]==='provided'){env.PIP_NO_INDEX='1';env.COMPOSER_DISABLE_NETWORK='1';env.YARN_ENABLE_NETWORK='0';}
  const execution=executions.getStore();if(execution)execution.buildEnvironment=env;
  env.PRODUCT_SDK_SOURCE_MODE=localSdkMode()?'local':'git';
@@ -648,8 +646,7 @@ async function nativeVerifier(work,env) {
  if(state)state.verifier=verify;return verify;
 }
 async function developmentMaterial(work,env,value) {
- const operation=value===undefined?'development.read':'development.create',host=await productHost();
- if(host)return host(operation,value);
+ const operation=value===undefined?'development.read':'development.create';
  const verifier=await nativeVerifier(work,env);return (await verifier({operation,product_id:product,...(value===undefined?{}:{value})})).value;
 }
 export function parseAndroidSigning(encoded) {
@@ -773,8 +770,6 @@ async function saveMobileArtifact(platform,work,path) {
  const declared=platformContract(platform);if(declared.files.length!==1)fail('移动候选登记不唯一');
  const publicPath=join(work,declared.files[0]);
  if(path!==publicPath){unlinkSync(publicPath);copyFileSync(path,publicPath);}
- const host=await productHost();
- if(host)await host('artifact',[{path:publicPath,sha256:outputDigest(publicPath)}]);
 }
 async function completeMobile(platform,work,receipt,env) {
  executions.getStore()?.signal?.throwIfAborted();if(platform.endsWith('android'))await completeAndroid(platform,work,receipt,env);else await completeIOS(platform,work,receipt,env);
@@ -826,9 +821,9 @@ export function outputDigest(path) {
 }
 
 // 宿主完整Build先由调用方消费回执、安装并收尾；独立执行由本产品清空现场。
-// 本仓完整Build在资源回执后运行自己的测试，控制台不选择测试清单。
+// 本产品拥有测试清单、资源准备和执行顺序。
 function testFiles(){return ['scripts/build.mjs','scripts/publish.mjs','app/scripts/project.mjs','.github/workflows/release-client-android.mjs','.github/workflows/release-client-ios.mjs','.github/workflows/release-client-macos.mjs','.github/workflows/release-client-windows.mjs','.github/workflows/release-host-linux-amd.mjs','.github/workflows/release-host-linux-arm.mjs','.github/workflows/release-host-macos.mjs','.github/workflows/release-host-windows.mjs'];}
-// 产品在资源回执后运行自身Node回归；控制台只调用完整Build。
+// 本产品独立拥有此实现，通过自身公开接口执行。
 async function runProductTests(platform,work,receipt,base){
  const env=resourceEnvironment(platform,work,receipt,base),node=receipt.tools.node;
  if(!node||node.version!==contract.platforms[platform].tools.find(value=>value.id==='node')?.version
@@ -868,7 +863,7 @@ if(testSession&&process.argv.length===2&&resolve(process.argv[1]||'')===fileURLT
 export async function execute(platform,work,request={},options={}) {
  if(options.stages&&!process.env.NODE_TEST_CONTEXT)fail('合成阶段仅用于本仓测试');
  checkFixedWork(work,{create:true});
- return withFixedWork(taskScope(work),()=>executeTask(platform,work,request,options),{run_id:request.run_id,environment:options.environment||process.env,retain:(options.environment||process.env).PRODUCT_RESOURCE_FD==='4'||(options.environment||process.env).PRODUCT_HOST_FD==='3'});
+ return withFixedWork(taskScope(work),()=>executeTask(platform,work,request,options),{run_id:request.run_id,environment:options.environment||process.env});
 }
 async function executeTask(platform,work,request={},options={}) {
  checkWork(work);platformContract(platform);
@@ -882,15 +877,11 @@ async function executeTask(platform,work,request={},options={}) {
  if(existsSync(resultFile))fail('本轮完整Build已有结果，禁止复用旧终态');
  const handle=openSync(lock,'wx',0o600);closeSync(handle);
  const cancellation=new AbortController(),abort=()=>cancellation.abort();options.signal?.addEventListener('abort',abort,{once:true});if(options.signal?.aborted)abort();
- const state={signal:cancellation.signal,cancellation,host:options.host,unconfirmed:false,finished:false};
+ const state={signal:cancellation.signal,cancellation,unconfirmed:false,finished:false};
  try{return await executions.run(state,async()=>{
   const stages=options.stages||{requirements,resources:(...args)=>resourceInternals.resources(...args),prepare,build};
   const resourcesOptions={signal:state.signal,offline:Boolean(options.offline),environment:options.environment||process.env};
 
-  if((options.environment||process.env).PRODUCT_RESOURCE_FD==='4'){
-   state.resourceClient=options.resourceClient||createResourceSupplyClient(new Socket({fd:4,readable:true,writable:true}),state.signal);
-   resourcesOptions.supply=previous=>state.resourceClient({previous});
-  }
   await stages.requirements(platform,work);state.signal.throwIfAborted();
   let receipt=await stages.resources(platform,work,request,resourcesOptions);state.signal.throwIfAborted();
   if(!options.stages)await runProductTests(platform,work,receipt,resourcesOptions.environment);
@@ -901,7 +892,7 @@ async function executeTask(platform,work,request={},options={}) {
   const result=await stages.build(platform,work,receipt,resourcesOptions.environment);state.signal.throwIfAborted();
   checkBuildResult(result,platform,work,request.run_id);
   writeFileSync(resultFile,JSON.stringify(result)+'\n',{flag:'wx',mode:0o600});return result;
- });}catch(error){if(String(error?.message).includes('退出未确认'))state.unconfirmed=true;throw error;}finally{state.finished=true;state.socket?.destroy();state.resourceClient?.close?.();options.signal?.removeEventListener('abort',abort);if(!state.unconfirmed){unlinkSync(lock);if((options.environment||process.env).PRODUCT_RESOURCE_FD!=='4'&&(options.environment||process.env).PRODUCT_HOST_FD!=='3')clearWork(work);}}
+ });}catch(error){if(String(error?.message).includes('退出未确认'))state.unconfirmed=true;throw error;}finally{state.finished=true;options.signal?.removeEventListener('abort',abort);if(!state.unconfirmed){unlinkSync(lock);clearWork(work);}}
 }
 export function checkBuildResult(value,platform,work,runId) {
  const endpoint=platformContract(platform),mobile=['client-ios','client-android'].includes(platform),desktop=platform.endsWith('macos');
@@ -930,19 +921,7 @@ async function completeBuild(platform,work,receipt,env) {
 }
 
 // 全双工宿主通道只传开发签名材料，不与stdout结果、stderr日志或资源回执混用。
-async function productHost() {
- const supplied=executions.getStore()?.host;if(supplied)return supplied;
- if(process.env.PRODUCT_HOST_FD===undefined)return null;
- if(process.env.PRODUCT_HOST_FD!=='3')fail('宿主通道描述符无效');
- const socket=new Socket({fd:3,readable:true,writable:true}),pending=new Map();let buffer='',sequence=0;
- socket.on('data',chunk=>{buffer+=chunk.toString('utf8');if(Buffer.byteLength(buffer)>128*1024){socket.destroy();return;}
-  let end;while((end=buffer.indexOf('\n'))>=0){const line=buffer.slice(0,end);buffer=buffer.slice(end+1);try{const reply=JSON.parse(line),entry=pending.get(reply.id);if(!entry)throw Error();pending.delete(reply.id);clearTimeout(entry.timer);if(reply.ok!==true)entry.reject(Error('开发签名材料宿主操作失败'));else entry.resolve(reply.value);}catch{socket.destroy();}}});
- const close=()=>{const state=executions.getStore();if(state&&!state.finished)state.cancellation?.abort();for(const entry of pending.values()){clearTimeout(entry.timer);entry.reject(Error('产品宿主通道中断'));}pending.clear();};socket.on('error',close);socket.on('close',close);socket.unref();
- const host=(operation,value)=>new Promise((resolve,reject)=>{if(!['development.read','development.create','artifact'].includes(operation))return reject(Error('宿主能力未授权'));
-  const id=String(++sequence),timer=setTimeout(()=>{pending.delete(id);reject(Error('开发材料操作超时'));socket.destroy();},30000);
-  pending.set(id,{resolve,reject,timer});socket.write(JSON.stringify({id,operation,...(value===undefined?{}:operation==='artifact'?{files:value}:{value})})+'\n');});
- executions.getStore().host=host;executions.getStore().socket=socket;return host;
-}
+
 // 模块先完成初始化，资源模块才能反向导入本文件的唯一校验；异步CLI在独立Promise中执行。
 // 所有本机原生编译正文集中于此；不生成第二份脚本。
 export const BUILD_SHELL_SOURCES=Object.freeze({"business":"#!/bin/bash\nset -euo pipefail\n# 本机生成物由本产品清理。\nproduct_clean() { \"${PRODUCT_NODE_BIN:-${NODE:?缺少本产品Node入口}}\" \"$PRODUCT_BUILD_ROOT/scripts/build.mjs\" clean \"$@\"; }\n\nSCRIPT_DIR=\"$(cd \"$(dirname \"$PRODUCT_BUILD_SCRIPT\")\" && pwd)\"\nROOT=\"$(cd \"$SCRIPT_DIR/..\" && pwd)\"\nDESTINATION=\"${1:?usage: build.mjs shell business DESTINATION}\"\n# 原件输入在创建或清理任何本轮目录前验证；没有交付组件就保持源码与既有候选不变。\n\"${NODE:?缺少Node准确入口}\" --input-type=module - \"$ROOT\" <<'COMPONENT_INPUTS'\nimport { lstatSync, realpathSync } from 'node:fs';\nimport { isAbsolute, join, resolve, sep } from 'node:path';\nconst source = realpathSync(process.argv[2]);\nfor (const name of ['TUYU_PHP_PREFIX', 'TUYU_OPENSSL_PREFIX', 'TUYU_PCRE2_PREFIX']) {\n  const path = process.env[name];\n  if (!path || !isAbsolute(path) || resolve(path) !== path || realpathSync(path) !== path\n    || !lstatSync(path).isDirectory() || path === source || (path.startsWith(source + sep) && !path.startsWith(join(source, 'target') + sep))\n    || source.startsWith(path + sep)) throw Error('编译组件未交付或目录身份无效：' + name);\n}\nCOMPONENT_INPUTS\n\n# 所有独立入口的工具临时状态归本产品target；宿主已交付的产品工作根继续归当前任务。\nPRODUCT_TEMP_SCRIPT=\"${PRODUCT_BUILD_SCRIPT}\"\nwhile [[ -L \"$PRODUCT_TEMP_SCRIPT\" ]]; do\n  PRODUCT_TEMP_LINK=\"$(readlink \"$PRODUCT_TEMP_SCRIPT\")\"\n  [[ \"$PRODUCT_TEMP_LINK\" == /* ]] || PRODUCT_TEMP_LINK=\"$(cd \"$(dirname \"$PRODUCT_TEMP_SCRIPT\")\" && pwd -P)/$PRODUCT_TEMP_LINK\"\n  PRODUCT_TEMP_SCRIPT=\"$PRODUCT_TEMP_LINK\"\ndone\nPRODUCT_TEMP_SOURCE=\"$(cd \"$(dirname \"$PRODUCT_TEMP_SCRIPT\")/..\" && pwd -P)\"\nPRODUCT_TARGET_TEMP_ROOT=\"$(\"${PRODUCT_NODE_BIN:-${NODE:-node}}\" \"$PRODUCT_TEMP_SOURCE/scripts/build.mjs\" temporary-root \"${PLATFORM:-${platform:-}}\" 'host-macos')\" || exit 1\nif [[ -z \"${PRODUCT_WORK_DIR:-}\" && \"${TMPDIR:-}\" != \"$PRODUCT_TEMP_SOURCE/target/\"* ]]; then\n  export TMPDIR=\"$PRODUCT_TARGET_TEMP_ROOT/\"\nfi\nDEPENDENCY_WORK_DIR=\"${TUYUBOOKING_DEPENDENCY_DIR:-${TMPDIR:-$PRODUCT_TARGET_TEMP_ROOT}/tuyubooking/dependencies}\"\nBUILD_ROOT=\"${TUYUBOOKING_BUILD_DIR:-${TMPDIR:-$PRODUCT_TARGET_TEMP_ROOT}/tuyubooking/build}\"\nCACHE=\"$DEPENDENCY_WORK_DIR/runtime\"\nVOYANT_OUTPUT=\"${TUYU_VOYANT_OUTPUT_DIR:-$BUILD_ROOT/voyant-output}\"\n\"${PYTHON:?缺少Python准确入口}\" - \"$ROOT\" \"$DEPENDENCY_WORK_DIR\" \"$BUILD_ROOT\" \"$DESTINATION\" \"$VOYANT_OUTPUT\" <<'CHECK_PATHS'\nfrom pathlib import Path\nimport sys\nsource = Path(sys.argv[1]).resolve()\nfor value in sys.argv[2:]:\n    raw, target = Path(value), Path(value).resolve()\n    if not raw.is_absolute() or source / 'target' not in target.parents:\n        raise SystemExit(f'TuyuBooking可写目录必须是本产品target内绝对路径：{value}')\nCHECK_PATHS\nmkdir -p \"$CACHE\" \"$BUILD_ROOT\"\nWORK=\"$(mktemp -d \"$BUILD_ROOT/business-build.XXXXXX\")\"\n\nif [ \"$(uname -s)\" != Darwin ] || [ \"$(uname -m)\" != arm64 ]; then\n  echo \"TuyuBooking business runtime build requires macOS\" >&2\n  exit 1\nfi\n\n# The first macOS release line uses the same minimum as the packaged\n# PostgreSQL, PHP and OpenSSL build inputs. Never inherit the build host SDK.\nexport MACOSX_DEPLOYMENT_TARGET=26.0\n\ncleanup() {\n  # 只清理本次独占工作目录，绝不清理上游源码目录。\n  product_clean -rf \"$WORK\" 2>/dev/null || true\n}\ntrap cleanup EXIT\n\nmkdir -p \"$CACHE\" \"$WORK\" \"$(dirname \"$DESTINATION\")\"\nif [ -n \"$DEPENDENCY_WORK_DIR\" ]; then\n  mkdir -p \"$DEPENDENCY_WORK_DIR/package-managers/npm\" \\\n    \"$DEPENDENCY_WORK_DIR/package-managers/yarn\" \\\n    \"$DEPENDENCY_WORK_DIR/package-managers/pip\" \\\n    \"$DEPENDENCY_WORK_DIR/frappe-assets\" \\\n    \"$DEPENDENCY_WORK_DIR/voyant-assets\" \\\n    \"$DEPENDENCY_WORK_DIR/hi-events-assets\"\n  export npm_config_cache=\"$DEPENDENCY_WORK_DIR/package-managers/npm\"\n  export YARN_CACHE_FOLDER=\"$DEPENDENCY_WORK_DIR/package-managers/yarn\"\n  export PIP_CACHE_DIR=\"$DEPENDENCY_WORK_DIR/package-managers/pip\"\nfi\nif [ -e \"$DESTINATION\" ]; then product_clean -rf \"$DESTINATION\"; fi\nmkdir -p \"$DESTINATION\"\n\n# 只消费调用方已交付的编译组件，禁止编译时由包管理器选择版本或来源。\n: \"${TUYU_PHP_PREFIX:?缺少验真的PHP编译组件}\" \"${TUYU_OPENSSL_PREFIX:?缺少验真的OpenSSL编译组件}\" \"${TUYU_PCRE2_PREFIX:?缺少验真的PCRE2编译组件}\"\n\nfetch_locked() {\n  \"${PRODUCT_NODE_BIN:-${NODE:?缺少本产品Node}}\" \"$PRODUCT_BUILD_ROOT/scripts/build.mjs\" original \"$1\" \"$2\" \"$3\"\n}\n\ncopy_tree() {\n  local source=\"$1\" destination=\"$2\"\n  ditto \"$source\" \"$destination\"\n}\n\ncopy_source() {\n  local source=\"$1\" destination=\"$2\"\n  mkdir -p \"$destination\"\n  rsync -a --delete \\\n    --exclude '.git' --exclude 'node_modules' --exclude '.turbo' --exclude '.output' \\\n    --exclude 'vendor' --exclude 'dist' \\\n    \"$source/\" \"$destination/\"\n}\n\nPHP_PREFIX=\"${TUYU_PHP_PREFIX}\"\nOPENSSL_PREFIX=\"${TUYU_OPENSSL_PREFIX}\"\nPCRE2_PREFIX=\"${TUYU_PCRE2_PREFIX}\"\n# 随包Node与构建Yarn只读TuyuBooking自己的runtime.lock.json。\nRUNTIME_TOOLS=\"$(node --input-type=module - \"$ROOT/modules/runtime.lock.json\" <<'NODE_TOOLS'\nimport {readFileSync} from 'node:fs';\nconst tools=JSON.parse(readFileSync(process.argv[2],'utf8')).tools;\nfor(const id of ['node','yarn']) {\n  const tool=tools[id];\n  process.stdout.write([tool.version,tool.url,tool.sha256,tool.archive,tool.root].join('\\n')+'\\n');\n}\nNODE_TOOLS\n)\"\n{ IFS= read -r NODE_VERSION; IFS= read -r NODE_URL; IFS= read -r NODE_SHA256;\n  IFS= read -r NODE_ARCHIVE; IFS= read -r NODE_ROOT;\n  IFS= read -r YARN_VERSION; IFS= read -r YARN_URL; IFS= read -r YARN_SHA256;\n  IFS= read -r YARN_ARCHIVE; IFS= read -r YARN_ROOT; } <<< \"$RUNTIME_TOOLS\"\nfetch_locked \"$NODE_URL\" \"$NODE_SHA256\" \"$CACHE/$NODE_ARCHIVE\"\ntar -xzf \"$CACHE/$NODE_ARCHIVE\" -C \"$WORK\"\nNODE_PREFIX=\"$WORK/$NODE_ROOT\"\n\ntest -x \"$PHP_PREFIX/bin/php\"\ntest -x \"$PHP_PREFIX/sbin/php-fpm\"\ntest -x \"$OPENSSL_PREFIX/bin/openssl\"\ntest -x \"$NODE_PREFIX/bin/node\"\n\"$PHP_PREFIX/bin/php\" --version | head -n 1 | grep -q '^PHP 8\\.4\\.24'\n\"$OPENSSL_PREFIX/bin/openssl\" version | grep -q '^OpenSSL 3\\.6\\.3'\ntest \"$(\"$NODE_PREFIX/bin/node\" --version)\" = \"v$NODE_VERSION\"\n\ncopy_tree \"$PHP_PREFIX\" \"$DESTINATION/php\"\ncopy_tree \"$OPENSSL_PREFIX\" \"$DESTINATION/openssl\"\ncopy_tree \"$NODE_PREFIX\" \"$DESTINATION/node\"\n\nPYTHON_ARCHIVE=\"$CACHE/Python-3.14.3.tgz\"\nfetch_locked \\\n  \"https://www.python.org/ftp/python/3.14.3/Python-3.14.3.tgz\" \\\n  \"d7fe130d0501ae047ca318fa92aa642603ab6f217901015a1df6ce650d5470cd\" \\\n  \"$PYTHON_ARCHIVE\"\ntar -xzf \"$PYTHON_ARCHIVE\" -C \"$WORK\"\n(\n  cd \"$WORK/Python-3.14.3\"\n  CPPFLAGS=\"-I$OPENSSL_PREFIX/include\" \\\n  LDFLAGS=\"-L$OPENSSL_PREFIX/lib\" \\\n  ac_cv_func_dup3=no \\\n  ac_cv_func_pipe2=no \\\n    ./configure \\\n      --prefix=\"$DESTINATION/python\" \\\n      --enable-shared \\\n      --with-ensurepip=install \\\n      --with-openssl=\"$OPENSSL_PREFIX\"\n  make -j\"$(sysctl -n hw.logicalcpu)\"\n  make install\n)\nPYTHON=\"$DESTINATION/python/bin/python3\"\n\"$PYTHON\" --version 2>&1 | grep -q '^Python 3\\.14\\.3$'\n\"$PYTHON\" - \"$DESTINATION/python\" <<'PY'\nimport pathlib\nimport sys\nimport sysconfig\n\nprefix = pathlib.Path(sys.argv[1]).resolve()\npurelib = pathlib.Path(sysconfig.get_paths()[\"purelib\"]).resolve()\nif prefix not in purelib.parents:\n    raise SystemExit(f\"Python package directory escaped runtime: {purelib}\")\nPY\n\n# Yarn仅用于本次构建，不封入运行包，也不依赖Node是否附带Corepack。\nfetch_locked \"$YARN_URL\" \"$YARN_SHA256\" \"$CACHE/$YARN_ARCHIVE\"\nmkdir -p \"$WORK/yarn\"\ntar -xzf \"$CACHE/$YARN_ARCHIVE\" -C \"$WORK/yarn\"\nYARN=\"$WORK/yarn/$YARN_ROOT/bin/yarn.js\"\ntest \"$(\"$DESTINATION/node/bin/node\" \"$YARN\" --version)\" = \"$YARN_VERSION\"\nexport PATH=\"$DESTINATION/node/bin:$(dirname \"$YARN\"):$PATH\"\n\nNGINX_ARCHIVE=\"$CACHE/nginx-1.30.4.tar.gz\"\nfetch_locked \\\n  \"https://nginx.org/download/nginx-1.30.4.tar.gz\" \\\n  \"4261dc90e9e47c1c4041276e9aaa3d48ebe2e664f728e14fa95ae6c67d57a08b\" \\\n  \"$NGINX_ARCHIVE\"\ntar -xzf \"$NGINX_ARCHIVE\" -C \"$WORK\"\n(\n  cd \"$WORK/nginx-1.30.4\"\n  ./configure \\\n    --prefix=\"$DESTINATION/nginx\" \\\n    --sbin-path=\"$DESTINATION/nginx/sbin/nginx\" \\\n    --conf-path=\"$DESTINATION/nginx/conf/nginx.conf\" \\\n    --with-http_ssl_module \\\n    --with-http_v2_module \\\n    --with-pcre-jit \\\n    --with-cc-opt=\"-I$PCRE2_PREFIX/include -I$OPENSSL_PREFIX/include\" \\\n    --with-ld-opt=\"-L$PCRE2_PREFIX/lib -L$OPENSSL_PREFIX/lib\"\n  make -j\"$(sysctl -n hw.logicalcpu)\"\n  make install\n)\n\"$DESTINATION/nginx/sbin/nginx\" -v 2>&1 | grep -q '^nginx version: nginx/1\\.30\\.4$'\n\nBENCH=\"$DESTINATION/bench\"\nmkdir -p \"$BENCH/apps\" \"$BENCH/sites\"\nfor app in frappe erpnext hrms kamra ury; do\n  copy_source \"$ROOT/upstream/$app\" \"$BENCH/apps/$app\"\ndone\n\n# The product runtime is PostgreSQL-only. Remove MariaDB-only drivers from the\n# disposable Frappe build copy without changing the imported upstream source.\nFRAPPE_PROJECT=\"$BENCH/apps/frappe/pyproject.toml\"\nsed -i '' \\\n  -e '/\"PyMySQL==1\\.1\\.2\",/d' \\\n  -e '/\"mysqlclient==2\\.2\\.7\",/d' \\\n  \"$FRAPPE_PROJECT\"\nif grep -Eq '\"(PyMySQL==1\\.1\\.2|mysqlclient==2\\.2\\.7)\"' \"$FRAPPE_PROJECT\"; then\n  echo \"failed to remove MariaDB-only Frappe dependencies\" >&2\n  exit 1\nfi\n\nexport PYTHONNOUSERSITE=1\n# Python依赖由产品自己的pyproject清单和pip解析，调用方只选择产品缓存目录。\nunset PIP_NO_CACHE_DIR UV_NO_CACHE\nexport PIP_CACHE_DIR=\"$DEPENDENCY_WORK_DIR/package-managers/pip\"\nexport UV_CACHE_DIR=\"$DEPENDENCY_WORK_DIR/package-managers/uv\"\nmkdir -p \"$PIP_CACHE_DIR\" \"$UV_CACHE_DIR\"\nPIP_NETWORK_ARGS=()\ncase \"${TUYUBOOKING_OFFLINE:-false}\" in\n  true) PIP_NETWORK_ARGS+=(--no-index) ;;\n  false) ;;\n  *) echo 'TUYUBOOKING_OFFLINE只接受true或false' >&2; exit 1 ;;\nesac\n\"$PYTHON\" -m pip install --disable-pip-version-check --break-system-packages \\\n  --cache-dir \"$PIP_CACHE_DIR\" \"${PIP_NETWORK_ARGS[@]}\" \"$BENCH/apps/frappe\"\nfor app in erpnext hrms kamra ury; do\n  \"$PYTHON\" -m pip install --disable-pip-version-check --break-system-packages \\\n    --cache-dir \"$PIP_CACHE_DIR\" \"${PIP_NETWORK_ARGS[@]}\" \"$BENCH/apps/$app\"\ndone\nTUYU_FRAPPE_ASSET_CACHE=\"${DEPENDENCY_WORK_DIR:+$DEPENDENCY_WORK_DIR/frappe-assets}\" \\\n  \"${PRODUCT_NODE_BIN:-${NODE:-node}}\" \"$ROOT/scripts/build.mjs\" shell assets \"$DESTINATION\" \"$YARN\"\n\nVOYANT_SOURCE=\"$ROOT/upstream/voyant\"\nVOYANT_BUILD_SOURCE=\"$WORK/voyant-source\"\nVOYANT_LOCK_SHA256=\"$(shasum -a 256 \"$VOYANT_SOURCE/pnpm-lock.yaml\" | awk '{print $1}')\"\ncopy_source \"$VOYANT_SOURCE\" \"$VOYANT_BUILD_SOURCE\"\nPNPM_TOOL=\"$(\"$DESTINATION/node/bin/node\" --input-type=module - \"$ROOT/modules/runtime.lock.json\" <<'NODE_PNPM'\nimport {readFileSync} from 'node:fs';\nconst tool=JSON.parse(readFileSync(process.argv[2],'utf8')).tools.pnpm;\nprocess.stdout.write([tool.version,tool.url,tool.sha256,tool.archive,tool.root].join('\\n'));\nNODE_PNPM\n)\"\n{ IFS= read -r PNPM_VERSION; IFS= read -r PNPM_URL; IFS= read -r PNPM_SHA256;\n  IFS= read -r PNPM_ARCHIVE; IFS= read -r PNPM_ROOT; } <<< \"$PNPM_TOOL\"\nfetch_locked \"$PNPM_URL\" \"$PNPM_SHA256\" \"$CACHE/$PNPM_ARCHIVE\"\nmkdir -p \"$WORK/pnpm\"\ntar -xzf \"$CACHE/$PNPM_ARCHIVE\" -C \"$WORK/pnpm\"\nVOYANT_PNPM=\"$WORK/pnpm/$PNPM_ROOT/bin/pnpm.cjs\"\nVOYANT_PNPM_STORE=\"$DEPENDENCY_WORK_DIR/package-managers/pnpm-store\"\ntest \"$(\"$DESTINATION/node/bin/node\" \"$VOYANT_PNPM\" --version)\" = \"$PNPM_VERSION\"\nmkdir -p \"$VOYANT_PNPM_STORE\"\nPNPM_OPTIONS=()\nif [ \"${TUYUBOOKING_OFFLINE:-false}\" = true ]; then PNPM_OPTIONS+=(--offline); fi\n(\n  cd \"$VOYANT_BUILD_SOURCE\"\n  # 依赖只安装到产品临时源码副本；锁文件和包管理器版本保持冻结。\n  export HUSKY=0 CI=true\n  \"$DESTINATION/node/bin/node\" \"$VOYANT_PNPM\" install --frozen-lockfile \"${PNPM_OPTIONS[@]}\" \\\n    --store-dir \"$VOYANT_PNPM_STORE\"\n)\nexport PATH=\"$DESTINATION/node/bin:$VOYANT_BUILD_SOURCE/node_modules/.bin:$PATH\"\nVOYANT_CACHE=\"${DEPENDENCY_WORK_DIR:+$DEPENDENCY_WORK_DIR/voyant-assets}\"\nVOYANT_FINGERPRINT=\"\"\nif [ -n \"$VOYANT_CACHE\" ]; then\n  VOYANT_FINGERPRINT=\"$({\n    printf '%s\\n' 'tuyu-voyant-assets-v1'\n    printf '%s\\n' \"$NODE_VERSION\" \"$NODE_SHA256\"\n    find \"$ROOT/upstream/voyant/templates/operator\" -type f \\\n      ! -path '*/.git/*' ! -path '*/node_modules/*' ! -path '*/.output/*' \\\n      -exec shasum -a 256 {} + | LC_ALL=C sort\n    shasum -a 256 \"$ROOT/upstream/voyant/pnpm-lock.yaml\"\n  } | shasum -a 256 | awk '{print $1}')\"\nfi\nif [ -n \"$VOYANT_CACHE\" ] \\\n  && [ -f \"$VOYANT_CACHE/fingerprint\" ] \\\n  && [ \"$(cat \"$VOYANT_CACHE/fingerprint\")\" = \"$VOYANT_FINGERPRINT\" ] \\\n  && [ -f \"$VOYANT_CACHE/output/server/index.mjs\" ]; then\n  if [ -e \"$VOYANT_OUTPUT\" ]; then find \"$VOYANT_OUTPUT\" -depth -delete; fi\n  copy_tree \"$VOYANT_CACHE/output\" \"$VOYANT_OUTPUT\"\nelse\n  (\n    cd \"$VOYANT_BUILD_SOURCE/templates/operator\"\n    TUYU_VOYANT_OUTPUT_DIR=\"$VOYANT_OUTPUT\" \\\n      \"$DESTINATION/node/bin/node\" scripts/build-tuyu.mjs\n  )\n  if [ -n \"$VOYANT_CACHE\" ]; then\n    VOYANT_CACHE_NEXT=\"$VOYANT_CACHE.next.$$\"\n    if [ -e \"$VOYANT_CACHE_NEXT\" ]; then find \"$VOYANT_CACHE_NEXT\" -depth -delete; fi\n    mkdir -p \"$VOYANT_CACHE_NEXT\"\n    copy_tree \"$VOYANT_OUTPUT\" \"$VOYANT_CACHE_NEXT/output\"\n    printf '%s\\n' \"$VOYANT_FINGERPRINT\" > \"$VOYANT_CACHE_NEXT/fingerprint\"\n    if [ -e \"$VOYANT_CACHE\" ]; then find \"$VOYANT_CACHE\" -depth -delete; fi\n    mv \"$VOYANT_CACHE_NEXT\" \"$VOYANT_CACHE\"\n  fi\nfi\ntest \"$(shasum -a 256 \"$VOYANT_SOURCE/pnpm-lock.yaml\" | awk '{print $1}')\" = \"$VOYANT_LOCK_SHA256\"\ntest -f \"$VOYANT_OUTPUT/server/index.mjs\"\nmkdir -p \"$DESTINATION/voyant/operator\"\ncopy_tree \"$VOYANT_OUTPUT\" \"$DESTINATION/voyant/operator/.output\"\ncopy_tree \"$VOYANT_BUILD_SOURCE/templates/operator/migrations\" \\\n  \"$DESTINATION/voyant/operator/migrations\"\n\nHI_EVENTS_WORK=\"$WORK/hi_events\"\ncopy_source \"$ROOT/upstream/hi_events/backend\" \"$HI_EVENTS_WORK/backend\"\ncopy_source \"$ROOT/upstream/hi_events/frontend\" \"$HI_EVENTS_WORK/frontend\"\nHI_EVENTS_CACHE=\"${DEPENDENCY_WORK_DIR:+$DEPENDENCY_WORK_DIR/hi-events-assets}\"\nHI_EVENTS_FINGERPRINT=\"\"\nHI_EVENTS_CACHE_HIT=0\nif [ -n \"$HI_EVENTS_CACHE\" ]; then\n  HI_EVENTS_FINGERPRINT=\"$({\n    printf '%s\\n' 'tuyu-hi-events-assets-v1'\n    printf '%s\\n' \"$NODE_VERSION\" \"$NODE_SHA256\" \"$YARN_VERSION\" \"$YARN_SHA256\"\n    find \"$ROOT/upstream/hi_events/frontend\" -type f \\\n      ! -path '*/.git/*' ! -path '*/node_modules/*' ! -path '*/dist/*' \\\n      ! -path '*/build/*' ! -path '*/.next/*' ! -path '*/.output/*' \\\n      -exec shasum -a 256 {} + | LC_ALL=C sort\n  } | shasum -a 256 | awk '{print $1}')\"\n  if [ -f \"$HI_EVENTS_CACHE/fingerprint\" ] \\\n    && [ \"$(cat \"$HI_EVENTS_CACHE/fingerprint\")\" = \"$HI_EVENTS_FINGERPRINT\" ] \\\n    && [ -f \"$HI_EVENTS_CACHE/outputs.txt\" ] \\\n    && [ -d \"$HI_EVENTS_CACHE/node_modules\" ]; then\n    HI_EVENTS_CACHE_HIT=1\n    copy_tree \"$HI_EVENTS_CACHE/node_modules\" \"$HI_EVENTS_WORK/frontend/node_modules\"\n    while IFS= read -r generated; do\n      [ -n \"$generated\" ] || continue\n      [ -d \"$HI_EVENTS_CACHE/$generated\" ] || { HI_EVENTS_CACHE_HIT=0; break; }\n      copy_tree \"$HI_EVENTS_CACHE/$generated\" \"$HI_EVENTS_WORK/frontend/$generated\"\n    done < \"$HI_EVENTS_CACHE/outputs.txt\"\n  fi\nfi\n\n# 固定Composer本体直接执行；生产依赖由composer.lock决定。\nCOMPOSER_TOOL=\"$(node --input-type=module - \"$ROOT/modules/runtime.lock.json\" <<'NODE_COMPOSER'\nimport {readFileSync} from 'node:fs';\nconst tool=JSON.parse(readFileSync(process.argv[2],'utf8')).tools.composer;\nprocess.stdout.write([tool.version,tool.url,tool.sha256,tool.archive].join('\\n'));\nNODE_COMPOSER\n)\"\n{ IFS= read -r COMPOSER_VERSION; IFS= read -r COMPOSER_URL;\n  IFS= read -r COMPOSER_SHA256; IFS= read -r COMPOSER_ARCHIVE; } <<< \"$COMPOSER_TOOL\"\nCOMPOSER=\"$CACHE/$COMPOSER_ARCHIVE\"\nfetch_locked \"$COMPOSER_URL\" \"$COMPOSER_SHA256\" \"$COMPOSER\"\nCOMPOSER_HOME=\"$DEPENDENCY_WORK_DIR/package-managers/composer-home\"\nCOMPOSER_CACHE_DIR=\"$DEPENDENCY_WORK_DIR/package-managers/composer-cache\"\nexport COMPOSER_HOME COMPOSER_CACHE_DIR\nmkdir -p \"$COMPOSER_HOME\" \"$COMPOSER_CACHE_DIR\"\nCOMPOSER_NETWORK_ENV=()\nif [ \"${TUYUBOOKING_OFFLINE:-false}\" = true ]; then COMPOSER_NETWORK_ENV+=(COMPOSER_DISABLE_NETWORK=1); fi\n(\n  cd \"$HI_EVENTS_WORK/backend\"\n  env \"${COMPOSER_NETWORK_ENV[@]}\" \"$DESTINATION/php/bin/php\" \"$COMPOSER\" install \\\n    --no-dev --prefer-dist --no-interaction --no-progress --optimize-autoloader\n)\nif [ \"$HI_EVENTS_CACHE_HIT\" != 1 ]; then\n  YARN_NETWORK_ARGS=()\n  if [ \"${TUYUBOOKING_OFFLINE:-false}\" = true ]; then YARN_NETWORK_ARGS+=(--offline); fi\n  (\n    cd \"$HI_EVENTS_WORK/frontend\"\n    \"$DESTINATION/node/bin/node\" \"$YARN\" install --frozen-lockfile --non-interactive \\\n      --cache-folder \"$YARN_CACHE_FOLDER\" \"${YARN_NETWORK_ARGS[@]}\"\n    \"$DESTINATION/node/bin/node\" \"$YARN\" build\n    find node_modules -depth -delete\n    \"$DESTINATION/node/bin/node\" \"$YARN\" install --frozen-lockfile --non-interactive \\\n      --cache-folder \"$YARN_CACHE_FOLDER\" \"${YARN_NETWORK_ARGS[@]}\" --production=true --ignore-scripts\n  )\n  if [ -n \"$HI_EVENTS_CACHE\" ]; then\n    HI_EVENTS_CACHE_NEXT=\"$HI_EVENTS_CACHE.next.$$\"\n    if [ -e \"$HI_EVENTS_CACHE_NEXT\" ]; then find \"$HI_EVENTS_CACHE_NEXT\" -depth -delete; fi\n    mkdir -p \"$HI_EVENTS_CACHE_NEXT\"\n    copy_tree \"$HI_EVENTS_WORK/frontend/node_modules\" \"$HI_EVENTS_CACHE_NEXT/node_modules\"\n    : > \"$HI_EVENTS_CACHE_NEXT/outputs.txt\"\n    for generated in dist build .next .output; do\n      if [ -d \"$HI_EVENTS_WORK/frontend/$generated\" ]; then\n        copy_tree \"$HI_EVENTS_WORK/frontend/$generated\" \"$HI_EVENTS_CACHE_NEXT/$generated\"\n        printf '%s\\n' \"$generated\" >> \"$HI_EVENTS_CACHE_NEXT/outputs.txt\"\n      fi\n    done\n    [ -s \"$HI_EVENTS_CACHE_NEXT/outputs.txt\" ] \\\n      || { echo 'Hi.Events前端没有产生可缓存资产目录' >&2; exit 1; }\n    printf '%s\\n' \"$HI_EVENTS_FINGERPRINT\" > \"$HI_EVENTS_CACHE_NEXT/fingerprint\"\n    if [ -e \"$HI_EVENTS_CACHE\" ]; then find \"$HI_EVENTS_CACHE\" -depth -delete; fi\n    mv \"$HI_EVENTS_CACHE_NEXT\" \"$HI_EVENTS_CACHE\"\n  fi\nfi\ncopy_tree \"$HI_EVENTS_WORK\" \"$DESTINATION/hi_events\"\n\nmkdir -p \"$DESTINATION/licenses/upstream\" \"$DESTINATION/licenses/build-inventory\"\ncopy_tree \"$ROOT/licenses\" \"$DESTINATION/licenses/upstream\"\n\"$PYTHON\" -m pip freeze > \"$DESTINATION/licenses/build-inventory/python.txt\"\ncp \"$ROOT/upstream/hi_events/backend/composer.lock\" \\\n  \"$DESTINATION/licenses/build-inventory/hi-events-composer.lock\"\ncp \"$ROOT/upstream/hi_events/frontend/yarn.lock\" \\\n  \"$DESTINATION/licenses/build-inventory/hi-events-yarn.lock\"\ncp \"$ROOT/upstream/voyant/pnpm-lock.yaml\" \\\n  \"$DESTINATION/licenses/build-inventory/voyant-pnpm-lock.yaml\"\n\nDESTINATION=\"$DESTINATION\" ROOT=\"$ROOT\" NODE_VERSION=\"$NODE_VERSION\" \"$PYTHON\" - <<'PY'\nimport hashlib\nimport json\nimport os\nfrom pathlib import Path\n\nroot = Path(os.environ[\"DESTINATION\"])\nrepo = Path(os.environ[\"ROOT\"])\nlocks = json.loads((repo / \"modules/runtime.lock.json\").read_text())\npackages = [\n    {\"SPDXID\": \"SPDXRef-Python\", \"name\": \"Python\", \"versionInfo\": \"3.14.3\"},\n    {\"SPDXID\": \"SPDXRef-Node\", \"name\": \"Node.js\", \"versionInfo\": os.environ[\"NODE_VERSION\"]},\n    {\"SPDXID\": \"SPDXRef-PHP\", \"name\": \"PHP\", \"versionInfo\": \"8.4.24\"},\n    {\"SPDXID\": \"SPDXRef-Nginx\", \"name\": \"Nginx\", \"versionInfo\": \"1.30.4\"},\n]\nfor name in (\"frappe\", \"erpnext\", \"hrms\", \"kamra\", \"ury\"):\n    packages.append({\n        \"SPDXID\": f\"SPDXRef-{name}\",\n        \"name\": name,\n        \"versionInfo\": locks[f\"{name}_commit\"],\n    })\npackages.extend([\n    {\"SPDXID\": \"SPDXRef-Voyant\", \"name\": \"Voyant\", \"versionInfo\": locks[\"voyant\"][\"commit\"]},\n    {\"SPDXID\": \"SPDXRef-HiEvents\", \"name\": \"Hi.Events\", \"versionInfo\": locks[\"hi_events\"][\"commit\"]},\n])\n(root / \"sbom.spdx.json\").write_text(json.dumps({\n    \"spdxVersion\": \"SPDX-2.3\",\n    \"dataLicense\": \"CC0-1.0\",\n    \"SPDXID\": \"SPDXRef-DOCUMENT\",\n    \"name\": \"TuyuBooking-macOS-business-runtime\",\n    \"documentNamespace\": \"https://tuyu.love/spdx/tuyubooking/business-runtime/macos\",\n    \"creationInfo\": {\"creators\": [\"Tool: TuyuBooking build.mjs shell business\"]},\n    \"packages\": packages,\n}, ensure_ascii=False, indent=2) + \"\\n\")\n\nrecords = []\nfor path in sorted(root.rglob(\"*\")):\n    if not path.is_file() or path.name == \"bundle.manifest.json\":\n        continue\n    records.append({\n        \"path\": path.relative_to(root).as_posix(),\n        \"sha256\": hashlib.sha256(path.read_bytes()).hexdigest(),\n        \"size\": path.stat().st_size,\n        \"executable\": bool(path.stat().st_mode & 0o111),\n    })\n(root / \"bundle.manifest.json\").write_text(json.dumps({\n    \"schema_version\": 1,\n    \"platform\": \"macos\",\n    \"network_install_allowed\": False,\n    \"files\": records,\n}, ensure_ascii=False, indent=2) + \"\\n\")\nPY\n\necho \"built TuyuBooking macOS business runtime: $DESTINATION\"\n","assets":"#!/bin/bash\nset -euo pipefail\n# 本机生成物由本产品清理。\nproduct_clean() { \"${PRODUCT_NODE_BIN:-${NODE:?缺少本产品Node入口}}\" \"$PRODUCT_BUILD_ROOT/scripts/build.mjs\" clean \"$@\"; }\n\nSOURCE=\"${1:?usage: build.mjs shell assets BUSINESS_RUNTIME_SOURCE}\"\nBENCH=\"$SOURCE/bench\"\nNODE=\"$SOURCE/node/bin/node\"\nYARN=\"${2:?usage: build.mjs shell assets BUSINESS_RUNTIME_SOURCE VERIFIED_YARN}\"\nASSETS=\"$BENCH/sites/assets\"\nFRAPPE_PUBLIC=\"$BENCH/apps/frappe/frappe/public\"\nAPPS=(frappe erpnext hrms kamra ury)\nASSET_CACHE=\"${TUYU_FRAPPE_ASSET_CACHE:-}\"\n\nrequire_file() { test -f \"$1\" || { echo \"missing Frappe build file: $1\" >&2; exit 1; }; }\nrequire_dir() { test -d \"$1\" || { echo \"missing Frappe build directory: $1\" >&2; exit 1; }; }\nrequire_executable() { test -x \"$1\" || { echo \"missing Frappe build executable: $1\" >&2; exit 1; }; }\n\nrequire_executable \"$NODE\"\nrequire_executable \"$YARN\"\nfor app in \"${APPS[@]}\"; do\n  require_dir \"$BENCH/apps/$app/$app/public\"\ndone\nrequire_file \"$BENCH/apps/frappe/yarn.lock\"\nrequire_file \"$BENCH/apps/erpnext/yarn.lock\"\nrequire_file \"$BENCH/apps/hrms/yarn.lock\"\n\nexport PATH=\"$SOURCE/node/bin:$(dirname \"$YARN\"):$PATH\"\n# 所有独立入口的工具临时状态归本产品target；宿主已交付的产品工作根继续归当前任务。\nPRODUCT_TEMP_SCRIPT=\"${PRODUCT_BUILD_SCRIPT}\"\nwhile [[ -L \"$PRODUCT_TEMP_SCRIPT\" ]]; do\n  PRODUCT_TEMP_LINK=\"$(readlink \"$PRODUCT_TEMP_SCRIPT\")\"\n  [[ \"$PRODUCT_TEMP_LINK\" == /* ]] || PRODUCT_TEMP_LINK=\"$(cd \"$(dirname \"$PRODUCT_TEMP_SCRIPT\")\" && pwd -P)/$PRODUCT_TEMP_LINK\"\n  PRODUCT_TEMP_SCRIPT=\"$PRODUCT_TEMP_LINK\"\ndone\nPRODUCT_TEMP_SOURCE=\"$(cd \"$(dirname \"$PRODUCT_TEMP_SCRIPT\")/..\" && pwd -P)\"\nPRODUCT_TARGET_TEMP_ROOT=\"$(\"${PRODUCT_NODE_BIN:-${NODE:-node}}\" \"$PRODUCT_TEMP_SOURCE/scripts/build.mjs\" temporary-root \"${PLATFORM:-${platform:-}}\" 'host-macos')\" || exit 1\nif [[ -z \"${PRODUCT_WORK_DIR:-}\" && \"${TMPDIR:-}\" != \"$PRODUCT_TEMP_SOURCE/target/\"* ]]; then\n  export TMPDIR=\"$PRODUCT_TARGET_TEMP_ROOT/\"\nfi\nBUILD_TMP_ROOT=\"${TUYU_BUILD_TMPDIR:-${TMPDIR:-$PRODUCT_TARGET_TEMP_ROOT}}\"\nmkdir -p \"$BUILD_TMP_ROOT\"\nBUILD_TMP=\"$(mktemp -d \"$BUILD_TMP_ROOT/tuyubooking-frappe-assets.XXXXXX\")\"\nexport TMPDIR=\"$BUILD_TMP\"\nexport FRAPPE_BENCH_ROOT=\"$BENCH\"\nexport NODE_OPTIONS=\"--max_old_space_size=4096\"\n\nasset_fingerprint() {\n  {\n    printf '%s\\n' 'tuyu-frappe-assets-v1'\n    shasum -a 256 \"$0\"\n    # 工具变化必须使资源缓存失效，不能复用另一版本的编译结果。\n    shasum -a 256 \"$NODE\" \"$YARN\"\n    find \"$BENCH/apps\" -type f \\\n      ! -path '*/.git/*' ! -path '*/node_modules/*' ! -path '*/sites/assets/*' \\\n      -exec shasum -a 256 {} + | LC_ALL=C sort\n  } | shasum -a 256 | awk '{print $1}'\n}\n\ncopy_tree() {\n  local source=\"$1\" destination=\"$2\"\n  if command -v ditto >/dev/null 2>&1; then\n    ditto \"$source\" \"$destination\"\n  else\n    cp -a \"$source\" \"$destination\"\n  fi\n}\n\ncleanup() {\n  if test -L \"$FRAPPE_PUBLIC/node_modules\"; then\n    find \"$FRAPPE_PUBLIC/node_modules\" -delete\n  fi\n  if test -d \"$BUILD_TMP\"; then\n    find \"$BUILD_TMP\" -depth -delete\n  fi\n}\ntrap cleanup EXIT\n\nASSET_FINGERPRINT=\"\"\nif test -n \"$ASSET_CACHE\"; then\n  ASSET_FINGERPRINT=\"$(asset_fingerprint)\"\n  if test -f \"$ASSET_CACHE/fingerprint\" \\\n    && test \"$(cat \"$ASSET_CACHE/fingerprint\")\" = \"$ASSET_FINGERPRINT\" \\\n    && test -f \"$ASSET_CACHE/assets/assets.json\"; then\n    if test -e \"$ASSETS\" || test -L \"$ASSETS\"; then\n      find \"$ASSETS\" -depth -delete\n    fi\n    mkdir -p \"$ASSETS\"\n    copy_tree \"$ASSET_CACHE/assets/.\" \"$ASSETS\"\n    printf 'frappe\\nerpnext\\nhrms\\nkamra\\nury\\n' > \"$BENCH/sites/apps.txt\"\n    echo \"reused immutable TuyuBooking Frappe assets: $ASSETS\"\n    exit 0\n  fi\nfi\n\n# Yarn版本由TuyuBooking runtime锁固定，依赖闭包由各上游yarn.lock决定。\nYARN_CACHE_FOLDER=\"${YARN_CACHE_FOLDER:-${TUYUBOOKING_DEPENDENCY_DIR:-${TMPDIR:-$PRODUCT_TARGET_TEMP_ROOT}/tuyubooking/dependencies}/package-managers/yarn}\"\nmkdir -p \"$YARN_CACHE_FOLDER\"\nYARN_NETWORK_ARGS=()\ncase \"${TUYUBOOKING_OFFLINE:-false}\" in\n  true) YARN_NETWORK_ARGS+=(--offline) ;;\n  false) ;;\n  *) echo 'TUYUBOOKING_OFFLINE只接受true或false' >&2; exit 1 ;;\nesac\n\ninstall_locked_dependencies() {\n  local app=\"$1\"\n  shift\n  (\n    cd \"$BENCH/apps/$app\"\n    \"$NODE\" \"$YARN\" --cache-folder \"$YARN_CACHE_FOLDER\" \\\n      install --frozen-lockfile --non-interactive --network-timeout 60000 \\\n      \"${YARN_NETWORK_ARGS[@]}\" \"$@\"\n  )\n}\n\n# These dependencies exist only on the trusted build machine. They are pruned\n# after the immutable browser assets have been generated.\ninstall_locked_dependencies frappe\ninstall_locked_dependencies erpnext --ignore-scripts\ninstall_locked_dependencies hrms --ignore-scripts\n\n# @frappe/esbuild-plugin-postcss2 0.1.3 derives an entry-point temporary path\n# from path.relative(). When Node resolves an input through a different macOS\n# filesystem root, the relative path contains \"..\" segments and path.resolve()\n# escapes the plugin temporary directory.\n# Patch only the disposable, lockfile-installed build dependency. The exact\n# one-match gate makes an upstream plugin change fail closed instead of silently\n# applying an incompatible replacement.\nPOSTCSS_PLUGIN=\"$BENCH/apps/frappe/node_modules/@frappe/esbuild-plugin-postcss2/dist/index.js\"\nrequire_file \"$POSTCSS_PLUGIN\"\n\"$NODE\" - \"$POSTCSS_PLUGIN\" <<'NODE'\nconst fs = require(\"fs\");\n\nconst file = process.argv[2];\nconst source = fs.readFileSync(file, \"utf8\");\nconst unsafe = `        const sourceRelDir = import_path.default.relative(import_path.default.dirname(rootDir), import_path.default.dirname(sourceFullPath));\n        tmpFilePath = import_path.default.resolve(tmpDirPath, sourceRelDir, \\`${\"${sourceBaseName}\"}.css\\`);`;\nconst safe = `        tmpFilePath = import_path.default.resolve(tmpDirPath, uniqueId(), \\`${\"${sourceBaseName}\"}.css\\`);`;\nconst count = source.split(unsafe).length - 1;\nif (count !== 1) {\n  throw new Error(`postcss2 entry-point temp-path contract drifted: expected 1 match, found ${count}`);\n}\nfs.writeFileSync(file, source.replace(unsafe, safe));\nNODE\n\nif test -e \"$ASSETS\" || test -L \"$ASSETS\"; then\n  find \"$ASSETS\" -depth -delete\nfi\nmkdir -p \"$ASSETS\"\nprintf 'frappe\\nerpnext\\nhrms\\nkamra\\nury\\n' > \"$BENCH/sites/apps.txt\"\n\n# Kamra and URY publish their committed front-end output through their own\n# public directories. Frappe, ERPNext and HRMS bundles are added below.\nfor app in \"${APPS[@]}\"; do\n  copy_tree \"$BENCH/apps/$app/$app/public\" \"$ASSETS/$app\"\ndone\n\nif test -e \"$FRAPPE_PUBLIC/node_modules\" || test -L \"$FRAPPE_PUBLIC/node_modules\"; then\n  echo \"unexpected Frappe public/node_modules path\" >&2\n  exit 1\nfi\n# One upstream stylesheet imports this conventional build-time path. The link\n# is temporary and never enters the runtime payload.\nln -s ../../node_modules \"$FRAPPE_PUBLIC/node_modules\"\n\nfind \\\n  \"$BENCH/apps/frappe/frappe/public/scss\" \\\n  \"$BENCH/apps/erpnext/erpnext/public/scss\" \\\n  \"$BENCH/apps/hrms/hrms/public/scss\" \\\n  -type f -name '*.bundle.css' -delete\n\n# Frappe resolves CSS imports relative to its app root, so this working\n# directory is part of the reproducible build contract.\n(\n  cd \"$BENCH/apps/frappe\"\n  \"$NODE\" esbuild --production --apps frappe,erpnext,hrms\n)\n\nrequire_file \"$ASSETS/assets.json\"\n\"$NODE\" - \"$ASSETS/assets.json\" <<'NODE'\nconst fs = require(\"fs\");\nconst file = process.argv[2];\nconst assets = JSON.parse(fs.readFileSync(file, \"utf8\"));\nfor (const key of [\"login.bundle.css\", \"desk.bundle.js\", \"erpnext.bundle.js\", \"hrms.bundle.js\"]) {\n  if (typeof assets[key] !== \"string\" || !assets[key].startsWith(\"/assets/\")) {\n    throw new Error(`missing required Frappe asset: ${key}`);\n  }\n}\nNODE\n\nif test -n \"$ASSET_CACHE\"; then\n  ASSET_CACHE_NEXT=\"$ASSET_CACHE.next.$$\"\n  if test -e \"$ASSET_CACHE_NEXT\"; then find \"$ASSET_CACHE_NEXT\" -depth -delete; fi\n  mkdir -p \"$ASSET_CACHE_NEXT/assets\"\n  copy_tree \"$ASSETS/.\" \"$ASSET_CACHE_NEXT/assets\"\n  printf '%s\\n' \"$ASSET_FINGERPRINT\" > \"$ASSET_CACHE_NEXT/fingerprint\"\n  if test -e \"$ASSET_CACHE\"; then find \"$ASSET_CACHE\" -depth -delete; fi\n  mv \"$ASSET_CACHE_NEXT\" \"$ASSET_CACHE\"\nfi\n\nfind \\\n  \"$BENCH/apps/frappe/frappe/public/scss\" \\\n  \"$BENCH/apps/erpnext/erpnext/public/scss\" \\\n  \"$BENCH/apps/hrms/hrms/public/scss\" \\\n  -type f -name '*.bundle.css' -delete\n\n# Application source and generated assets are runtime inputs. Package-manager\n# trees and version-control metadata are build inputs and must not ship.\nfind \"$BENCH/apps\" -type d -name node_modules -prune -print0 |\n  while IFS= read -r -d '' directory; do find \"$directory\" -depth -delete; done\nfind \"$BENCH/apps\" -name .git -print0 |\n  while IFS= read -r -d '' marker; do find \"$marker\" -depth -delete; done\n\necho \"built immutable TuyuBooking Frappe assets: $ASSETS\"\n","host":"#!/bin/bash\nset -euo pipefail\n# 本机生成物由本产品清理。\nproduct_clean() { \"${PRODUCT_NODE_BIN:-${NODE:?缺少本产品Node入口}}\" \"$PRODUCT_BUILD_ROOT/scripts/build.mjs\" clean \"$@\"; }\n\nSCRIPT_PATH=\"${PRODUCT_BUILD_SCRIPT}\"\nwhile [[ -L \"$SCRIPT_PATH\" ]]; do\n  LINK_TARGET=\"$(readlink \"$SCRIPT_PATH\")\"\n  [[ \"$LINK_TARGET\" == /* ]] || LINK_TARGET=\"$(cd \"$(dirname \"$SCRIPT_PATH\")\" && pwd -P)/$LINK_TARGET\"\n  SCRIPT_PATH=\"$LINK_TARGET\"\ndone\nSCRIPT_DIR=\"$(cd \"$(dirname \"$SCRIPT_PATH\")\" && pwd -P)\"\nROOT=\"$(cd \"$SCRIPT_DIR/..\" && pwd)\"\n# 所有独立入口的工具临时状态归本产品target；宿主已交付的产品工作根继续归当前任务。\nPRODUCT_TEMP_SCRIPT=\"${PRODUCT_BUILD_SCRIPT}\"\nwhile [[ -L \"$PRODUCT_TEMP_SCRIPT\" ]]; do\n  PRODUCT_TEMP_LINK=\"$(readlink \"$PRODUCT_TEMP_SCRIPT\")\"\n  [[ \"$PRODUCT_TEMP_LINK\" == /* ]] || PRODUCT_TEMP_LINK=\"$(cd \"$(dirname \"$PRODUCT_TEMP_SCRIPT\")\" && pwd -P)/$PRODUCT_TEMP_LINK\"\n  PRODUCT_TEMP_SCRIPT=\"$PRODUCT_TEMP_LINK\"\ndone\nPRODUCT_TEMP_SOURCE=\"$(cd \"$(dirname \"$PRODUCT_TEMP_SCRIPT\")/..\" && pwd -P)\"\nPRODUCT_TARGET_TEMP_ROOT=\"$(\"${PRODUCT_NODE_BIN:-${NODE:-node}}\" \"$PRODUCT_TEMP_SOURCE/scripts/build.mjs\" temporary-root \"${PLATFORM:-${platform:-}}\" 'host-macos')\" || exit 1\nif [[ -z \"${PRODUCT_WORK_DIR:-}\" && \"${TMPDIR:-}\" != \"$PRODUCT_TEMP_SOURCE/target/\"* ]]; then\n  export TMPDIR=\"$PRODUCT_TARGET_TEMP_ROOT/\"\nfi\nWORK_DIR=\"${TUYUBOOKING_WORK_DIR:-${TMPDIR:-$PRODUCT_TARGET_TEMP_ROOT}/tuyubooking/host/macos}\"\nBUILD_WORK_DIR=\"${TUYUBOOKING_BUILD_DIR:-$WORK_DIR/build}\"\nDEPENDENCY_WORK_DIR=\"${TUYUBOOKING_DEPENDENCY_DIR:-$WORK_DIR/dependencies}\"\nARTIFACT_DIR=\"${TUYUBOOKING_ARTIFACT_DIR:-$WORK_DIR/artifacts}\"\nexport TUYUBOOKING_ROOT=\"$ROOT\"\nFLUTTER_APP=\"$WORK_DIR/flutter-project\"\n\"${PYTHON:?缺少受控Python}\" - \"$ROOT\" \"$WORK_DIR\" \"$BUILD_WORK_DIR\" \"$DEPENDENCY_WORK_DIR\" \"$ARTIFACT_DIR\" <<'CHECK_PATHS'\nfrom pathlib import Path\nimport sys\nsource = Path(sys.argv[1]).resolve()\nfor value in sys.argv[2:]:\n    raw, target = Path(value), Path(value).resolve()\n    if not raw.is_absolute() or source / 'target' not in target.parents:\n        raise SystemExit(f'TuyuBooking可写目录必须是本产品target内绝对路径：{value}')\nCHECK_PATHS\nmkdir -p \"$WORK_DIR\" \"$BUILD_WORK_DIR\" \"$DEPENDENCY_WORK_DIR\" \"$ARTIFACT_DIR\"\nproduct_clean -rf -- \"$FLUTTER_APP\"\nexport PUB_CACHE=\"${PUB_CACHE:-$DEPENDENCY_WORK_DIR/pub}\"\nexport XDG_CONFIG_HOME=\"${XDG_CONFIG_HOME:-$DEPENDENCY_WORK_DIR/flutter-config}\"\nexport CP_HOME_DIR=\"${CP_HOME_DIR:-$DEPENDENCY_WORK_DIR/cocoapods}\"\nexport TMPDIR=\"$WORK_DIR/tmp/\"\nexport CARGO_TARGET_DIR=\"${CARGO_TARGET_DIR:-$BUILD_WORK_DIR/cargo}\"\nmkdir -p \"$PUB_CACHE\" \"$XDG_CONFIG_HOME\" \"$CP_HOME_DIR\" \"$TMPDIR\" \"$CARGO_TARGET_DIR\"\n\"${NODE:?缺少受控Node}\" \"$ROOT/scripts/build.mjs\" module sdk prepare --platform macos \\\n  --output \"$FLUTTER_APP\" --offline \"${TUYUBOOKING_OFFLINE:-false}\"\n# Apple安装件装入Pub实际解析的SDK视图，不引入邻仓模式或外部podspec路径。\n\"${NODE:?缺少受控Node}\" \"$ROOT/app/scripts/project.mjs\" native --source-root \"$ROOT/app\" \\\n  --work-root \"$WORK_DIR\" --output \"$FLUTTER_APP\" --platform macos >/dev/null\n\nassert_local_work_path() {\n  local path=\"${1:?缺少产品生成路径}\"\n  case \"$path\" in \"$WORK_DIR\"|\"$WORK_DIR\"/*) ;; *) echo '生成路径不属于TuyuBooking工作目录' >&2; return 1 ;; esac\n}\n\nRUNTIME=\"$BUILD_WORK_DIR/runtime/postgresql\"\nBUSINESS_SOURCE=\"${TUYU_BUSINESS_RUNTIME_SOURCE:-}\"\nXCODE_BUILD=\"$BUILD_WORK_DIR/xcode\"\nFLUTTER_BUILD=\"$BUILD_WORK_DIR/flutter\"\nCARGO_BUILD=\"$CARGO_TARGET_DIR\"\nFLUTTER_CONFIG=\"$XDG_CONFIG_HOME\"\nAPP=\"$XCODE_BUILD/Build/Products/Release/TuyuBooking Host.app\"\nIDENTITY=\"${CODE_SIGN_IDENTITY:--}\"\nTUYU_SERVE_URL=\"${TUYU_SERVE_URL:?TUYU_SERVE_URL must be an HTTPS origin}\"\nAPP_ENTITLEMENTS=\"$FLUTTER_APP/macos/Runner/Release.entitlements\"\ncase \"$TUYU_SERVE_URL\" in\n  https://*) ;;\n  *) echo \"TUYU_SERVE_URL must use HTTPS\" >&2; exit 1 ;;\nesac\n\n# Fail on Flutter contract regressions before building the bundled business and\n# PostgreSQL runtimes. The later build phase reuses this resolved application.\n(\n  cd \"$FLUTTER_APP\"\n  export XDG_CONFIG_HOME=\"$FLUTTER_CONFIG\"\n  mkdir -p \"$XDG_CONFIG_HOME\"\n  \"${FLUTTER:?缺少受控Flutter}\" config --build-dir=\"$(\"$PYTHON\" -c 'import os,sys; print(os.path.relpath(sys.argv[1], sys.argv[2]))' \"$FLUTTER_BUILD\" \"$FLUTTER_APP\")\" >/dev/null\n  \"${FLUTTER:?缺少受控Flutter}\" pub get\n)\n\nBUSINESS_BUILD=\"\"\nLOCAL_APP_ENTITLEMENTS=\"\"\nPOSTGRES_TEST_TMP_ALIAS=\"\"\nPOSTGRES_TEST_TMP_TARGET=\"\"\ncleanup() {\n  if [ -n \"$BUSINESS_BUILD\" ] && [ -d \"$BUSINESS_BUILD\" ]; then\n    assert_local_work_path \"$BUSINESS_BUILD\" || return 1\n    find \"$BUSINESS_BUILD\" -depth -delete\n  fi\n  if [ -n \"$LOCAL_APP_ENTITLEMENTS\" ] && [ -f \"$LOCAL_APP_ENTITLEMENTS\" ]; then\n    assert_local_work_path \"$LOCAL_APP_ENTITLEMENTS\" || return 1\n    find \"$LOCAL_APP_ENTITLEMENTS\" -delete\n  fi\n  if [ -n \"$POSTGRES_TEST_TMP_ALIAS\" ] && [ -L \"$POSTGRES_TEST_TMP_ALIAS\" ]; then\n    [[ \"$(readlink \"$POSTGRES_TEST_TMP_ALIAS\")\" == \"$POSTGRES_TEST_TMP_TARGET\" ]] \\\n      || { echo 'PostgreSQL测试短路径指向了非本任务目录，拒绝清理' >&2; return 1; }\n    rm \"$POSTGRES_TEST_TMP_ALIAS\"\n  fi\n}\ntrap cleanup EXIT\n\n# SDK 原生模块先从本轮解析的源码构建；失败时不再耗时构建四个业务运行时。\n(\n  cd \"$FLUTTER_APP\"\n  export XDG_CONFIG_HOME=\"$FLUTTER_CONFIG\"\n  \"${FLUTTER:?缺少受控Flutter}\" build macos --release --config-only --target lib/main_host.dart \\\n    --dart-define=\"TUYU_SERVE_URL=$TUYU_SERVE_URL\"\n  cd macos\n  \"${POD:?缺少受控CocoaPods}\" install\n)\n\n# Ad-hoc signatures have no Team ID, so Hardened Runtime cannot prove that the\n# bundled Flutter frameworks belong to the app. This local-only entitlement is\n# never used when CI/Release supplies a real Apple signing identity.\nif [ \"$IDENTITY\" = \"-\" ]; then\n  if [[ \"${CI:-}\" == true ]]; then\n    LOCAL_APP_ENTITLEMENTS=\"$(mktemp \"${TMPDIR:-$PRODUCT_TARGET_TEMP_ROOT}/tuyubooking-adhoc-entitlements.XXXXXX\")\"\n  else\n    LOCAL_APP_ENTITLEMENTS=\"$WORK_DIR/local.entitlements\"\n    assert_local_work_path \"$LOCAL_APP_ENTITLEMENTS\"\n    [[ ! -e \"$LOCAL_APP_ENTITLEMENTS\" ]] || { echo '本机临时签名配置已存在，拒绝覆盖' >&2; exit 1; }\n  fi\n  cp \"$APP_ENTITLEMENTS\" \"$LOCAL_APP_ENTITLEMENTS\"\n  /usr/libexec/PlistBuddy -c \\\n    'Add :com.apple.security.cs.disable-library-validation bool true' \\\n    \"$LOCAL_APP_ENTITLEMENTS\"\n  APP_ENTITLEMENTS=\"$LOCAL_APP_ENTITLEMENTS\"\nfi\n\nif [ -z \"$BUSINESS_SOURCE\" ]; then\n  if [[ \"${CI:-}\" == true ]]; then\n    BUSINESS_BUILD=\"$(mktemp -d \"${TMPDIR:-$PRODUCT_TARGET_TEMP_ROOT}/tuyubooking-release-runtime.XXXXXX\")\"\n  else\n    BUSINESS_BUILD=\"$WORK_DIR/runtime/business\"\n    assert_local_work_path \"$BUSINESS_BUILD\"\n    [[ ! -e \"$BUSINESS_BUILD\" ]] || { echo '本机临时业务运行件已存在，拒绝覆盖' >&2; exit 1; }\n    mkdir -p \"$BUSINESS_BUILD\"\n  fi\n  BUSINESS_SOURCE=\"$BUSINESS_BUILD/business\"\n  TUYU_VOYANT_OUTPUT_DIR=\"$WORK_DIR/voyant\" \\\n    \"$ROOT/scripts/build.mjs\" shell business \"$BUSINESS_SOURCE\"\nfi\n\n# 本轮按固定组件锁、GNU官方补丁和已交付工具编译完整运行时，禁止使用只覆盖入口摘要的旧缓存。\n# 先创建本轮产物父目录，运行时入口再核验规范路径并排他创建postgresql。\nmkdir -p \"$BUILD_WORK_DIR/runtime\"\nTUYU_POSTGRES_DEST=\"$RUNTIME\" \"$ROOT/scripts/build.mjs\" module postgres\n\n(\n  cd \"$FLUTTER_APP\"\n  export XDG_CONFIG_HOME=\"$FLUTTER_CONFIG\"\n  mkdir -p \"$XDG_CONFIG_HOME\"\n  \"${FLUTTER:?缺少受控Flutter}\" config --build-dir=\"$(\"$PYTHON\" -c 'import os,sys; print(os.path.relpath(sys.argv[1], sys.argv[2]))' \"$FLUTTER_BUILD\" \"$FLUTTER_APP\")\" >/dev/null\n  \"${XCODEBUILD:?缺少已验真Xcode}\" \\\n    -workspace macos/Runner.xcworkspace \\\n    -scheme Runner \\\n    -configuration Release \\\n    -derivedDataPath \"$XCODE_BUILD\" \\\n    -destination 'platform=macOS,arch=arm64' \\\n    ARCHS=arm64 \\\n    ONLY_ACTIVE_ARCH=YES \\\n    \"TUYU_BOOKING_PRODUCT_NAME=TuyuBooking Host\" \\\n    TUYU_BOOKING_BUNDLE_IDENTIFIER=com.tuyulove.tuyubooking.host \\\n    \"TUYU_BOOKING_DISPLAY_NAME=TuyuBooking Host\" \\\n    CODE_SIGN_ENTITLEMENTS=\n)\n# PostgreSQL limits Unix-domain socket paths to 103 bytes on macOS. Keep all\n# test data in the central task directory, but expose that directory through\n# a short process-unique alias while the database integration tests run.\nPOSTGRES_TEST_TMP_TARGET=\"$WORK_DIR/tmp/postgres-tests\"\nassert_local_work_path \"$POSTGRES_TEST_TMP_TARGET\"\nmkdir -p \"$POSTGRES_TEST_TMP_TARGET\"\nPOSTGRES_TEST_TMP_ALIAS=\"/tmp/tuyu-pg-test-$$\"\n[[ ! -e \"$POSTGRES_TEST_TMP_ALIAS\" && ! -L \"$POSTGRES_TEST_TMP_ALIAS\" ]] \\\n  || { echo 'PostgreSQL测试短路径已存在，拒绝覆盖' >&2; exit 1; }\nln -s \"$POSTGRES_TEST_TMP_TARGET\" \"$POSTGRES_TEST_TMP_ALIAS\"\n(\n  cd \"$ROOT\"\n  export CARGO_TARGET_DIR=\"$CARGO_BUILD\"\n  TMPDIR=\"$POSTGRES_TEST_TMP_ALIAS\" TUYU_POSTGRES_BIN=\"$RUNTIME/bin\" \"${CARGO:?缺少受控Cargo}\" test --workspace --locked\n  \"$CARGO\" build --locked --release --target aarch64-apple-darwin -p tuyubooking-native\n)\n\ntest -d \"$APP\"\ntest -d \"$APP/Contents/Frameworks/CitizenSDK.framework\"\n[[ \"$( \"${LIPO:?缺少已验真Lipo}\" -archs \"$APP/Contents/Frameworks/CitizenSDK.framework/CitizenSDK\")\" == arm64 ]]\nmkdir -p \"$APP/Contents/Frameworks\" \"$APP/Contents/Resources/postgresql\"\nditto \"$RUNTIME\" \"$APP/Contents/Resources/postgresql\"\n\"$ROOT/scripts/build.mjs\" shell materialize \\\n  \"$BUSINESS_SOURCE\" \"$APP/Contents/Resources/business\"\ncp \"$CARGO_BUILD/aarch64-apple-darwin/release/libtuyubooking_native.dylib\" \\\n  \"$APP/Contents/Frameworks/libtuyubooking_native.dylib\"\n\"${INSTALL_NAME_TOOL:?缺少已验真安装名称工具}\" -id '@rpath/libtuyubooking_native.dylib' \\\n  \"$APP/Contents/Frameworks/libtuyubooking_native.dylib\"\n\n# Sign nested Mach-O code before signing the containing app bundle. PostgreSQL\n# requires System V IPC, so direct-distribution children must not inherit an\n# App Sandbox profile; local-only listeners are enforced by runtime config.\nsign_nested_code() {\n  local file_path=\"$1\" signing_output\n  if ! signing_output=\"$(\"${CODESIGN:?缺少已验真签名工具}\" --force --sign \"$IDENTITY\" --timestamp=none \"$file_path\" 2>&1)\"; then\n    printf '%s\\n' \"$signing_output\" >&2\n    return 1\n  fi\n}\n\nwhile IFS= read -r file_path; do\n  if file -b \"$file_path\" | grep -q 'Mach-O'; then\n    sign_nested_code \"$file_path\"\n  fi\ndone < <(find \"$APP/Contents/Resources/postgresql/bin\" \\\n  \"$APP/Contents/Resources/postgresql/lib\" \"$APP/Contents/Resources/business\" \"$APP/Contents/Frameworks\" \\\n  -type f \\( -perm -111 -o -name '*.dylib' -o -name '*.so' -o -name '*.node' \\) \\\n  -print | LC_ALL=C sort)\n\n# 嵌套二进制签名后再封装 SDK framework 的资源签名，保留标准版本化目录结构。\n\"${CODESIGN:?缺少已验真签名工具}\" --force --sign \"$IDENTITY\" --timestamp=none \"$APP/Contents/Frameworks/CitizenSDK.framework\"\n\n# Code signing changes Mach-O bytes, so manifests are generated after every\n# nested executable and library is signed. One process avoids 100k+ forks.\n\"${PRODUCT_NODE_BIN:-${NODE:-node}}\" \"$ROOT/scripts/build.mjs\" python manifest \\\n  \"$APP/Contents/Resources/postgresql\" \\\n  \"$APP/Contents/Resources/postgresql/MANIFEST.sha256\"\n\"${PRODUCT_NODE_BIN:-${NODE:-node}}\" \"$ROOT/scripts/build.mjs\" python manifest \\\n  \"$APP/Contents/Resources/business\" \\\n  \"$APP/Contents/Resources/business/MANIFEST.sha256\"\n\n# Finalize the delivery path before signing. Localized resources provide the\n# public brand while the base names match the physical bundle for Finder.\nproduct_clean -rf \"$ARTIFACT_DIR/tuyubooking.app\"\nif [[ -n \"$BUILD_WORK_DIR\" ]]; then\n  ditto \"$APP\" \"$ARTIFACT_DIR/tuyubooking.app\"\nelse\n  mv \"$APP\" \"$ARTIFACT_DIR/tuyubooking.app\"\nfi\nAPP=\"$ARTIFACT_DIR/tuyubooking.app\"\nbundle_name=\"$(basename \"$APP\" .app)\"\n/usr/libexec/PlistBuddy -c \"Set :CFBundleDisplayName $bundle_name\" \"$APP/Contents/Info.plist\"\n/usr/libexec/PlistBuddy -c \"Set :CFBundleName $bundle_name\" \"$APP/Contents/Info.plist\"\n\nif ! app_signing_output=\"$(\"${CODESIGN:?缺少已验真签名工具}\" --force --sign \"$IDENTITY\" --timestamp=none --options runtime \\\n  --entitlements \"$APP_ENTITLEMENTS\" \"$APP\" 2>&1)\"; then\n  printf '%s\\n' \"$app_signing_output\" >&2\n  exit 1\nfi\n\"${PRODUCT_NODE_BIN:-${NODE:-node}}\" \"$ROOT/scripts/build.mjs\" shell verify-host \"$APP\"\n\"$ROOT/host/tests/smoke_bundle.py\" \"$APP\"\necho \"built TuyuBooking macOS app: $ARTIFACT_DIR/tuyubooking.app\"\n","client":"#!/bin/bash\nset -euo pipefail\n# 本机生成物由本产品清理。\nproduct_clean() { \"${PRODUCT_NODE_BIN:-${NODE:?缺少本产品Node入口}}\" \"$PRODUCT_BUILD_ROOT/scripts/build.mjs\" clean \"$@\"; }\n\nSCRIPT_PATH=\"${PRODUCT_BUILD_SCRIPT}\"\nwhile [[ -L \"$SCRIPT_PATH\" ]]; do\n  LINK_TARGET=\"$(readlink \"$SCRIPT_PATH\")\"\n  [[ \"$LINK_TARGET\" == /* ]] || LINK_TARGET=\"$(cd \"$(dirname \"$SCRIPT_PATH\")\" && pwd -P)/$LINK_TARGET\"\n  SCRIPT_PATH=\"$LINK_TARGET\"\ndone\nSCRIPT_DIR=\"$(cd \"$(dirname \"$SCRIPT_PATH\")\" && pwd -P)\"\nROOT=\"$(cd \"$SCRIPT_DIR/..\" && pwd)\"\nTUYU_SERVE_URL=\"${TUYU_SERVE_URL:?TUYU_SERVE_URL must be an HTTPS origin}\"\n# 所有独立入口的工具临时状态归本产品target；宿主已交付的产品工作根继续归当前任务。\nPRODUCT_TEMP_SCRIPT=\"${PRODUCT_BUILD_SCRIPT}\"\nwhile [[ -L \"$PRODUCT_TEMP_SCRIPT\" ]]; do\n  PRODUCT_TEMP_LINK=\"$(readlink \"$PRODUCT_TEMP_SCRIPT\")\"\n  [[ \"$PRODUCT_TEMP_LINK\" == /* ]] || PRODUCT_TEMP_LINK=\"$(cd \"$(dirname \"$PRODUCT_TEMP_SCRIPT\")\" && pwd -P)/$PRODUCT_TEMP_LINK\"\n  PRODUCT_TEMP_SCRIPT=\"$PRODUCT_TEMP_LINK\"\ndone\nPRODUCT_TEMP_SOURCE=\"$(cd \"$(dirname \"$PRODUCT_TEMP_SCRIPT\")/..\" && pwd -P)\"\nPRODUCT_TARGET_TEMP_ROOT=\"$(\"${PRODUCT_NODE_BIN:-${NODE:-node}}\" \"$PRODUCT_TEMP_SOURCE/scripts/build.mjs\" temporary-root \"${PLATFORM:-${platform:-}}\" 'client-macos')\" || exit 1\nif [[ -z \"${PRODUCT_WORK_DIR:-}\" && \"${TMPDIR:-}\" != \"$PRODUCT_TEMP_SOURCE/target/\"* ]]; then\n  export TMPDIR=\"$PRODUCT_TARGET_TEMP_ROOT/\"\nfi\nWORK_DIR=\"${TUYUBOOKING_WORK_DIR:-${TMPDIR:-$PRODUCT_TARGET_TEMP_ROOT}/tuyubooking/client/macos}\"\nBUILD_DIR=\"${TUYUBOOKING_BUILD_DIR:-$WORK_DIR/build}\"\nDEPENDENCY_DIR=\"${TUYUBOOKING_DEPENDENCY_DIR:-$WORK_DIR/dependencies}\"\nARTIFACT_DIR=\"${TUYUBOOKING_ARTIFACT_DIR:-$WORK_DIR/artifacts}\"\nFLUTTER_APP=\"$WORK_DIR/flutter-project\"\n\ncase \"$TUYU_SERVE_URL\" in https://*) ;; *) echo 'TUYU_SERVE_URL must use HTTPS' >&2; exit 1 ;; esac\npython3 - \"$ROOT\" \"$WORK_DIR\" \"$BUILD_DIR\" \"$DEPENDENCY_DIR\" \"$ARTIFACT_DIR\" <<'CHECK_PATHS'\nfrom pathlib import Path\nimport sys\nsource = Path(sys.argv[1]).resolve()\nfor value in sys.argv[2:]:\n    raw, target = Path(value), Path(value).resolve()\n    if not raw.is_absolute() or source / 'target' not in target.parents:\n        raise SystemExit(f'TuyuBooking可写目录必须是本产品target内绝对路径：{value}')\nCHECK_PATHS\n\nmkdir -p \"$WORK_DIR\" \"$BUILD_DIR\" \"$DEPENDENCY_DIR\" \"$ARTIFACT_DIR\"\nproduct_clean -rf -- \"$FLUTTER_APP\"\nexport PUB_CACHE=\"${PUB_CACHE:-$DEPENDENCY_DIR/pub}\"\nexport XDG_CONFIG_HOME=\"${XDG_CONFIG_HOME:-$DEPENDENCY_DIR/flutter-config}\"\nexport CP_HOME_DIR=\"${CP_HOME_DIR:-$DEPENDENCY_DIR/cocoapods}\"\nexport TMPDIR=\"$WORK_DIR/tmp/\"\nmkdir -p \"$PUB_CACHE\" \"$XDG_CONFIG_HOME\" \"$CP_HOME_DIR\" \"$TMPDIR\"\nnode \"$ROOT/scripts/build.mjs\" module sdk prepare --platform macos \\\n  --output \"$FLUTTER_APP\" --offline \"${TUYUBOOKING_OFFLINE:-false}\"\n\n# SDK安装到本次真实Pub插件视图；源码SHA来自产品声明和锁。\nnode \"$ROOT/app/scripts/project.mjs\" native --source-root \"$ROOT/app\" \\\n  --work-root \"$WORK_DIR\" --output \"$FLUTTER_APP\" --platform macos >/dev/null\n\nXCODE_BUILD=\"$BUILD_DIR/xcode\"\nFLUTTER_BUILD=\"$BUILD_DIR/flutter\"\nAPP=\"$XCODE_BUILD/Build/Products/Release/TuyuBooking Client.app\"\nOUTPUT=\"$ARTIFACT_DIR/tuyubooking-client.app\"\nIDENTITY=\"${CODE_SIGN_IDENTITY:--}\"\nAPP_ENTITLEMENTS=\"$FLUTTER_APP/macos/Runner/Release.entitlements\"\n\n(\n  cd \"$FLUTTER_APP\"\n  flutter config --build-dir=\"$(python3 -c 'import os,sys; print(os.path.relpath(sys.argv[1], sys.argv[2]))' \"$FLUTTER_BUILD\" \"$FLUTTER_APP\")\" >/dev/null\n  flutter build macos --no-pub --release --config-only --target lib/main_client.dart \\\n    --dart-define=\"TUYU_SERVE_URL=$TUYU_SERVE_URL\"\n  (cd macos && pod install)\n  xcodebuild \\\n    -workspace macos/Runner.xcworkspace \\\n    -scheme Runner \\\n    -configuration Release \\\n    -derivedDataPath \"$XCODE_BUILD\" \\\n    -destination 'platform=macOS,arch=arm64' \\\n    ARCHS=arm64 ONLY_ACTIVE_ARCH=YES \\\n    \"TUYU_BOOKING_PRODUCT_NAME=TuyuBooking Client\" \\\n    TUYU_BOOKING_BUNDLE_IDENTIFIER=com.tuyulove.tuyubooking.client \\\n    \"TUYU_BOOKING_DISPLAY_NAME=TuyuBooking Client\" \\\n    ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS=NO \\\n    CODE_SIGN_ENTITLEMENTS=\n)\n\ntest -d \"$APP\"\ntest -d \"$APP/Contents/Frameworks/CitizenSDK.framework\"\n[[ \"$(xcrun lipo -archs \"$APP/Contents/Frameworks/CitizenSDK.framework/CitizenSDK\")\" == arm64 ]]\ntest ! -e \"$APP/Contents/Resources/postgresql\"\ntest ! -e \"$APP/Contents/Resources/business\"\ntest ! -e \"$APP/Contents/Frameworks/libtuyubooking_native.dylib\"\ncodesign --force --sign \"$IDENTITY\" --timestamp=none \"$APP/Contents/Frameworks/CitizenSDK.framework\"\nproduct_clean -rf -- \"$OUTPUT\"\nditto \"$APP\" \"$OUTPUT\"\nAPP=\"$OUTPUT\"\nbundle_name=\"$(basename \"$APP\" .app)\"\n/usr/libexec/PlistBuddy -c \"Set :CFBundleDisplayName $bundle_name\" \"$APP/Contents/Info.plist\"\n/usr/libexec/PlistBuddy -c \"Set :CFBundleName $bundle_name\" \"$APP/Contents/Info.plist\"\ncodesign --force --sign \"$IDENTITY\" --timestamp=none --options runtime \\\n  --entitlements \"$APP_ENTITLEMENTS\" \"$APP\"\ncodesign --verify --strict --verbose=2 \"$APP\"\necho \"built TuyuBooking macOS client app: $OUTPUT\"\n","materialize":"#!/bin/bash\nset -euo pipefail\n\nSCRIPT_DIR=\"$(cd \"$(dirname \"$0\")\" && pwd)\"\nMODULE_DIR=\"$(cd \"$SCRIPT_DIR/../modules\" && pwd -P)\"\nSOURCE=\"${1:?usage: build.mjs shell materialize SOURCE DESTINATION}\"\nDESTINATION=\"${2:?usage: build.mjs shell materialize SOURCE DESTINATION}\"\n\nrequire_file() { test -f \"$1\" || { echo \"missing runtime file: $1\" >&2; exit 1; }; }\nrequire_dir() { test -d \"$1\" || { echo \"missing runtime directory: $1\" >&2; exit 1; }; }\nrequire_executable() { test -x \"$1\" || { echo \"missing runtime executable: $1\" >&2; exit 1; }; }\n\nrequire_executable \"$SOURCE/python/bin/python3\"\n\"$SOURCE/python/bin/python3\" --version 2>&1 | grep -q '^Python 3\\.14\\.'\nrequire_executable \"$SOURCE/node/bin/node\"\n# 组装再次读取TuyuBooking产品锁中的Node版本。\nNODE_VERSION=\"$(node --input-type=module - \"$MODULE_DIR/runtime.lock.json\" <<'NODE_TOOL'\nimport { readFileSync } from 'node:fs';\nconst lock = JSON.parse(readFileSync(process.argv[2], 'utf8'));\nif (!lock.tools?.node?.version) throw new Error('TuyuBooking产品锁缺少Node版本');\nprocess.stdout.write(lock.tools.node.version);\nNODE_TOOL\n)\"\ntest \"$(\"$SOURCE/node/bin/node\" --version)\" = \"v$NODE_VERSION\"\nrequire_executable \"$SOURCE/php/bin/php\"\n\"$SOURCE/php/bin/php\" --version | grep -q '^PHP 8\\.4\\.'\nrequire_executable \"$SOURCE/php/sbin/php-fpm\"\nrequire_executable \"$SOURCE/nginx/sbin/nginx\"\nrequire_executable \"$SOURCE/openssl/bin/openssl\"\n\nfor app in frappe erpnext hrms kamra ury; do require_dir \"$SOURCE/bench/apps/$app\"; done\nrequire_file \"$SOURCE/bench/sites/assets/assets.json\"\nrequire_file \"$SOURCE/voyant/operator/.output/server/index.mjs\"\nrequire_file \"$SOURCE/voyant/operator/.output/migration/migrate.mjs\"\nrequire_file \"$SOURCE/voyant/operator/migrations/0000_baseline.sql\"\nrequire_file \"$SOURCE/hi_events/backend/vendor/autoload.php\"\nrequire_file \"$SOURCE/hi_events/frontend/server.js\"\nrequire_file \"$SOURCE/hi_events/frontend/dist/client/index.html\"\nrequire_file \"$SOURCE/hi_events/frontend/dist/server/entry.server.js\"\nrequire_dir \"$SOURCE/hi_events/frontend/node_modules\"\nrequire_file \"$SOURCE/sbom.spdx.json\"\nrequire_file \"$SOURCE/bundle.manifest.json\"\n\nif test -n \"$(find \"$SOURCE/bench/apps\" -name .git -print -quit)\"; then\n  echo \"business runtime still contains version-control metadata; run build.mjs shell assets\" >&2\n  exit 1\nfi\nif test -n \"$(find \"$SOURCE/bench/apps\" -type d -name node_modules -print -quit)\"; then\n  echo \"business runtime still contains Frappe build dependencies; run build.mjs shell assets\" >&2\n  exit 1\nfi\n\nif [ -e \"$DESTINATION\" ]; then find \"$DESTINATION\" -depth -delete; fi\nmkdir -p \"$DESTINATION\"\n\ncopy_tree() {\n  local source=\"$1\" destination=\"$2\"\n  mkdir -p \"$destination\"\n  # Runtime trees contain generated assets and many relative symlinks. rsync's\n  # archive contract copies the complete directory contents deterministically;\n  # ditto can omit entries when merging these large generated trees.\n  rsync -a --delete \"$source/\" \"$destination/\"\n}\n\nfor directory in python node php nginx openssl bench voyant hi_events licenses; do\n  copy_tree \"$SOURCE/$directory\" \"$DESTINATION/$directory\"\ndone\n# Homebrew exposes its global PECL directory through an absolute symlink. The\n# product runtime may use only extensions explicitly embedded in this bundle.\nif [ -L \"$DESTINATION/php/pecl\" ]; then\n  rm \"$DESTINATION/php/pecl\"\n  mkdir -p \"$DESTINATION/php/pecl\"\nfi\ncp \"$SOURCE/sbom.spdx.json\" \"$DESTINATION/sbom.spdx.json\"\ncp \"$SOURCE/bundle.manifest.json\" \"$DESTINATION/bundle.manifest.json\"\n\nfor script in tuyu_runtime_common.py tuyu_https_proxy.py tuyu_frappe_runtime.py tuyu_frappe_worker.py tuyu_frappe_wsgi.py tuyu_voyant_runtime.py tuyu_voyant_https.mjs tuyu_hi_events_runtime.py; do\n  require_file \"$MODULE_DIR/$script\"\n  cp \"$MODULE_DIR/$script\" \"$DESTINATION/$script\"\n  chmod 0755 \"$DESTINATION/$script\"\ndone\ncp \"$MODULE_DIR/runtime.lock.json\" \"$DESTINATION/runtime.lock.json\"\nrequire_file \"$DESTINATION/bench/sites/assets/assets.json\"\n\nwhile IFS= read -r link; do\n  case \"$(readlink \"$link\")\" in\n    /*) echo \"business runtime contains an absolute symlink: $link\" >&2; exit 1 ;;\n  esac\ndone < <(find \"$DESTINATION\" -type l -print)\n\nif [ \"$(uname -s)\" = Darwin ]; then\n  \"${PRODUCT_NODE_BIN:-${NODE:-node}}\" \"$SCRIPT_DIR/build.mjs\" shell relocate \"$DESTINATION\" \"$SOURCE\"\nfi\n\necho \"materialized TuyuBooking business runtime: $DESTINATION\"\n","relocate":"#!/bin/bash\nset -euo pipefail\n\nROOT_INPUT=\"${1:?usage: build.mjs shell relocate BUSINESS_RUNTIME [BUILD_SOURCE]}\"\nROOT_INPUT=\"${ROOT_INPUT%/}\"\nSOURCE_INPUT=\"${2:-$ROOT_INPUT}\"\nSOURCE_INPUT=\"${SOURCE_INPUT%/}\"\nROOT=\"$(cd \"$ROOT_INPUT\" && pwd -P)\"\nif [ -d \"$SOURCE_INPUT\" ]; then\n  SOURCE_ROOT=\"$(cd \"$SOURCE_INPUT\" && pwd -P)\"\nelse\n  # A completed Release may be diagnosed after its temporary source is gone.\n  SOURCE_ROOT=\"$SOURCE_INPUT\"\nfi\nLIB=\"$ROOT/lib\"\nHOST_PYTHON=\"$(command -v python3)\"\nmkdir -p \"$LIB\"\n\ncandidates() {\n  find \"$ROOT\" -type f \\( -perm -111 -o -name '*.dylib' -o -name '*.so' -o -name '*.node' \\) -print | LC_ALL=C sort\n}\n\nis_macho() { file -b \"$1\" | grep -q 'Mach-O'; }\ncanonical_path() {\n  if [ -e \"$1\" ]; then\n    (cd \"$(dirname \"$1\")\" && printf '%s/%s\\n' \"$(pwd -P)\" \"$(basename \"$1\")\")\n  else\n    printf '%s\\n' \"$1\"\n  fi\n}\nis_system() {\n  case \"$1\" in\n    /System/Library/*|/usr/lib/*) return 0 ;;\n    *) return 1 ;;\n  esac\n}\nis_internal() {\n  local dependency canonical\n  dependency=\"$1\"\n  case \"$dependency\" in\n    \"$ROOT\"/*|\"$ROOT_INPUT\"/*|\"$SOURCE_ROOT\"/*) return 0 ;;\n  esac\n  canonical=\"$(canonical_path \"$dependency\")\"\n  case \"$canonical\" in\n    \"$ROOT\"/*|\"$SOURCE_ROOT\"/*) return 0 ;;\n    *) return 1 ;;\n  esac\n}\nis_external() {\n  is_internal \"$1\" && return 1\n  is_system \"$1\" && return 1\n  case \"$1\" in\n    /*) return 0 ;;\n    *) return 1 ;;\n  esac\n}\n\nwhile :; do\n  copied=0\n  while IFS= read -r binary; do\n    is_macho \"$binary\" || continue\n    dylib_id=\"$(otool -D \"$binary\" 2>/dev/null | sed -n '2p' || true)\"\n    while IFS= read -r dependency; do\n      [ -n \"$dylib_id\" ] && [ \"$dependency\" = \"$dylib_id\" ] && continue\n      is_internal \"$dependency\" && continue\n      is_external \"$dependency\" || continue\n      test -f \"$dependency\" || { echo \"missing dylib: $dependency\" >&2; exit 1; }\n      destination=\"$LIB/$(basename \"$dependency\")\"\n      if [ ! -f \"$destination\" ]; then\n        cp -L \"$dependency\" \"$destination\"\n        chmod u+w \"$destination\"\n        copied=$((copied + 1))\n      elif ! cmp -s \"$dependency\" \"$destination\"; then\n        echo \"dylib basename collision: $dependency\" >&2\n        exit 1\n      fi\n    done < <(otool -L \"$binary\" | awk '/^[[:space:]]/{print $1}')\n    while IFS= read -r dependency; do\n      [ -n \"$dylib_id\" ] && [ \"$dependency\" = \"$dylib_id\" ] && continue\n      case \"$dependency\" in\n        @loader_path/*)\n          local_candidate=\"$(dirname \"$binary\")/${dependency#@loader_path/}\"\n          ;;\n        @rpath/*)\n          local_candidate=\"$LIB/$(basename \"$dependency\")\"\n          ;;\n        *) continue ;;\n      esac\n      [ -e \"$local_candidate\" ] && continue\n      name=\"$(basename \"$dependency\")\"\n      source_candidate=\"$(find -L /opt/homebrew/opt -name \"$name\" -print -quit 2>/dev/null || true)\"\n      [ -n \"$source_candidate\" ] || continue\n      destination=\"$LIB/$name\"\n      if [ ! -f \"$destination\" ]; then\n        cp -L \"$source_candidate\" \"$destination\"\n        chmod u+w \"$destination\"\n        copied=$((copied + 1))\n      fi\n    done < <(otool -L \"$binary\" | awk '/^[[:space:]]/{print $1}')\n  done < <(candidates)\n  [ \"$copied\" -gt 0 ] || break\ndone\n\nwhile IFS= read -r binary; do\n  is_macho \"$binary\" || continue\n  chmod u+w \"$binary\"\n  dylib_id=\"$(otool -D \"$binary\" 2>/dev/null | sed -n '2p' || true)\"\n  relative=\"$($HOST_PYTHON -c 'import os,sys; print(os.path.relpath(sys.argv[2], os.path.dirname(sys.argv[1])))' \"$binary\" \"$LIB\")\"\n  while IFS= read -r dependency; do\n    if [ -n \"$dylib_id\" ] && [ \"$dependency\" = \"$dylib_id\" ]; then\n      # Wheel extension modules may use a module-qualified @rpath LC_ID_DYLIB.\n      install_name_tool -id \"@loader_path/$(basename \"$binary\")\" \"$binary\"\n      continue\n    fi\n    case \"$dependency\" in\n      @loader_path/*)\n        local_candidate=\"$(dirname \"$binary\")/${dependency#@loader_path/}\"\n        [ -e \"$local_candidate\" ] && continue\n        ;;\n      @rpath/*) ;;\n      *) local_candidate=\"\" ;;\n    esac\n    case \"$dependency\" in\n      @loader_path/*|@rpath/*)\n        target=\"$LIB/$(basename \"$dependency\")\"\n        [ -f \"$target\" ] || { echo \"missing relative dylib: $dependency\" >&2; exit 1; }\n        install_name_tool -change \"$dependency\" \"@loader_path/$relative/$(basename \"$dependency\")\" \"$binary\"\n        continue\n        ;;\n    esac\n    if is_external \"$dependency\"; then\n      install_name_tool -change \"$dependency\" \"@loader_path/$relative/$(basename \"$dependency\")\" \"$binary\"\n    elif is_internal \"$dependency\"; then\n      canonical_dependency=\"$(canonical_path \"$dependency\")\"\n      case \"$canonical_dependency\" in\n        \"$ROOT\"/*) target=\"$canonical_dependency\" ;;\n        \"$ROOT_INPUT\"/*) target=\"$ROOT/${canonical_dependency#\"$ROOT_INPUT\"/}\" ;;\n        \"$SOURCE_ROOT\"/*) target=\"$ROOT/${canonical_dependency#\"$SOURCE_ROOT\"/}\" ;;\n        *) echo \"cannot map internal dependency: $dependency\" >&2; exit 1 ;;\n      esac\n      target=\"$(cd \"$(dirname \"$target\")\" && pwd -P)/$(basename \"$target\")\"\n      if [ \"$target\" = \"$binary\" ]; then\n        install_name_tool -id \"@loader_path/$(basename \"$binary\")\" \"$binary\"\n      else\n        target_relative=\"$($HOST_PYTHON -c 'import os,sys; print(os.path.relpath(sys.argv[2], os.path.dirname(sys.argv[1])))' \"$binary\" \"$target\")\"\n        install_name_tool -change \"$dependency\" \"@loader_path/$target_relative\" \"$binary\"\n      fi\n    fi\n  done < <(otool -L \"$binary\" | awk '/^[[:space:]]/{print $1}')\n  while IFS= read -r runpath; do\n    is_external \"$runpath\" || continue\n    install_name_tool -delete_rpath \"$runpath\" \"$binary\" 2>/dev/null || true\n  done < <(otool -l \"$binary\" | awk '/cmd LC_RPATH/{getline; getline; print $2}')\n  # Every packaged dylib needs a bundle-relative install ID, including dylibs\n  # kept in component-owned directories such as openssl/lib.\n  case \"$binary\" in *.dylib) install_name_tool -id \"@loader_path/$(basename \"$binary\")\" \"$binary\" ;; esac\n  codesign --force --sign - --timestamp=none \"$binary\" >/dev/null\ndone < <(candidates)\n\nwhile IFS= read -r binary; do\n  is_macho \"$binary\" || continue\n  while IFS= read -r dependency; do\n    case \"$dependency\" in\n      @rpath/*)\n        echo \"unrelocated dependency: $binary -> $dependency\" >&2\n        exit 1\n        ;;\n      /*)\n        if ! is_system \"$dependency\"; then\n          echo \"unrelocated absolute dependency: $binary -> $dependency\" >&2\n          exit 1\n        fi\n        ;;\n    esac\n  done < <(otool -L \"$binary\" | awk '/^[[:space:]]/{print $1}')\ndone < <(candidates)\n\necho \"relocated macOS business runtime: $ROOT\"\n","verify-host":"#!/bin/bash\nset -Eeuo pipefail\n\nreport_verification_failure() {\n  local exit_code=\"$?\" line_number=\"$1\" command=\"$2\"\n  printf 'macOS bundle verification failed at line %s: %s (exit %s)\\n' \\\n    \"$line_number\" \"$command\" \"$exit_code\" >&2\n  exit \"$exit_code\"\n}\ntrap 'report_verification_failure \"$LINENO\" \"$BASH_COMMAND\"' ERR\n\nAPP=\"${1:?usage: build.mjs shell verify-host /path/to/tuyubooking.app}\"\nCONTENTS=\"$APP/Contents\"\nRUNTIME=\"$CONTENTS/Resources/postgresql\"\nNATIVE=\"$CONTENTS/Frameworks/libtuyubooking_native.dylib\"\nBUSINESS=\"$CONTENTS/Resources/business\"\n\ntest -d \"$APP\"\ntest -f \"$NATIVE\"\nfor executable in postgres initdb pg_ctl psql; do\n  test -x \"$RUNTIME/bin/$executable\"\ndone\ntest -f \"$RUNTIME/MANIFEST.sha256\"\ntest -f \"$RUNTIME/licenses/PostgreSQL-COPYRIGHT\"\ntest -x \"$BUSINESS/python/bin/python3\"\ntest -x \"$BUSINESS/node/bin/node\"\ntest -x \"$BUSINESS/php/bin/php\"\ntest -x \"$BUSINESS/php/sbin/php-fpm\"\ntest -x \"$BUSINESS/nginx/sbin/nginx\"\ntest -f \"$BUSINESS/voyant/operator/.output/server/index.mjs\"\ntest -f \"$BUSINESS/voyant/operator/.output/migration/migrate.mjs\"\ntest -f \"$BUSINESS/voyant/operator/migrations/0000_baseline.sql\"\ntest -f \"$BUSINESS/tuyu_frappe_runtime.py\"\ntest -f \"$BUSINESS/tuyu_frappe_worker.py\"\ntest -f \"$BUSINESS/tuyu_runtime_common.py\"\ntest -f \"$BUSINESS/tuyu_voyant_runtime.py\"\ntest -f \"$BUSINESS/tuyu_hi_events_runtime.py\"\ntest -f \"$BUSINESS/tuyu_https_proxy.py\"\ntest -f \"$BUSINESS/hi_events/backend/vendor/autoload.php\"\ntest -f \"$BUSINESS/hi_events/frontend/server.js\"\ntest -f \"$BUSINESS/hi_events/frontend/dist/server/entry.server.js\"\ntest -f \"$BUSINESS/runtime.lock.json\"\ntest -f \"$BUSINESS/sbom.spdx.json\"\ntest -f \"$BUSINESS/bundle.manifest.json\"\ntest -d \"$BUSINESS/licenses\"\ntest -f \"$BUSINESS/bench/apps/frappe/LICENSE\"\ntest -f \"$BUSINESS/bench/apps/erpnext/license.txt\"\ntest -f \"$BUSINESS/bench/apps/hrms/license.txt\"\ntest -f \"$BUSINESS/bench/apps/kamra/license.txt\"\ntest -f \"$BUSINESS/bench/apps/ury/LICENSE\"\ntest -f \"$BUSINESS/MANIFEST.sha256\"\n\nis_macho() {\n  file -b \"$1\" | grep -q 'Mach-O'\n}\n\nwhile IFS= read -r link; do\n  case \"$(readlink \"$link\")\" in\n    /*) echo \"release bundle contains an absolute symlink: $link\" >&2; exit 1 ;;\n  esac\ndone < <(find \"$APP\" -type l -print)\n\nwhile IFS= read -r file_path; do\n  is_macho \"$file_path\" || continue\n  lipo -archs \"$file_path\" | tr ' ' '\\n' | grep -qx arm64\n  while IFS= read -r dependency; do\n    case \"$dependency\" in\n      /System/Library/*|/usr/lib/*|@loader_path/*|@rpath/*) ;;\n      /*)\n        echo \"release bundle contains an external dependency: $file_path -> $dependency\" >&2\n        exit 1\n        ;;\n    esac\n  done < <(otool -L \"$file_path\" | awk '/^[[:space:]]/{print $1}')\ndone < <(find \"$CONTENTS/MacOS\" \"$CONTENTS/Frameworks\" \"$RUNTIME/bin\" \"$RUNTIME/lib\" \"$BUSINESS\" \\\n  -type f \\( -perm -111 -o -name '*.dylib' -o -name '*.so' -o -name '*.node' \\) \\\n  -print | LC_ALL=C sort)\n\nnm -gU \"$NATIVE\" | grep '_tuyubooking_contract' >/dev/null\nnm -gU \"$NATIVE\" | grep '_tuyubooking_start' >/dev/null\nnm -gU \"$NATIVE\" | grep '_tuyubooking_runtime_snapshot' >/dev/null\nnm -gU \"$NATIVE\" | grep '_tuyubooking_restart_module' >/dev/null\n# Keep verification side-effect free: validate the embedded version marker,\n# signed-byte manifest, and enclosing code signature without launching servers.\nstrings \"$RUNTIME/bin/postgres\" | grep -F 'PostgreSQL) 17.11' >/dev/null\n(\n  cd \"$RUNTIME\"\n  shasum -a 256 -c MANIFEST.sha256 >/dev/null\n)\n(\n  cd \"$BUSINESS\"\n  shasum -a 256 -c MANIFEST.sha256 >/dev/null\n)\ngrep -q '\"network_install_allowed\": false' \"$BUSINESS/runtime.lock.json\"\ngrep -q '\"database_name\": \"tuyubooking\"' \"$BUSINESS/runtime.lock.json\"\n# Business children inherit the App Sandbox and therefore cannot be launched by\n# this unsandboxed shell. Their real execution is covered by smoke_bundle.py.\n# Here we validate the locked version, signed bytes, and static binary marker.\n# 不启动沙箱内业务进程；只读产品锁和包内Node静态版本标记。\nNODE_VERSION=\"$(node --input-type=module - \"$BUSINESS/runtime.lock.json\" <<'NODE_TOOL'\nimport { readFileSync } from 'node:fs';\nconst lock = JSON.parse(readFileSync(process.argv[2], 'utf8'));\nif (!lock.tools?.node?.version) throw new Error('TuyuBooking产品锁缺少Node版本');\nprocess.stdout.write(lock.tools.node.version);\nNODE_TOOL\n)\"\ngrep -q '\"php\": \"8.4.24\"' \"$BUSINESS/runtime.lock.json\"\ngrep -Fx \"v$NODE_VERSION\" < <(strings \"$BUSINESS/node/bin/node\") >/dev/null\ngrep -Fx '8.4.24' < <(strings \"$BUSINESS/php/bin/php\") >/dev/null\ncodesign --verify --deep --strict \"$APP\"\neffective_entitlements=\"$(codesign -d --entitlements - \"$APP\" 2>&1)\"\nif grep -q 'com.apple.security.app-sandbox' <<< \"$effective_entitlements\"; then\n  echo \"App Sandbox is incompatible with embedded PostgreSQL System V IPC\" >&2\n  exit 1\nfi\nif grep -q 'keychain-access-groups' <<< \"$effective_entitlements\"; then\n  echo \"release bundle must not request a shared Keychain access group\" >&2\n  exit 1\nfi\necho \"verified macOS bundle: $APP\"\n"});
@@ -985,11 +964,11 @@ export async function runOwnedModule(name,args,environment=process.env){return r
 
 async function runCLI(){
  const [operation,platform,flag,work]=process.argv.slice(2);
- if(operation==='execute'&&process.env.PRODUCT_RESOURCE_FD!=='4'){if(flag!=='--work'||work!==fixedWork('build/'+platform))fail('平台编译现场不符');return withFixedWork('build/'+platform,()=>runCommand(),{environment:process.env,retain:process.env.PRODUCT_HOST_FD==='3'});}
+ if(operation==='execute'){if(flag!=='--work'||work!==fixedWork('build/'+platform))fail('平台编译现场不符');return withFixedWork('build/'+platform,()=>runCommand(),{environment:process.env});}
  if(operation==='execute')return runCommand();
  if(['resources','prepare','build'].includes(operation)&&flag==='--work'){
   checkWork(work);
-  return withFixedWork(taskScope(work),()=>runCommand(),{environment:process.env,retain:process.env.PRODUCT_HOST_FD==='3'||process.env.PRODUCT_RESOURCE_FD==='4'});
+  return withFixedWork(taskScope(work),()=>runCommand(),{environment:process.env});
  }
  return runCommand();
 }
@@ -1023,14 +1002,11 @@ async function runCommand(){
   let input='';for await(const chunk of process.stdin){input+=chunk;if(Buffer.byteLength(input)>2*1024*1024)fail('公开输入超限');}
   const request=input?JSON.parse(input):{},options={environment:process.env,signal:cancellation.signal,offline:extra.includes('--offline')};
   let result;
-  if(command==='execute'&&process.env.PRODUCT_RESOURCE_FD==='4'){
-   if(process.env.PRODUCT_RESOURCE_FD!=='4')fail('编译资源供给通道缺失');
-   result=await execute(platform,work,request,options);
-  }else if(command==='execute'){
+  if(command==='execute'){
    const {bootstrapNode}=resourceInternals;const node=await bootstrapNode(work,options);
    if(createHash('sha256').update(readFileSync(process.execPath)).digest('hex')!==createHash('sha256').update(readFileSync(node.path)).digest('hex')){
-    const environment=Object.fromEntries(['HOME','USER','LOGNAME','LANG','LC_ALL','PRODUCT_TOOL_ROOT','PRODUCT_DEPENDENCY_ROOT','PRODUCT_HOST_FD','PRODUCT_WORK_LEASE'].filter(k=>typeof process.env[k]==='string').map(k=>[k,process.env[k]]));
-    result=JSON.parse((await runBuildProcess(node.path,[fileURLToPath(import.meta.url),command,platform,option,work,...extra],workEnvironment(environment),root,{capture:true,streamError:true,input:JSON.stringify(request),signal:cancellation.signal,passHost:environment.PRODUCT_HOST_FD==='3'})).stdout);
+    const environment=Object.fromEntries(['HOME','USER','LOGNAME','LANG','LC_ALL','PRODUCT_WORK_LEASE'].filter(k=>typeof process.env[k]==='string').map(k=>[k,process.env[k]]));
+    result=JSON.parse((await runBuildProcess(node.path,[fileURLToPath(import.meta.url),command,platform,option,work,...extra],workEnvironment(environment),root,{capture:true,streamError:true,input:JSON.stringify(request),signal:cancellation.signal})).stdout);
    }else result=await execute(platform,work,request,options);
   }else if(command==='resources')result=await resourceInternals.resources(platform,work,request,options);
   else result=await executions.run({signal:cancellation.signal},()=>command==='prepare'?prepare(platform,work,request,process.env):build(platform,work,request,process.env));
@@ -1143,26 +1119,7 @@ test('Android实际Gradle接收完整版本定义，缺字段和编译失败阻�
 }
 
 // 供给模式只接收所属任务资源，通道失败不切换为独立准备。
-export function createResourceSupplyClient(stream,signal){
- let buffer='',sequence=0,pending=null,closed=false;
- const reject=message=>{closed=true;if(pending){clearTimeout(pending.timer);pending.reject(Error(message));pending=null;}stream.destroy();};
- const abort=()=>reject('资源供给已取消');
- signal?.addEventListener('abort',abort,{once:true});
- stream.setEncoding?.('utf8');
- stream.on('data',chunk=>{buffer+=chunk.toString();if(Buffer.byteLength(buffer)>2*1024**2)return reject('资源供给回执超限');
-  let end;while((end=buffer.indexOf('\n'))>=0){const line=buffer.slice(0,end);buffer=buffer.slice(end+1);
-   try{const reply=JSON.parse(line);if(!pending||reply.id!==pending.id||Object.keys(reply).sort().join(',')!==(reply.ok===true?'id,ok,value':'error,id,ok'))throw Error();
-    const entry=pending;pending=null;clearTimeout(entry.timer);if(reply.ok!==true){entry.reject(Error(reply.error));reject('资源供给失败');return;}entry.resolve(reply.value);
-   }catch{reject('资源供给帧或请求身份无效');return;}
-  }
- });
- stream.on('error',()=>reject('资源供给通道失败'));stream.on('end',()=>reject('资源供给通道中断'));stream.on('close',()=>reject('资源供给通道中断'));
- const request=value=>new Promise((resolve,rejectPromise)=>{if(closed||pending||signal?.aborted)return rejectPromise(Error('资源供给不可用，禁止独立下载'));
-  const id=String(++sequence),timer=setTimeout(()=>reject('资源供给超时'),7200000);pending={id,timer,resolve,reject:rejectPromise};
-  stream.write(JSON.stringify({...value,id,operation:'prepare'})+'\n');
- });
- request.close=()=>{signal?.removeEventListener('abort',abort);reject('资源供给已关闭');};return request;
-}
+
 
 // 本仓本机编译正文只有此处一份；不生成独立编译脚本。
 
@@ -1197,7 +1154,7 @@ async function rm(path,options) {
  return removeResourcePath(path,options);
 }
 function runResourceProcess(command,args,{signal,maxBuffer=8*1024**2,timeout=3600000,encoding='utf8',quietOutput=false,...options}={}) {
- const supplied=resourceSupplies.getStore();if(supplied&&!supplied.preparingTool){if(typeof supplied.runCommand!=='function')fail('供给未交付执行能力');return supplied.runCommand(command,args,{...options,maxBuffer,timeout,encoding,quietOutput,signal});}
+
 
  signal?.throwIfAborted();
  if(!Number.isSafeInteger(maxBuffer)||maxBuffer<=0||!Number.isSafeInteger(timeout)||timeout<=0)throw Error('资源进程边界参数无效');
@@ -1319,7 +1276,7 @@ async function resourceWork(work) {
  checkScratchPath(path);return directory(join(path,'resource-pending'),true);
 }
 async function acquireArchive(entry,{store,work,optional,offline=false,fetcher=fetch,signal,maxBytes=4*1024**3}={}){
- const supplied=resourceSupplies.getStore();if(supplied)return supplied.acquireOriginal(entry,{kind:store===join(supplied.toolRoot,'archives')?'tool':'dependency',offline,signal,maxBytes});
+
  const url=checkedURL(entry.url);digestSpec(entry);await directory(store,true);const coordinate=hash(JSON.stringify([url,entry.sha256||entry.integrity]));const target=join(store,coordinate+'.blob');
  const check=async path=>{await regular(path);const b=await readFile(path);if(!b.length||b.length>maxBytes)fail('原件大小超限');verifyBytes(b,entry);return path;};
  if(await stat(target))return check(target);
@@ -2206,7 +2163,7 @@ const appleBundleTools = new Set([
 ]);
 async function verifyAppleTools(library,{names=['xcodebuild'],signal,run=exec,environment=process.env}={}){
   const wanted=library.tools.find(tool=>tool.id==='xcode');if(!wanted||!Array.isArray(names)||names.some(name=>!appleBundleTools.has(name)&&!Object.hasOwn(appleSystemTools,name)))fail('Apple工具需求无效');
-  const supplied=resourceSupplies.getStore();if(supplied)return supplied.acquireApple({...supplyRequirements().apple,names});
+
   const env=cleanEnvironment(environment),developerDirectory=(await run('/usr/bin/xcode-select',['-p'],{env,signal})).stdout.trim();await directory(developerDirectory);
   const tools={};for(const name of names){const path=appleSystemTools[name]||(name==='xcodebuild'?join(developerDirectory,'usr/bin/xcodebuild'):(await run('/usr/bin/xcrun',['--find',name],{env:{...env,DEVELOPER_DIR:developerDirectory},signal})).stdout.trim());await regular(path);tools[name]=await realpath(path);}
   return {developerDirectory,version:wanted.version,tools};
@@ -2234,18 +2191,19 @@ async function productFoundation(library,verify,{bootstrap=false,id}={}){
 }
 async function prepareSourceDependencies({library,tool,pending,signal,fetcher,options={}}){const result=new Map();for(const entry of tool.dependencies||[])result.set(entry.name,await acquireArchive(entry,{work:library.work,store:join(library.root,'archives'),optional:options.optionalDependencies,offline:options.offline,signal,fetcher}));return result;}
 async function commitCandidate(pending,target,{signal,verify}={}){
- const supplied=resourceSupplies.getStore();if(supplied){if(typeof supplied.publishCandidate!=='function')fail('供给未交付提交能力');return supplied.publishCandidate(pending,target);}
+
 
  // 下载与编译已完成后才取得短锁；等待可取消，已有对象永不覆盖。
  const lock=target+'.lock';let handle;for(let n=0;n<500;n++){signal?.throwIfAborted();try{handle=await open(lock,'wx',0o600);break;}catch(e){if(e.code!=='EEXIST')throw e;await new Promise(r=>setTimeout(r,20));}}if(!handle)fail('原件提交锁等待超限');
  try{signal?.throwIfAborted();if(await stat(target)){if(verify)await verify(target);}else await rename(pending,target);}finally{await handle.close();await rm(lock);}
 }
+// 准备产物身份与使用验收由本产品定义，供应端不解释组件布局。
+function toolSupplyKey(tool){const archive=toolArchive(tool);if(tool.id==='node')return archive.sha256;return archive.sha256+'-'+objectRecipe(tool);}
+
+
+
 async function installTool(library,tool,options,visiting=new Set()){
- const supplied=resourceSupplies.getStore();if(supplied&&!supplied.preparingTool){
-  if(library.installed.has(tool.id))return library.installed.get(tool.id);
-  const value=tool.id==='xcode'?await supplied.acquireApple({...supplyRequirements().apple,names:['xcodebuild']}).then(apple=>({path:apple.tools.xcodebuild,version:tool.version})):await supplied.acquireTool(supplyRequirements().tools.find(item=>item.id===tool.id));
-  library.installed.set(tool.id,value);return value;
- }
+
 
  if(library.installed.has(tool.id))return library.installed.get(tool.id);if(visiting.has(tool.id))fail('工具声明循环：'+tool.id);visiting=new Set([...visiting,tool.id]);const archive=toolArchive(tool);
  if(tool.id==='xcode'){const apple=await verifyAppleTools(library,{environment:cleanEnvironment(options.environment),signal:options.signal});const value={path:apple.tools.xcodebuild,version:tool.version};library.installed.set(tool.id,value);return value;}
@@ -2461,8 +2419,8 @@ async function bootstrapNode(work,options={}) {
  const store=options.storeRoot||join(homedir(),'.local/share/product-resources');
  if(inside(root,store)||inside(store,root)||inside(work,store)||inside(store,work)||store===work)fail('启动原件库边界交叉');
  const library={root:join(store,'tools'),work,tools:toolDefinitions,installed:new Map()};await directory(library.root,true);
- const context={environment,offline:false,fetcher:fetch,...options,library,optionalTools:environment.PRODUCT_TOOL_ROOT,
-  optionalDependencies:environment.PRODUCT_DEPENDENCY_ROOT?join(environment.PRODUCT_DEPENDENCY_ROOT,'objects'):undefined};
+ const context={environment,offline:false,fetcher:fetch,...options,library,optionalTools:undefined,
+  optionalDependencies:undefined};
  return installTool(library,toolDefinitions.find(x=>x.id==='node'),context);
 }
 
@@ -2472,8 +2430,8 @@ async function processResources(work,options={}) {
  const store=options.storeRoot||join(homedir(),'.local/share/product-resources');
  if(inside(root,store)||inside(store,root)||inside(work,store)||inside(store,work))fail('操作原件库边界交叉');
  const library={root:join(store,'tools'),work,tools:toolDefinitions,installed:new Map()};await directory(library.root,true);
- const context={environment,offline:false,fetcher:fetch,...options,library,optionalTools:environment.PRODUCT_TOOL_ROOT,
-  optionalDependencies:environment.PRODUCT_DEPENDENCY_ROOT?join(environment.PRODUCT_DEPENDENCY_ROOT,'objects'):undefined};
+ const context={environment,offline:false,fetcher:fetch,...options,library,optionalTools:undefined,
+  optionalDependencies:undefined};
  for(const id of ['node','xcode','posix','bash','grep','sed'])await installTool(library,toolDefinitions.find(tool=>tool.id===id),context);
  const foundation=await productFoundation(library,async(_,tool)=>library.installed.get(tool.id));
  const apple=await verifyAppleTools(library,{names:['codesign'],signal:options.signal,environment:cleanEnvironment(environment)});
@@ -2481,19 +2439,12 @@ async function processResources(work,options={}) {
   plutil:foundation.tools.plutil,environment:{...cleanEnvironment(environment),PATH:foundation.path,DEVELOPER_DIR:apple.developerDirectory}};
 }
 
-async function resources(platform,work,previous={},options={}){
- if(options.supply){const receipt=await options.supply(previous);if(receipt?.run_id!==previous.run_id)fail('资源供给任务身份不符');const owner=buildApi;owner.resourceEnvironment(platform,work,receipt,options.environment||{});return receipt;}
- return materializeResources(platform,work,previous,options);
-}
-async function prepareResourceSupply(platform,work,previous,options){
- if(!options||typeof options.acquireOriginal!=='function'||!options.toolRoot||!options.dependencyRoot)fail('供给准备缺少公开能力');
- const receipt=await resourceSupplies.run({...options,work},()=>materializeResources(platform,work,previous,options));
- receipt.environment??={};receipt.environment["TUYUBOOKING_RESOURCE_MODE"]='provided';return receipt;
-}
+async function resources(platform,work,previous={},options={}){return resourceSupplies.run({work},()=>materializeResources(platform,work,previous,options));}
+async function prepareResourceSupply(platform,work,previous,options){return resources(platform,work,previous,options);}
 async function materializeResources(platform,work,previous={},options={}){
  const owner=buildApi;owner.checkWork(work);const request=()=>owner.requirements(platform,work);const requirement=await request(),environment=options.environment||process.env;
  if(previous.schema!==undefined&&(previous.schema!==1||previous.product_id!==requirement.product_id||previous.platform!==platform||previous.work!==work))fail('资源请求身份无效');options={environment,fetcher:fetch,offline:false,...options};options.signal?.throwIfAborted();
- const store=options.storeRoot||join(homedir(),'.local/share/product-resources'),optionalTools=options.toolRoot||environment.PRODUCT_TOOL_ROOT,optionalDependencies=options.dependencyRoot?join(options.dependencyRoot,'objects'):environment.PRODUCT_DEPENDENCY_ROOT?join(environment.PRODUCT_DEPENDENCY_ROOT,'objects'):undefined;
+ const store=options.storeRoot||join(homedir(),'.local/share/product-resources'),optionalTools=options.toolRoot,optionalDependencies=options.dependencyRoot?join(options.dependencyRoot,'objects'):undefined;
  await directory(store,true);if(inside(root,store)||inside(store,root)||inside(work,store)||inside(store,work)||store===work)fail('原件库与源码或工作区交叉');
  // tools承载工具发行件/编译输入，rely承载产品依赖原件；不把可写任务缓存混入任一原件库。
  const library={root:options.toolRoot||join(store,'tools'),work,tools:toolDefinitions,requested:requirement.tools,installed:new Map(),androidPlatforms:androidPlatformDefinitions};await directory(library.root,true);options={...options,platform,optionalTools,optionalDependencies,library,dependencyRoot:options.dependencyRoot||join(store,'rely'),sources:requirement.sources};
@@ -2516,24 +2467,12 @@ async function materializeResources(platform,work,previous={},options={}){
 
 // 公开声明与候选配方；供给对象的领取、提交及删除只由调度方实现。
 function supplyRequirements(){
- const wanted=toolDefinitions.filter(tool=>tool.id!=='xcode').map(tool=>{const archive=toolArchive(tool);return {...tool,archive,slots:[...new Set([archive?.executable,...(tool.slots||[])].filter(Boolean))]};});
+ const wanted=toolDefinitions.filter(tool=>tool.id!=='xcode').map(tool=>{const archive=toolArchive(tool);return {...tool,archive,cache_key:toolSupplyKey(tool),slots:[...new Set([archive?.executable,...(tool.slots||[])].filter(Boolean))]};});
  const xcode=toolDefinitions.find(tool=>tool.id==='xcode');
  return {tools:wanted,apple:{version:xcode.version,source:xcode.source,names:[...new Set([...Object.keys(appleSystemTools),...appleBundleTools])]}};
 }
 function assertWorkQuiescent(work){for(const pid of supplyGroups.get(work)||[])try{process.kill(-pid,0);fail('资源工具退出未确认');}catch(error){if(error.code!=='ESRCH')throw error;}if(retainedResourcePath(work))fail('资源工具退出未确认');}
-async function prepareToolSupply(tool,{original,payload,work,signal,offline,acquireOriginal,acquireTool,acquireApple,publishCandidate,environment,finalPayload}){
- const at=await fixedScratch(join(work,'.tool-recipe-'+tool.id+'-'+randomUUID()));
- const library={root:at,work,tools:toolDefinitions,installed:new Map(),requested:[],androidPlatforms:typeof androidPlatformDefinitions==='undefined'?[]:androidPlatformDefinitions};
- const context={work,toolRoot:at,dependencyRoot:join(work,'dependencies'),acquireOriginal,acquireTool,acquireApple,publishCandidate,preparingTool:true};
- try{return await resourceSupplies.run(context,async()=>{
-  const definition=toolDefinitions.find(entry=>entry.id===tool.id);if(!definition)fail('工具配方未声明');
-  const ids=[...(definition.requires||[]),...(!['node','posix'].includes(tool.id)?['posix',...(['bash','grep','sed'].includes(tool.id)?[]:['bash','grep','sed'])]:[])];
-  for(const id of new Set(ids)){if(id==='xcode'){const apple=await acquireApple({...supplyRequirements().apple,names:['xcodebuild']});library.installed.set(id,{path:apple.tools.xcodebuild,version:toolDefinitions.find(t=>t.id===id).version});}else{const entry=supplyRequirements().tools.find(t=>t.id===id);if(!entry)fail('工具前置未声明');library.installed.set(id,await acquireTool(entry));}}
-  const value=await installTool(library,definition,{library,signal,offline,environment,finalPayload,dependencyRoot:context.dependencyRoot});
-  const executable=toolArchive(definition).executable,built=value.path.slice(0,-executable.length-1);await chmod(built,0o700);await rm(payload,{recursive:true,force:true});await rename(built,payload);
-  return {schema:1,id:tool.id,version:tool.version,payload,original};
- });}finally{assertWorkQuiescent(work);await rm(at,{recursive:true,force:true});}
-}
+
 
 // 正式实现结束；仅直接使用 node --test 执行本文件时注册以下回归。
 if (process.env.NODE_TEST_CONTEXT && process.argv.length === 2 && !process.execArgv.some(value=>/^(?:-e|--eval(?:=|$)|--input-type(?:=|$))/u.test(value)) && process.argv[1] && import.meta.url === (await import('node:url')).pathToFileURL((await import('node:path')).resolve(process.argv[1])).href) {
@@ -2795,13 +2734,7 @@ test('资源下载候选只属于当前产品target现场，永久库不接收�
 // 同文件回归只准备夹具归档，验证候选职责和失败清理，不下载或运行产品编译。
 if(process.env.NODE_TEST_CONTEXT&&process.argv.length===2&&process.argv[1]===import.meta.filename){
  const {test}=await import('node:test'),{default:assert}=await import('node:assert/strict'),{execFileSync}=await import('node:child_process'),fs=await import('node:fs'),{withFixedWork}=Promise.resolve(targetInternals);
- for(const failure of [false,true])test('编译供给候选归属与失败收尾：'+failure,()=>withFixedWork('test',async work=>{
-  const tool=supplyRequirements().tools.find(tool=>tool.id==='node'),base=join(work,'fixture');await mkdir(join(base,tool.archive.root,'bin'),{recursive:true});await writeFile(join(base,tool.archive.root,'bin/node'),'#!/bin/sh\nexit 0\n',{mode:0o755});
-  const archive=join(work,'fixture.tgz');execFileSync('/usr/bin/tar',['-czf',archive,'-C',base,tool.archive.root]);const payload=join(work,'payload');await mkdir(payload);let acquired=0,committed=0;
-  const options={original:archive,payload,work,environment:{HOME:work},acquireOriginal:async entry=>{acquired++;assert.equal(entry.url,tool.archive.url);if(failure)throw Error('原件缺失');return archive;},acquireTool:()=>assert.fail('Node无前置工具'),acquireApple:()=>assert.fail('Node不需要Apple'),publishCandidate:async(candidate,target)=>{assert.ok(candidate.startsWith(work+'/')&&target.startsWith(work+'/'));committed++;await mkdir(dirname(target),{recursive:true});await rename(candidate,target);}};
-  if(failure)await assert.rejects(prepareToolSupply(tool,options),/原件缺失/);else{const result=await prepareToolSupply(tool,options);assert.equal(result.payload,payload);assert.ok((await lstat(join(payload,'bin/node'))).mode&0o111);assert.equal(committed,1);}
-  assert.equal(acquired,1);assert.equal((await readdir(work)).some(name=>name.startsWith('.tool-recipe-')),false);
- }));
+
 }
 
 // 使用真实本轮目录验证解析器取得、复用及失败清场，不触碰共享工具库。
@@ -2810,22 +2743,7 @@ if(process.env.NODE_TEST_CONTEXT&&process.argv.length===2&&process.argv[1]===imp
  const {mkdtemp,mkdir,writeFile,readdir,rm,lstat}=await import('node:fs/promises');
  const {gzipSync}=await import('node:zlib');
  const tar=entries=>{const blocks=[];for(const [name,body]of entries){const bytes=Buffer.from(body),header=Buffer.alloc(512);header.write(name,0,100);header.write('0000644\0',100);header.write('0000000\0',108);header.write('0000000\0',116);header.write(bytes.length.toString(8).padStart(11,'0')+'\0',124);header.write('00000000000\0',136);header.fill(32,148,156);header.write('0',156);header.write('ustar\0',257);header.write('00',263);header.write([...header].reduce((sum,value)=>sum+value,0).toString(8).padStart(6,'0')+'\0 ',148);blocks.push(header,bytes,Buffer.alloc((512-bytes.length%512)%512));}return gzipSync(Buffer.concat([...blocks,Buffer.alloc(1024)]));};
- test('解析器仅在本任务目录物化并复用，离线缺件失败',async t=>{
-  await mkdir(fixedWork('test'),{recursive:true});const work=await mkdtemp(join(fixedWork('test'),'parser-task-'));t.after(()=>rm(work,{recursive:true,force:true}));
-  const library={root:join(work,'library'),work,installed:new Map()};await mkdir(library.root);
-  const input=join(work,'parser.tgz'),broken=join(work,'broken.tgz');
-  await writeFile(input,tar([['package/package.json','{"main":"index.js"}'],['package/index.js','module.exports={parse(text){return {text}}};']]));
-  await writeFile(broken,tar([['../escape','invalid']]));
-  let acquired=0;const supply={toolRoot:library.root,acquireOriginal:async()=>{acquired++;return input;},publishCandidate:()=>assert.fail('解析器不得发布共享目录')};
-  const options={library,offline:true};
-  assert.deepEqual((await resourceSupplies.run(supply,()=>parser('yaml',options)))('first'),{text:'first'});
-  assert.deepEqual((await resourceSupplies.run(supply,()=>parser('yaml',options)))('again'),{text:'again'});
-  assert.equal(acquired,1);await assert.rejects(lstat(join(library.root,'parsers')),{code:'ENOENT'});
-  const local=join(work,'resource-pending','parsers');assert.equal((await readdir(local)).length,1);await rm(local,{recursive:true});
-  await assert.rejects(resourceSupplies.run({...supply,acquireOriginal:async()=>broken},()=>parser('yaml',options)),/越界|非法/);
-  assert.deepEqual(await readdir(local),[]);
-  await assert.rejects(resourceSupplies.run({...supply,acquireOriginal:async()=>{throw Error('离线缺原件');}},()=>parser('yaml',options)),/离线缺原件/);
- });
+
  test('锁定Git bundle仅在任务内检出，离线缺原件失败',async t=>{
   const {execFileSync}=await import('node:child_process'),{mkdtemp,mkdir,writeFile,readFile,readdir,rm}=await import('node:fs/promises');
   await mkdir(fixedWork('test'),{recursive:true});const work=await mkdtemp(join(fixedWork('test'),'git-task-'));t.after(()=>rm(work,{recursive:true,force:true}));
@@ -2850,36 +2768,13 @@ if(process.env.NODE_TEST_CONTEXT&&process.argv.length===2&&process.argv[1]===imp
   assert.equal(await stat(target),null);
  });
 
- test('Pod spec与源码仅在任务内物化，离线复用与失败清场保持锁定',async t=>{
-  const {mkdtemp,mkdir,writeFile,readFile,rm}=await import('node:fs/promises');
-  const {spawnSync}=await import('node:child_process');
-  await mkdir(fixedWork('test'),{recursive:true});const work=await mkdtemp(join(fixedWork('test'),'pod-task-'));t.after(()=>rm(work,{recursive:true,force:true}));
-  const checksum='a'.repeat(40),sourceBytes=tar([['source.txt','locked-source']]),sourceUrl='https://example.invalid/Example.tgz';
-  const spec={name:'Example',version:'1.0.0',source:{http:sourceUrl,sha256:hash(sourceBytes)}};
-  const lock={PODS:['Example (1.0.0)'],'SPEC CHECKSUMS':{Example:checksum}};
-  const parserArchive=join(work,'parser.tgz'),sourceArchive=join(work,'source.tgz'),lockfile=join(work,'Podfile.lock');
-  await writeFile(parserArchive,tar([['package/package.json','{"main":"index.js"}'],['package/index.js','module.exports={parse(){return '+JSON.stringify(lock)+';}};']]));
-  await writeFile(sourceArchive,sourceBytes);await writeFile(lockfile,'PODS:\n  - Example (1.0.0)\nSPEC CHECKSUMS:\n  Example: '+checksum+'\n');
-  const ruby=join(work,'ruby'),pod=join(work,'cocoapods/bin/pod');await mkdir(dirname(pod),{recursive:true});await mkdir(join(work,'cocoapods/gems'));
-  await writeFile(ruby,'#!'+process.execPath+'\nprocess.stdout.write('+JSON.stringify(checksum)+');\n',{mode:0o755});await writeFile(pod,'fixture',{mode:0o755});
-  const library={root:join(work,'library'),work,installed:new Map([['ruby',{path:ruby}],['cocoapods',{path:pod}]]),tools:[{id:'cocoapods',version:'1.17.0'}]};await mkdir(library.root);
-  let originals=0,requests=0;
-  const supply={toolRoot:library.root,acquireOriginal:async entry=>{originals++;return entry.url===parserDefinitions.yaml.url?parserArchive:entry.url===sourceUrl?sourceArchive:assert.fail('未知原件');},publishCandidate:()=>assert.fail('Pod不得提交共享目录'),runCommand:async(command,args,options)=>{assert.equal(command,ruby);const result=spawnSync(command,args,{env:options.env,encoding:'utf8'});assert.equal(result.status,0,result.stderr);return {stdout:result.stdout,stderr:result.stderr};}};
-  const fetcher=async url=>{requests++;assert.match(url,/^https:\/\/cdn\.cocoapods\.org\/Specs\//u);return Response.json(spec);};
-  const podWork=join(work,'pod');await resourceSupplies.run(supply,()=>preparePods(lockfile,podWork,{library,fetcher,environment:{HOME:work}}));
-  assert.equal(await readFile(join(podWork,'cocoapods/cache/Pods/Release/Example','1.0.0-'+checksum.slice(0,5),'source.txt'),'utf8'),'locked-source');
-  assert.equal(await stat(join(library.root,'parsers')),null);assert.equal(await stat(join(work,'rely/pods')),null);
-  await resourceSupplies.run(supply,()=>preparePods(lockfile,podWork,{library,offline:true,environment:{HOME:work},fetcher:()=>assert.fail('离线复用不得联网')}));
-  assert.equal(originals,2);assert.equal(requests,1);
-  await assert.rejects(resourceSupplies.run(supply,()=>preparePods(lockfile,join(work,'failed'),{library,environment:{HOME:work},fetcher:async()=>new Response(null,{status:503})})),/官方来源响应失败/);
-  assert.equal(await stat(join(work,'failed/cocoapods/cache/Pods/Release/Example')),null);
- });
+
 }
 
-return {runResourceProcess,inventory,acquireArchive,extractArchive,normalizeCargoManifest,podSourceCoordinate,readDependencySupply,materializePodSupply,materializeMavenCache,mavenSupplyInit,checkCocoaPodsResources,buildSourceTool,posixNames,resourceDeclarations,bootstrapNode,processResources,resources,prepareResourceSupply,supplyRequirements,assertWorkQuiescent,prepareToolSupply};
+return {runResourceProcess,inventory,acquireArchive,extractArchive,normalizeCargoManifest,podSourceCoordinate,readDependencySupply,materializePodSupply,materializeMavenCache,mavenSupplyInit,checkCocoaPodsResources,buildSourceTool,posixNames,resourceDeclarations,bootstrapNode,processResources,resources,prepareResourceSupply,supplyRequirements,assertWorkQuiescent};
 })();
-const {runResourceProcess,inventory,acquireArchive,extractArchive,normalizeCargoManifest,podSourceCoordinate,readDependencySupply,materializePodSupply,materializeMavenCache,mavenSupplyInit,checkCocoaPodsResources,buildSourceTool,posixNames,resourceDeclarations,bootstrapNode,processResources,resources,prepareResourceSupply,supplyRequirements,assertWorkQuiescent,prepareToolSupply}=resourceInternals;
-export {runResourceProcess,inventory,acquireArchive,extractArchive,normalizeCargoManifest,podSourceCoordinate,readDependencySupply,materializePodSupply,materializeMavenCache,mavenSupplyInit,checkCocoaPodsResources,buildSourceTool,posixNames,resourceDeclarations,bootstrapNode,processResources,resources,prepareResourceSupply,supplyRequirements,assertWorkQuiescent,prepareToolSupply};
+const {runResourceProcess,inventory,acquireArchive,extractArchive,normalizeCargoManifest,podSourceCoordinate,readDependencySupply,materializePodSupply,materializeMavenCache,mavenSupplyInit,checkCocoaPodsResources,buildSourceTool,posixNames,resourceDeclarations,bootstrapNode,processResources,resources,prepareResourceSupply,supplyRequirements,assertWorkQuiescent}=resourceInternals;
+export {runResourceProcess,inventory,acquireArchive,extractArchive,normalizeCargoManifest,podSourceCoordinate,readDependencySupply,materializePodSupply,materializeMavenCache,mavenSupplyInit,checkCocoaPodsResources,buildSourceTool,posixNames,resourceDeclarations,bootstrapNode,processResources,resources,prepareResourceSupply,supplyRequirements,assertWorkQuiescent};
 
 // 正式实现结束；仅直接使用 node --test 执行本文件时注册以下回归。
 if (process.env.NODE_TEST_CONTEXT && process.argv.length === 2 && !process.execArgv.some(value=>/^(?:-e|--eval(?:=|$)|--input-type(?:=|$))/u.test(value)) && process.argv[1] && import.meta.url === (await import('node:url')).pathToFileURL((await import('node:path')).resolve(process.argv[1])).href) {
@@ -3015,7 +2910,7 @@ async function start(platform,artifact,{signal,tools,run=runBuildProcess}={}) {
  if(outputDigest(artifact)!==before||JSON.stringify(startDeclaration(platform))!==declaration)fail('启动期间候选或声明变化');
  return bookingLaunchConfirmation({schema:1,product_id:declared.product,platform,flow:'start',artifact,status:'started'},platform,artifact);
 }
-// 商家主机和分机分别绑定自己的声明，确认逻辑不依赖厂家或控制台。
+// 本产品独立拥有此实现，通过自身公开接口执行。
 function bookingLaunchConfirmation(receipt,platform,artifact) {
  const booking=startDeclaration(platform);
  if(receipt===null||typeof receipt!=='object'||Array.isArray(receipt)||Object.keys(receipt).length!==6)
@@ -3034,16 +2929,15 @@ async function runStartCLI(){
  const cancellation=new AbortController();for(const event of ['SIGTERM','SIGINT'])process.once(event,()=>cancellation.abort());
  let unconfirmed=false;
  try {
-  const publicEnv=Object.fromEntries(['HOME','USER','LOGNAME','LANG','LC_ALL','PRODUCT_TOOL_ROOT','PRODUCT_DEPENDENCY_ROOT','PRODUCT_RESULT_FD'].filter(key=>typeof process.env[key]==='string').map(key=>[key,process.env[key]]));
+  const publicEnv=Object.fromEntries(['HOME','USER','LOGNAME','LANG','LC_ALL'].filter(key=>typeof process.env[key]==='string').map(key=>[key,process.env[key]]));
   publicEnv.PRODUCT_WORK_LEASE=session.owner.nonce;const options={signal:cancellation.signal,environment:publicEnv};const node=await bootstrapNode(work,options);
   if(createHash('sha256').update(readFileSync(process.execPath)).digest('hex')!==createHash('sha256').update(readFileSync(node.path)).digest('hex')) {
-   const result=await runBuildProcess(node.path,[fileURLToPath(import.meta.url),...process.argv.slice(2)],publicEnv,root,{signal:cancellation.signal,capture:true,streamError:true,passHost:publicEnv.PRODUCT_RESULT_FD==='3'});
-   if(publicEnv.PRODUCT_RESULT_FD!=='3')process.stdout.write(result.stdout);
+   const result=await runBuildProcess(node.path,[fileURLToPath(import.meta.url),...process.argv.slice(2)],publicEnv,root,{signal:cancellation.signal,capture:true,streamError:true});
+   process.stdout.write(result.stdout);
   } else {
    const result=bookingLaunchConfirmation(await start(platform,artifact,{signal:cancellation.signal,tools:await processResources(work,options)}),platform,artifact);
    const bytes=JSON.stringify(result)+'\n';
-   if(publicEnv.PRODUCT_RESULT_FD!==undefined){if(publicEnv.PRODUCT_RESULT_FD!=='3')fail('结果通道无效');writeSync(3,bytes);}
-   else process.stdout.write(bytes);
+   process.stdout.write(bytes);
   }
  } catch(error) { unconfirmed=String(error.message).includes('退出未确认');throw error; }
  finally { releaseFixedWork(session,{unsafe:unconfirmed}); }
@@ -3109,18 +3003,16 @@ const {startDeclaration,startArtifact,start,bookingLaunchConfirmation}=startInte
 export {startDeclaration,startArtifact,start,bookingLaunchConfirmation};
 
 
-// 本产品独立拥有自动化的派发、观察、取消与恢复；控制台只交付任务宿主和仓库授权。
+// 本产品公开GitHub接口只使用普通参数与返回值；平台流程及终态处理归本仓。
 const automationRepository='tuyutata/tuyubooking';
 const automationWorkflows=Object.freeze({"host-macos":"release-host-macos.yml","host-windows":"release-host-windows.yml","host-linux-arm":"release-host-linux-arm.yml","host-linux-amd":"release-host-linux-amd.yml","client-ios":"release-client-ios.yml","client-android":"release-client-android.yml","client-macos":"release-client-macos.yml","client-windows":"release-client-windows.yml"});
-const automationObservers=new WeakMap();
-const automationReconnect=new WeakSet();
+
+
 function automationRoute(route,action){
  const workflow=automationWorkflows[route?.platform];
  if(!workflow||route.repository!==contract.product_id||route.product!==contract.product_id||route.workflow!==workflow
   ||route.canonicalId!==`${contract.product_id}.${route.platform}.release`||route.flow!=='release'
-  ||action&&(action.id!==`${contract.product_id}-release-${route.platform}`||action.canonicalId!==route.canonicalId
-   ||action.flow!=='release'||action.platform!==route.platform||action.productId!==contract.product_id
-   ||action.authorizationLevel!==2||action.production===true))
+  )
   throw Error('产品自动化目标与声明不一致');
  return workflow;
 }
@@ -3132,18 +3024,7 @@ function automationRun(run,workflow,id){
   throw Error('产品 GitHub Run 身份不一致');
  return run;
 }
-async function automationToken(route,actionId,security,task){
- if(typeof security!=='function')throw Error('产品自动化缺少仓库授权');
- const payload={repository:automationRepository,purpose:'workflow',action_id:actionId,platform:route.platform,
-  ...(task?{run_id:task.id,recovery_run_id:task.id}:{})};
- const response=await security('github.repository.token',{payload_base64:Buffer.from(JSON.stringify(payload)).toString('base64')});
- if(response?.ok!==true||!response.values)throw Error('产品 GitHub 仓库授权失败');
- const token=Buffer.from(response.values['repository-main:TOKEN']||'','base64').toString('utf8');
- const expiresAt=Number(Buffer.from(response.values['repository-main:EXPIRES_AT']||'','base64').toString('utf8'));
- if(!/^ghs_[^\s\u0000-\u001f\u007f]{1,2044}$/u.test(token)||!Number.isSafeInteger(expiresAt)||expiresAt<=Date.now()/1000)
-  throw Error('产品 GitHub 短期授权无效');
- return {token,expiresAt};
-}
+
 function automationSafe(value,token){return String(value??'').split(token||'\0').join('[已脱敏]').replace(/gh[sopur]_[A-Za-z0-9_]+/gu,'[已脱敏]').slice(0,4000);}
 async function automationRequest(path,token,{method='GET',body,fetchImpl=fetch,signal}={}){
  if(typeof path!=='string'||path.startsWith('/')||path.includes('..')||/[\r\n]/u.test(path))throw Error('产品 GitHub 路径无效');
@@ -3171,177 +3052,22 @@ export async function dispatchProductAutomation(platform,token,{inputs={},fetchI
  await accepted?.(value);
  return automationRun(await automationRequest(`actions/runs/${value.workflow_run_id}`,token,{fetchImpl}),workflow,value.workflow_run_id);
 }
-async function automationLogs(run,token,host,task){
- const first=await fetch(`https://api.github.com/repos/${automationRepository}/actions/runs/${run.id}/logs`,{
-  redirect:'manual',credentials:'omit',headers:{Authorization:'Bearer '+token,Accept:'application/vnd.github+json',
-   'X-GitHub-Api-Version':'2026-03-10','User-Agent':contract.product_id},signal:AbortSignal.timeout(30000)});
- if(first.status===404)return;
- let response=first;
- if(first.status===302){const url=new URL(first.headers.get('location'));
-  if(url.protocol!=='https:'||url.username||url.password)throw Error('产品 GitHub 日志下载地址无效');
-  response=await fetch(url,{redirect:'error',credentials:'omit',signal:AbortSignal.timeout(60000)});
- }
- if(!response.ok||!response.body)throw Error('产品 GitHub 日志读取失败');
- let size=0;const chunks=[];for await(const chunk of response.body){size+=chunk.length;if(size>32*1024*1024)throw Error('产品 GitHub 日志归档超限');chunks.push(chunk);}
- const bytes=Buffer.concat(chunks),{inflateRawSync}=await import('node:zlib');
- let end=-1;for(let at=bytes.length-22;at>=Math.max(0,bytes.length-65558);at--)if(bytes.readUInt32LE(at)===0x06054b50){end=at;break;}
- if(end<0)throw Error('产品 GitHub 日志 ZIP 目录无效');
- const count=bytes.readUInt16LE(end+10);if(count>2000)throw Error('产品 GitHub 日志文件过多');
- let at=bytes.readUInt32LE(end+16),total=0;
- for(let i=0;i<count;i++){
-  if(at+46>bytes.length||bytes.readUInt32LE(at)!==0x02014b50)throw Error('产品 GitHub 日志成员无效');
-  const flags=bytes.readUInt16LE(at+8),method=bytes.readUInt16LE(at+10),packed=bytes.readUInt32LE(at+20),length=bytes.readUInt32LE(at+24);
-  const nameSize=bytes.readUInt16LE(at+28),extra=bytes.readUInt16LE(at+30),comment=bytes.readUInt16LE(at+32),local=bytes.readUInt32LE(at+42);
-  const name=bytes.subarray(at+46,at+46+nameSize).toString('utf8');at+=46+nameSize+extra+comment;
-  total+=length;if(flags&1||![0,8].includes(method)||length>32*1024*1024||total>128*1024*1024
-   ||local+30>bytes.length||bytes.readUInt32LE(local)!==0x04034b50)throw Error('产品 GitHub 日志结构无效');
-  const start=local+30+bytes.readUInt16LE(local+26)+bytes.readUInt16LE(local+28);
-  if(start+packed>bytes.length)throw Error('产品 GitHub 日志内容越界');
-  const data=method===0?bytes.subarray(start,start+packed):inflateRawSync(bytes.subarray(start,start+packed),{maxOutputLength:length});
-  if(data.length!==length)throw Error('产品 GitHub 日志大小不一致');
-  if(name.endsWith('.txt')){host.report(task,`GitHub日志：${automationSafe(name,token)}`);
-   for(const line of data.toString('utf8').split(/\r?\n/u))if(line)host.report(task,automationSafe(line,token));}
- }
-}
-function automationIdentity(task,route,workflow,run){
- Object.assign(task,{repository:route.repository,productId:route.product,platform:route.platform,flow:'release',mode:'release',
-  githubRepository:automationRepository,githubWorkflow:workflow,githubRunId:run.id,githubRunNumber:run.run_number,
-  githubRunAttempt:run.run_attempt,githubRunUrl:run.html_url,sourceSHA:run.head_sha,githubRemoteStatus:run.status,recovered:false});
-}
-function automationRecoveryCall(task,route,host){
- return typeof host.recoverTask==='function'?host.recoverTask(task):recoverAutomation(task,route,host);
-}
-function automationRetry(task,route,host){
- if(!task.active||automationReconnect.has(task))return;
- automationReconnect.add(task);
- // 调度任务经宿主重新建立授权上下文；独立调用才直接走本产品恢复入口。
- const timer=setTimeout(()=>{
-  automationReconnect.delete(task);
-  if(!task.active||!task.recovered)return;
-  void Promise.resolve().then(()=>automationRecoveryCall(task,route,host)).catch(error=>{
-    if(!task.active)return;
-    task.recovered=true;host.report(task,'原 Run 重连未完成：'+automationSafe(error.message));host.changed(task);
-    automationRetry(task,route,host);
-  });
- },120000);
- timer.unref?.();
-}
-async function observeProductAutomation(task,route,host,access){
- const workflow=automationRoute(route),jobs=new Map();automationObservers.set(task,access);
- try{while(task.active){
-  const run=automationRun(await automationRequest(`actions/runs/${task.githubRunId}`,access.token),workflow,task.githubRunId);
-  if(task.sourceSHA&&run.head_sha!==task.sourceSHA)throw Error('产品 Run 提交身份已变化');
-  automationIdentity(task,route,workflow,run);host.changed(task);
-  const state=run.status==='completed'?(run.conclusion==='success'?'成功':'失败'):run.status;
-  if(task.automationLastState!==state){host.report(task,'GitHub：'+state);task.automationLastState=state;host.changed(task);}
-  const result=await automationRequest(`actions/runs/${run.id}/jobs?per_page=100`,access.token);
-  if(!Array.isArray(result?.jobs))throw Error('产品 GitHub Job 列表无效');
-  for(const job of result.jobs){const key=job.status+':'+job.conclusion;
-   if(jobs.get(job.id)!==key){jobs.set(job.id,key);host.report(task,`${automationSafe(job.name,access.token)}：${automationSafe(job.conclusion||job.status,access.token)}`);}}
-  if(run.status==='completed'){
-   try{await automationLogs(run,access.token,host,task);}catch{host.report(task,'GitHub 终态已确认；本次日志下载未完成，请查看 Run 链接');}
-   await host.finish(task,task.cancelRequested?1:run.conclusion==='success'?0:1,
-    task.cancelRequested?`任务已取消；塔塔自动化终态：${run.conclusion}`:run.conclusion==='success'?'塔塔自动化成功':`塔塔自动化失败：${run.conclusion}`);
-   await host.refresh?.(route.repository,host.security);return;
-  }
-  await new Promise(resolve=>setTimeout(resolve,5000));
- }}catch(error){if(task.active){task.recovered=true;host.report(task,automationSafe(error.message,access.token)+'；将重新连接原 Run');host.changed(task);automationRetry(task,route,host);}}
- finally{automationObservers.delete(task);}
-}
-function cancelProductAutomation(task,route,host){
- if(task.remoteCancelOperation)return task.remoteCancelOperation;
- const operation=cancelProductAutomationOnce(task,route,host).catch(error=>{
-  if(task.active){task.recovered=true;host.report(task,automationSafe(error.message)+'；将重新连接原 Run');host.changed(task);automationRetry(task,route,host);}
-  throw error;
- });
- task.remoteCancelOperation=operation;
- void operation.finally(()=>{if(task.remoteCancelOperation===operation)delete task.remoteCancelOperation;}).catch(()=>{});
- return operation;
-}
-async function cancelProductAutomationOnce(task,route,host){
- const workflow=automationRoute(route);
- if(!task.active||task.repository!==route.repository||task.platform!==route.platform||task.githubRepository!==automationRepository
-  ||task.githubWorkflow!==workflow||task.canonicalId!==route.canonicalId)throw Error('产品自动化取消身份无效');
- task.cancelRequested=true;host.changed(task);
- if(!task.githubRunId)return {id:task.id,closed:true};
- const remembered=automationObservers.get(task);
- const access=remembered?.expiresAt>Date.now()/1000?remembered:await automationToken(route,task.actionId,host.security,task);
- let run=automationRun(await automationRequest(`actions/runs/${task.githubRunId}`,access.token),workflow,task.githubRunId);
- if(task.sourceSHA&&run.head_sha!==task.sourceSHA)throw Error('产品自动化取消提交身份已变化');
- const already=run.status==='completed';
- if(!already){try{await automationRequest(`actions/runs/${run.id}/cancel`,access.token,{method:'POST'});}catch(error){
-  run=automationRun(await automationRequest(`actions/runs/${task.githubRunId}`,access.token),workflow,task.githubRunId);
-  if(run.status!=='completed')throw error;}}
- for(let i=0;i<60&&run.status!=='completed';i++){await new Promise(resolve=>setTimeout(resolve,5000));run=automationRun(await automationRequest(`actions/runs/${task.githubRunId}`,access.token),workflow,task.githubRunId);}
- if(run.status!=='completed'){
-  host.report(task,'普通取消未收口，执行原 Run 强制取消');
-  await automationRequest(`actions/runs/${task.githubRunId}/force-cancel`,access.token,{method:'POST'});
-  for(let i=0;i<60&&run.status!=='completed';i++){await new Promise(resolve=>setTimeout(resolve,5000));run=automationRun(await automationRequest(`actions/runs/${task.githubRunId}`,access.token),workflow,task.githubRunId);}
- }
- if(run.status!=='completed')throw Error('产品 GitHub 取消尚无远端终态，任务保持活动');
- if(task.active){task.githubRemoteStatus=run.status;await host.finish(task,1,(already?'取消时塔塔自动化已结束：':'任务已取消；塔塔自动化终态：')+run.conclusion);}
- return {id:task.id,closed:true};
-}
-export async function startAutomation(route,action,host){
- const workflow=automationRoute(route,action);
- const existing=host.listTasks().find(task=>task.active&&task.recovered&&task.githubRunId&&task.repository===route.repository&&task.platform===route.platform);
- if(existing)return recoverAutomation(existing,route,host);
- const access=await automationToken(route,action.id,host.security);
- const task=host.createTask({moduleFile:action.file,canonicalId:route.canonicalId,actionId:action.id,title:action.taskName,moduleId:action.productId});
- Object.assign(task,{repository:route.repository,productId:route.product,platform:route.platform,mode:'release',flow:'release',security:host.security});
- task.cancel=()=>cancelProductAutomation(task,route,host);task.secrets.push(access.token);host.created(task);host.report(task,'调用所属仓 '+workflow);
- try{
-  const run=await dispatchProductAutomation(route.platform,access.token,{accepted:value=>{
-   Object.assign(task,{githubRunId:value.workflow_run_id,githubRunUrl:value.html_url,githubRepository:automationRepository,githubWorkflow:workflow});host.changed(task);
-  }});
-  automationIdentity(task,route,workflow,run);host.changed(task);host.report(task,'GitHub 已接收：'+run.html_url);
-  if(task.cancelRequested)void cancelProductAutomation(task,route,host);
-  else void observeProductAutomation(task,route,host,access);
- }catch(error){
-  if(task.githubRunId){task.recovered=true;host.report(task,'原 Run 已接收，后续读取中断；将重新连接');host.changed(task);automationRetry(task,route,host);}
-  else await host.finish(task,1,automationSafe(error.message,access.token));
- }
- return {id:task.id};
-}
-export async function recoverAutomation(task,route,host){
- const workflow=automationRoute(route);
- if(!task?.active||task.mode!=='release'||task.repository!==route.repository||task.platform!==route.platform
-  ||task.canonicalId!==route.canonicalId||task.githubRepository!==automationRepository||task.githubWorkflow!==workflow
-  ||!Number.isSafeInteger(task.githubRunId)||task.githubRunId<1||!/^[0-9a-f]{40}$/u.test(task.sourceSHA||''))
-  throw Error('产品自动化恢复身份无效');
- task.cancel=()=>cancelProductAutomation(task,route,host);task.security=host.security;task.recovered=true;host.changed(task);
- try{const access=await automationToken(route,task.actionId,host.security,task);
-  task.secrets.push(access.token);task.recovered=false;host.changed(task);
-  if(task.cancelRequested)void cancelProductAutomation(task,route,host);
-  else void observeProductAutomation(task,route,host,access);
- }catch(error){task.recovered=true;host.report(task,'原 Run 自动恢复未完成：'+automationSafe(error.message));host.changed(task);automationRetry(task,route,host);}
- return {id:task.id};
-}
+
+
+
+
+
+
+
+
+
 
 
 // 回归夹具只模拟产品所属仓的 GitHub 响应，不派发真实任务。
 if(process.env.NODE_TEST_CONTEXT&&process.argv.length===2){
  const {test}=await import('node:test'),{default:assert}=await import('node:assert/strict');
- test('产品自动化只接受本仓声明的平台、动作和 Workflow',()=>{
-  const platform=Object.keys(automationWorkflows)[0],workflow=automationWorkflows[platform];
-  const route={repository:contract.product_id,product:contract.product_id,platform,workflow,canonicalId:`${contract.product_id}.${platform}.release`,flow:'release'};
-  const action={id:`${contract.product_id}-release-${platform}`,canonicalId:route.canonicalId,flow:'release',
-   platform,productId:contract.product_id,authorizationLevel:2,production:false};
-  assert.equal(automationRoute(route,action),workflow);
-  assert.throws(()=>automationRoute({...route,workflow:'other.yml'},action),/声明/);
-  assert.throws(()=>automationRoute({...route,platform:'other'},action),/声明/);
-  assert.throws(()=>automationRoute(route,{...action,id:'other'}),/声明/);
-  assert.throws(()=>automationRoute(route,{...action,platform:'other'}),/声明/);
-  assert.throws(()=>automationRoute(route,{...action,productId:'other'}),/声明/);
-  assert.throws(()=>automationRoute(route,{...action,authorizationLevel:1}),/声明/);
-  assert.throws(()=>automationRoute(route,{...action,production:true}),/声明/);
- });
- test('控制台恢复经过宿主上下文，独立恢复仍校验产品身份',async()=>{
-  const task={id:77};let called=0;
-  assert.equal(await automationRecoveryCall(task,null,{recoverTask:value=>{called++;return value.id;}}),77);
-  assert.equal(called,1);
-  await assert.rejects(automationRecoveryCall(task,null,{}),/声明/);
- });
+
+
  test('派发只接收准确 Run 回执，读回失败不补发',async()=>{
   const platform=Object.keys(automationWorkflows)[0],workflow=automationWorkflows[platform],id=123;
   const run={id,path:`.github/workflows/${workflow}`,event:'workflow_dispatch',head_branch:'main',head_sha:'a'.repeat(40),
@@ -3362,81 +3088,34 @@ if(process.env.NODE_TEST_CONTEXT&&process.argv.length===2){
   await assert.rejects(dispatchProductAutomation(platform,'fixture-token',{fetchImpl:ambiguous,accepted:()=>accepted++}),/未确认/);
   assert.equal(accepted,1); // 接收后读回失败仍只派发一次，原 Run 坐标已交付调用方。
  });
- test('Run 观察核对终态与 Job；伪造身份保留原任务并安排恢复',async()=>{
-  const platform=Object.keys(automationWorkflows)[0],workflow=automationWorkflows[platform],id=123;
-  const route={repository:contract.product_id,product:contract.product_id,platform,workflow,
-   canonicalId:`${contract.product_id}.${platform}.release`,flow:'release'};
-  const run={id,path:`.github/workflows/${workflow}`,event:'workflow_dispatch',head_branch:'main',head_sha:'a'.repeat(40),
-   repository:{full_name:automationRepository},html_url:`https://github.com/${automationRepository}/actions/runs/${id}`,
-   run_number:1,run_attempt:1,status:'completed',conclusion:'success'};
-  const original=globalThis.fetch,events=[];
-  const host={report:(_task,message)=>events.push(message),changed:()=>{},finish:async(task,code)=>{task.active=false;events.push(`完成:${code}`);}};
-  const task={id:7,active:true,githubRunId:id,sourceSHA:run.head_sha};
-  try{
-   globalThis.fetch=async url=>{
-    if(String(url).endsWith('/logs'))return new Response(null,{status:404});
-    if(String(url).includes('/jobs?'))return Response.json({jobs:[{id:1,name:'构建',status:'completed',conclusion:'success'}]});
-    return Response.json(run);
-   };
-   await observeProductAutomation(task,route,host,{token:'ghs_fixture',expiresAt:Math.ceil(Date.now()/1000)+60});
-   assert.equal(task.active,false);assert.ok(events.some(value=>value.includes('构建：success')));
-   assert.ok(events.includes('完成:0'));
-   const forged={...run,repository:{full_name:'other/repo'}};
-   const bad={id:8,active:true,githubRunId:id,sourceSHA:run.head_sha};
-   globalThis.fetch=async()=>Response.json(forged);
-   await observeProductAutomation(bad,route,host,{token:'ghs_fixture',expiresAt:Math.ceil(Date.now()/1000)+60});
-   assert.equal(bad.recovered,true);assert.equal(bad.active,true);bad.active=false;
-  }finally{globalThis.fetch=original;}
- });
- test('取消仅作用原 Run；过期授权重新领取，恢复不再次派发',async()=>{
-  const platform=Object.keys(automationWorkflows)[0],workflow=automationWorkflows[platform],id=123;
-  const route={repository:contract.product_id,product:contract.product_id,platform,workflow,
-   canonicalId:`${contract.product_id}.${platform}.release`,flow:'release'};
-  const actionId=`${contract.product_id}-release-${platform}`,sha='a'.repeat(40);
-  const run={id,path:`.github/workflows/${workflow}`,event:'workflow_dispatch',head_branch:'main',head_sha:sha,
-   repository:{full_name:automationRepository},html_url:`https://github.com/${automationRepository}/actions/runs/${id}`,
-   run_number:1,run_attempt:1,status:'in_progress',conclusion:null};
-  const token='ghs_fixture',originalFetch=globalThis.fetch,originalTimer=globalThis.setTimeout;
-  const calls=[],payloads=[];
-  const security=async(_name,{payload_base64})=>{
-   payloads.push(JSON.parse(Buffer.from(payload_base64,'base64').toString('utf8')));
-   return {ok:true,values:{'repository-main:TOKEN':Buffer.from(token).toString('base64'),
-    'repository-main:EXPIRES_AT':Buffer.from(String(Math.ceil(Date.now()/1000)+3600)).toString('base64')}};
+
+
+}
+
+// 外部调用方使用普通参数和返回值；此公开接口不接收任务宿主。
+export const automationClient=Object.freeze({automationRepository,automationWorkflows,automationRoute,automationRun,automationSafe,automationRequest,dispatchProductAutomation});
+
+// 合成回归只在本文件作为测试入口时注册；普通导入不要求调度器、其它仓库或外部服务。
+if(process.env.NODE_TEST_CONTEXT&&process.argv.length===2&&process.argv[1]===import.meta.filename){
+ const {test}=await import('node:test'),{default:assert}=await import('node:assert/strict');
+ test('独立自动化接口不接收任务宿主，准确派发与错误回执只请求一次',async()=>{
+  const api=automationClient,workflows=api.automationWorkflows||api.automationWorkflow;
+  const platform=Object.keys(workflows)[0],workflow=workflows[platform],repository=api.automationRepository;
+  const dispatch=api.dispatchAutomation||api.dispatchProductAutomation||api.dispatch;
+  let dispatches=0,mode='success';
+  const run={id:731,run_number:1,run_attempt:1,path:'.github/workflows/'+workflow,event:'workflow_dispatch',head_branch:'main',
+   head_sha:'a'.repeat(40),repository:{full_name:repository},status:'completed',conclusion:'success',
+   html_url:'https://github.com/'+repository+'/actions/runs/731'};
+  const fetchImpl=async(url,options)=>{
+   if(new URL(url).pathname.endsWith('/dispatches')){
+    dispatches++;assert.equal(options.method,'POST');
+    return mode==='ambiguous'?new Response(null,{status:204}):Response.json({workflow_run_id:731,html_url:run.html_url});
+   }
+   assert.ok(new URL(url).pathname.endsWith('/runs/731'));
+   return Response.json(mode==='wrong'?{...run,head_sha:'invalid'}:run);
   };
-  const host={security,report:()=>{},changed:()=>{},finish:async(task,code)=>{task.active=false;task.resultCode=code;}};
-  const task={id:7,active:true,mode:'release',repository:route.repository,platform,canonicalId:route.canonicalId,
-   actionId,githubRepository:automationRepository,githubWorkflow:workflow,githubRunId:id,sourceSHA:sha,secrets:[]};
-  try{
-   globalThis.fetch=async(url,options)=>{
-    const path=String(url);calls.push([path,options.method||'GET']);
-    if(path.endsWith(`/actions/runs/${id}/cancel`))return new Response(null,{status:202});
-    if(path.endsWith('/logs'))return new Response(null,{status:404});
-    if(path.includes('/jobs?'))return Response.json({jobs:[]});
-    return Response.json(calls.some(([,method])=>method==='POST')?{...run,status:'completed',conclusion:'cancelled'}:run);
-   };
-   // 夹具仅缩短取消轮询等待；正式轮询仍保持原间隔。
-   globalThis.setTimeout=(callback,delay,...args)=>delay===5000?originalTimer(callback,0,...args):originalTimer(callback,delay,...args);
-   automationObservers.set(task,{token:'ghs_expired',expiresAt:0});
-   await cancelProductAutomation(task,route,host);
-   assert.equal(task.active,false);assert.equal(task.resultCode,1);
-   assert.equal(payloads.length,1);assert.equal(payloads[0].run_id,task.id);
-   assert.equal(payloads[0].recovery_run_id,task.id);
-   assert.equal(calls.filter(([,method])=>method==='POST').length,1);
-   assert.ok(calls.some(([path])=>path.endsWith(`/actions/runs/${id}/cancel`)));
-   assert.ok(calls.every(([path])=>path.includes(`/repos/${automationRepository}/`)));
-   const recovery={...task,active:true,cancelRequested:false,recovered:true,secrets:[]};
-   calls.length=0;
-   globalThis.fetch=async(url,options)=>{
-    const path=String(url);calls.push([path,options.method||'GET']);
-    if(path.endsWith('/logs'))return new Response(null,{status:404});
-    if(path.includes('/jobs?'))return Response.json({jobs:[]});
-    return Response.json({...run,status:'completed',conclusion:'success'});
-   };
-   const completed=new Promise(resolve=>{host.finish=async(value,code)=>{value.active=false;resolve(code);};});
-   await recoverAutomation(recovery,route,host);
-   assert.equal(await completed,0);assert.equal(typeof recovery.cancel,'function');
-   assert.equal(calls.filter(([,method])=>method==='POST').length,0);
-   assert.ok(calls.some(([path])=>path.endsWith(`/actions/runs/${id}`)));
-  }finally{globalThis.fetch=originalFetch;globalThis.setTimeout=originalTimer;}
+  const invoke=()=>api.automationTransport?api.automationTransport.run({fetchImpl},()=>dispatch(platform,'fixture',{fetchImpl})):dispatch(platform,'fixture',{fetchImpl});
+  assert.equal((await invoke()).id,731);assert.equal(dispatches,1);
+  for(const failure of ['ambiguous','wrong']){mode=failure;dispatches=0;await assert.rejects(invoke);assert.equal(dispatches,1);}
  });
 }
