@@ -13,9 +13,8 @@ void main() {
   test('macOS通过CitizenSDK产品入口准备唯一框架且Podfile保持标准接入', () {
     final package = bookingBuildSource('shell', 'host');
     final podfile = source('app/macos/Podfile');
-    expect(package, contains('build.mjs" module sdk prepare'));
     expect(package, contains('app/scripts/project.mjs'));
-    expect(package.indexOf('module sdk prepare'), lessThan(package.indexOf('project.mjs" native')));
+    expect(package.indexOf('project.mjs" native'), lessThan(package.indexOf('xcodebuild')));
     expect(package, contains('Contents/Frameworks/CitizenSDK.framework'));
     expect(podfile, contains('flutter_install_all_macos_pods'));
     expect(podfile, isNot(contains('File.symlink')));

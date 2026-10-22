@@ -22,7 +22,7 @@
 
 本节描述当前候选的职责边界，不代表完整流程已经验收；实际测试、编译、签名、安装与发布结果只按原任务卡记录。本仓已移除旧库协议和索引适配，完整入口只使用本产品资源实现。
 
-本仓正式资产只读验真入口为`scripts/publish.mjs verify --platform <平台> --tag <正式Tag> --directory <绝对资产目录>`：核对本地资产、清单、SHA256SUMS与GitHub Release资产摘要、Tag提交、成功Run及本平台最新版本，只输出验真回执，不上传或部署。自动化的正式版本解析由本仓`.github/workflows/`拥有，不调用本机Build。编译和启动公开声明归`scripts/build.mjs describe`；本机工作根、资源准备、主机平台编译正文归Build。自动化的PostgreSQL准备及各平台组包归现有`.github/workflows/`，不导入Build。根`scripts/`递归只有Build与Publish两个文件；静态检查不能替代真实流程验收。
+本产品不提供独立发布流程。编译实现归`scripts/build.mjs`，配置和流程公开声明归`scripts/config.mjs`，GitHub塔塔自动化沿用现有Workflow。原独立发布文件及其测试引用已移除；编译与自动化的既有产物生成保持。
 
 ## 当前工作目录归属（第8步，2026-10-06）
 
@@ -47,7 +47,7 @@ TuyuBooking 涉及聊天时只作为依赖使用方；本条不代表尚未接�
 - 消费产品只提供产品入口、身份与业务权益结果、服务地址及授权、主题和公开接口要求的平台配置；只通过公开接口接入，禁止复制、重写、包装成另一套聊天内核或维护产品专属聊天实现。CitizenServe、TuyuServe 的产品身份与权益授权不包含聊天数据面的实现职责。
 - 本机开发直接依赖仓库路径；公民、途遇等产品的正式版本依赖塔塔聊天正式 Release；第三方市场分发使用公开市场版本。依赖使用不以公开市场发布为前置条件，也不改变实现归属。
 
-主机与分机受控缓存分别固定为 `tuyubooking/target/<host-platform|client-platform>/<build|ci|release|publish>/`。Flutter视图、Node/Python依赖展开、业务运行时、Cargo、Xcode、临时文件、日志和候选均写所属流程目录；四个流程互不清理，启动不建立缓存。
+主机与分机受控缓存分别固定为 `tuyubooking/target/<host-platform|client-platform>/<build|ci|release>/`。Flutter视图、Node/Python依赖展开、业务运行时、Cargo、Xcode、临时文件、日志和候选均写所属流程目录；各流程互不清理，启动不建立缓存。
 
 当前依赖边界：TuyuBooking 的锁文件和产品脚本自行决定依赖、版本、来源及工具；控制台不做产品依赖或工具门禁。产品自有缓存只保存产品主动取得的离线原件，不依赖控制台库存。
 
@@ -968,7 +968,6 @@ TuyuBooking完整产品仓的七个上游源码路径已由 `tuyubooking/importe
   目录必须为绝对路径且含可执行 `platform-tools/adb`，不满足时立即失败；通过后仅向当前任务及子进程
   导出 `ANDROID_HOME`，不改全局环境、不在沙箱内下载 SDK。Flutter 生成任务独占的 `android/local.properties`
   后，入口只在该副本写入 `cmake.dir`，绑定 调用方同轮交付的 CMake；产品源码和 CitizenSDK 源码均不写入。
-- CitizenSDK工作目录固定为调用方本轮工作根内的`sdk-native/`，只从本产品锁定Git来源物化源码；SDK Cargo目录与主产品Cargo目录独立。不同产品、不同平台任务不共享最终原生库；成功和失败结束时都删除本轮工作目录。
 - iOS 通过任务独占的 CocoaPods 插件视图接入：许可证、Podspec、Swift 文件和 XCFramework 均为指向 CitizenSDK完整仓源码或本轮受控产物的符号链接，不复制源码，也不向 CitizenSDK源码根写入生成物。所有 Pod 的最低 iOS 版本统一为 16.0。
 - Android根工程、子工程与Flutter插件输出由产品入口设置BUILD_DIR及本轮Gradle初始化脚本，使用产品声明的Gradle9.1.0执行同一Release工程，禁止在源码树建立build目录或符号链接。
 - Android 的原生 Flutter 插件由受控 Flutter Gradle 插件按宿主类型接线。应用模块的 Release 插件依赖必须进入 `releaseImplementation`，使 `citizen_sdk`、`jni`、`jni_flutter` 和 `mobile_scanner` 的 runtime JAR 成为 R8 输入；library/add-to-app 模块仍使用 `releaseApi` 向最终宿主传递。产品工程不维护第二份插件项目清单。
@@ -1019,7 +1018,7 @@ TuyuBooking完整产品仓的七个上游源码路径已由 `tuyubooking/importe
 
 - SDK 的 `darwin/citizen_sdk.podspec` 消费固定名称 `CitizenSDK.xcframework`，原生构建入口是 SDK 自有的 `scripts/build.mjs native`。源码检出不包含该生成物，不能把源码目录缺少 XCFramework 直接判断为 SDK 功能未实现，也不能要求向 CitizenSDK完整仓源码树写入二进制。
 - 现有 iOS Podfile 通过 `CITIZENSDK_IOS_PLUGIN_ROOT` 接收当前任务的插件链接视图，把 SDK 源码和本轮外部原生产物接入同一个 CocoaPods 插件。
-- macOS 的 `scripts/build.mjs shell host` 与 `scripts/build.mjs shell client` 共用现有 Podfile 中的准备、链接和清理实现。两者先解析 Flutter 实际依赖，调用 SDK 自有 `build-native.sh apple`，检查唯一 macOS 切片（架构 arm64）并真实 typecheck `import CitizenSDK`，再执行 CocoaPods 与宿主构建。主机的业务运行时和 PostgreSQL 构建在该预检之后。
+- macOS主机与分机在创建工程时消费同版完整SDK；后续只核对现有视图，沿标准Podfile进入宿主构建。业务运行时与PostgreSQL仍由本产品拥有。
 - SDK 每轮在当前受控任务的 `citizensdk/macos-*` 下生成独占工作目录、XCFramework 和 `macos-plugin` 链接视图；许可证、pubspec、Podspec、Swift 源码只建立符号链接。成功或失败退出只清理本轮 SDK 目录，以及仍指向本轮视图的插件链接，不删除共享 `.dart_tool` 或整个 `.symlinks`。
 - 最终主机和分机 App 均要求嵌入 macOS 的 `CitizenSDK.framework`（架构 arm64）并完成签名；分机继续拒绝 PostgreSQL、业务运行时和 `libtuyubooking_native.dylib`。完成实际构建之前不将该接入实现标记为安装包验收通过。
 - 主机打包的 Flutter 测试门禁已前移到业务运行时和 PostgreSQL 构建之前，桌面窗口测试使用现有动态显示名和产品名配置，不再要求固定名称 `TuyuBooking`。
@@ -1247,7 +1246,7 @@ TuyuBooking Flutter主机与分机已直接依赖同一完整CitizenSDK，并通
 挑战消费和授权规则，但密码学签名与验签实现必须由CitizenSDK提供的正式跨语言公开能力承担。当前只完成
 设计审计和旧Cargo锁修复，尚未改写这些运行路径；不得宣称服务端CitizenSDK边界已经闭合。
 
-本产品每个实际产品、平台、流程身份使用下列独立文件，主 Job 为 `flow`；CI 验证源码，Release 生成正式产物，本步不实现Publish，发布待后续逐产品重建。
+本产品每个实际产品、平台、流程身份使用下列独立文件，主 Job 为 `flow`；CI 验证源码，Release 生成正式产物；独立发布入口已移除。
 
 ## 平台输入与源码外工程
 
@@ -1325,7 +1324,7 @@ PostgreSQL集成测试必须显式接收TUYU_POSTGRES_BIN，要求完整且无�
 
 员工网关 HTTPS 与 WSS 转发统一要求 TLS 1.3、受信 CA 与主机名校验。既有运行时回归以真实 TLS 后端和 TLS 网关执行 WSS 升级、握手摘要及掩码帧往返，并验证不可信证书、错主机名和明文上游不能得到 101；测试只使用系统临时身份，不输出私钥。
 
-Windows PostgreSQL运行时在写入完整MANIFEST.sha256后，用显式Node调用所属.github/workflows/release-host-windows.mjs 的 verify-runtime 动作，完成真实PE架构、DLL依赖闭包与清单全量校验；验真失败禁止输出交付成功。
+Windows PostgreSQL运行时必须在交付前核验真实PE架构、DLL依赖闭包与既有原清单完整性，失败禁止交付成功；对应CI核验入口仍待现有Workflow补齐，不能以路径存在替代实际验收。
 
 macOS PostgreSQL固定为17.11。所属`scripts/build.mjs`的PostgreSQL来源计划从`host/database/licenses-macos.lock.json`导出六份官方源码归档及三份Readline官方context补丁：krb5、ICU、Readline、lz4、zstd和PostgreSQL进入产品自有原件缓存；Gettext、OpenSSL、Perl、Tcl、Bison、Flex与M4作为工具从工具库交付，不在产品依赖缓存保存第二份工具归档。原件物化、源码解包、静态库编译和PostgreSQL生成都位于本产品本轮源码外缓存，产物库只接收最终编译验真的完整产品包。
 
@@ -1335,7 +1334,7 @@ PL/Perl的纯模块、架构模块及官方COPYING、Artistic全文随运行包�
 
 旧的PostgreSQL缓存指纹只覆盖一个入口脚本，会漏掉工具、锁和补丁；主机打包移除该复用路径。每轮按完整闭包编译，原件继续由产品自有缓存复用。受控交付及候选补丁不等于编译、PL扩展或真实主机运行验收成功。
 
-主机 CI 的数据库测试输入由本机Build与现有`.github/workflows/release-host-macos.mjs`各自的PostgreSQL输入接口验真：仅消费源码外 PostgreSQL 17.11，同步核对完整文件清单、摘要、核心程序架构与真实版本输出。已交付运行包直接消费，不重复取件；缺少输入时只能通过所属产品的编译入口交付。macOS 编译要求显式提供既定工具及锁定原件，Windows/Linux 要求交付准确解释器入口；缺失直接失败。macOS、Windows Release 将此同一运行包纳入安装资产；Linux 的 deb 只读取本次源码外工作目录。输入边界单元测试使用二进制头测试替身，仅证明拒绝条件，不替代真实数据库验收。
+主机数据库测试输入必须由本仓既有PostgreSQL实现验真：仅消费源码外 PostgreSQL 17.11，同步核对完整文件清单、摘要、核心程序架构与真实版本输出。已交付运行包直接消费，不重复取件；缺少输入时只能通过所属产品的编译入口交付。macOS 编译要求显式提供既定工具及锁定原件，Windows/Linux 要求交付准确解释器入口；缺失直接失败。macOS、Windows Release 将此同一运行包纳入安装资产；Linux 的 deb 只读取本次源码外工作目录。输入边界单元测试使用二进制头测试替身，仅证明拒绝条件，不替代真实数据库验收。
 
 macOS业务运行包禁止由Homebrew自动选件：只消费显式交付且来源已验真的编译组件，缺失即失败。OpenSSL来自既定受控工具交付，Python调用使用准确入口。商家PHP/PCRE2、厂家libffi/Pango的实际编译组件仍须在真实Build前完成来源和可用性验真；未完成交付不能判定真实Build通过。
 
@@ -1393,7 +1392,7 @@ iOS真机交互、页面验收和交易诊断必须使用XCTest，UI测试必须
 
 ### 第4步实施中：远端路由当前声明
 
-本次同步路线读取、热更新和失败边界用例，未运行测试、语法检查、编译、签名、安装或下载。第4步仍在开发中：Publish执行器、聊天安装器、Start、固定菜单声明与完整程序摘要的其余实际耦合尚未解除，不能报告该步或整项任务完成。
+本次同步路线读取、热更新和失败边界用例，未运行测试、语法检查、编译、签名、安装或下载。第4步仍在开发中：聊天安装器、Start、固定菜单声明与完整程序摘要的其余实际耦合尚未解除，不能报告该步或整项任务完成。
 
 商家产品公开启动入口已归本仓`scripts/build.mjs start`。host-macos和client-macos分别读取自己的App声明并执行本仓的验签、可执行文件回读、候选变化检查及系统启动调用。临时资源使用本仓target/test，原成功App路径按本仓target/build声明提供。`bookingLaunchConfirmation`在输出前确认商家身份、主机或分机身份、本次产物路径和started状态，拒绝其它产品、主分机错配、缺失及多余字段。调用方通过PRODUCT_RESULT_FD=3接收回执；产品在没有控制台环境时也执行同一本仓启动实现。
 
@@ -1431,7 +1430,7 @@ iOS签名助手回归由同一锁定Xcode的swiftc构建，并在独立临时目
 
 ## 只读塔塔门禁与功能验收边界（2026-10-10）
 
-.github/tatagate/tatagate.mjs 只读核对本仓正式 main/HTTPS 来源、scripts/ 的 Build/Publish 双文件闭集、同仓 Workflow、流程调用方向与 Node 语法，并扫描自有受控文件的禁用字符、强特征机密及脚本中的明文网络地址。门禁不准备资源、不调用 Build 或 Publish、不执行产品测试。编译回归归 Build，自动化测试归各自 Workflow；旧门禁中的其它产品专属静态约束仍需逐项复核。当前代码只完成静态检查，没有执行正式门禁、完整产品测试、真实编译或发布。
+本产品测试由现有编译入口和Workflow负责；测试清单仅引用保留的代码入口。
 
 ## 本机固定执行目录
 
@@ -1447,24 +1446,26 @@ Node 回归由所属 Build 或 Workflow 执行，门禁只读核对登记与源�
 
 本产品完整本机流程由scripts/build.mjs实现，声明、资源准备、适用测试、编译及验收均归本仓。外部调度只调用同一公开完整入口；依赖由产品按原锁自行准备，既有工具入口可显式复用，任务现场及资源工具后代由产品确认退出后收尾。
 
-公开编译组件只有本文件中的正文；确有既有消费者的原路径只转交参数或公开接口，不保存编译命令。本机编译不生成第二份脚本。本机编译直接读取同级CitizenSDK仓库当前代码，SDK公开plan决定原生依赖；GitHub自动化才按本仓声明和锁检出准确Git提交，不调度兄弟仓任务。GitHub流程不属于本次修改范围。
+公开编译实现唯一归本仓scripts/build.mjs。CitizenSDK始终按本仓Pub声明与原锁选择固定Git源码，通过SDK公开consume入口消费明确交付的完整包；本机与GitHub不使用邻仓源码，不准备SDK原生依赖或执行SDK编译。
 
 ## GitHub自动化
 
-本仓自动化只在GitHub的main源码上执行；控制台只调用与展示。各目标独立拥有同名的YAML与Node实现，不调用其他仓或其他目标的Workflow。版本、构建、测试、签名、完整产物核验与正式tag/Release均由本仓负责。
+自动化派发与平台映射唯一归scripts/build.mjs，scripts/config.mjs公开describeAction({flow,platform,inputs})。调用方只提供已授权令牌和inputs.sdkRun；本仓在任何网络请求前拒绝缺失、非规范、非正安全整数或多余字段，按唯一sdk_run字段交付所选Workflow。这里的编号格式校验不证明SDK Run已成功；准确成功来源、同版Artifact及产物核验必须由后续Workflow通过SDK公开接口完成。
 
-- `.github/workflows/release-client-android.yml`及同名`.mjs`。
-- `.github/workflows/release-client-ios.yml`及同名`.mjs`。
-- `.github/workflows/release-client-macos.yml`及同名`.mjs`。
-- `.github/workflows/release-client-windows.yml`及同名`.mjs`。
-- `.github/workflows/release-host-linux-amd.yml`及同名`.mjs`。
-- `.github/workflows/release-host-linux-arm.yml`及同名`.mjs`。
-- `.github/workflows/release-host-macos.yml`及同名`.mjs`。
-- `.github/workflows/release-host-windows.yml`及同名`.mjs`。
+现有平台路径为：
 
-每个目标的最后任务使用always读取所有前置结果：全部成功清本仓本目标旧成功，否则清旧失败并失败退出。仅保留最新成功、最新失败各一条；保护本次Run和所有活动任务，另一类结果与其他目标不受影响。删除关联正式Release、tag、Actions产物和Run后回查；任何清理错误都按实际失败报告，不自动重试。
+- `.github/workflows/hostmacos.yml`。
+- `.github/workflows/hostwindows.yml`。
+- `.github/workflows/hostlinuxarm.yml`。
+- `.github/workflows/hostlinuxamd.yml`。
+- `.github/workflows/clientios.yml`。
+- `.github/workflows/clientandroid.yml`。
+- `.github/workflows/clientmacos.yml`。
+- `.github/workflows/clientwindows.yml`。
 
-所属回归位于各目标同名mjs，覆盖前置结果、版本边界、平台隔离、活动保护和完整分页；真实GitHub构建与发布验收依任务授权另行执行。
+这些现有YAML目前为空，路由修正仅消除入口失配，不代表工作流已经可执行。jobs、SDK跨仓只读授权、版本和产物验收须后续独立实施。自动化只在获准时从本仓main显式派发；SDK Run参数不授予签名、安装、提交、推送或发布权限。
+
+Node回归位于本仓保留的实际代码入口，覆盖SDK输入传递、参数边界、工作流映射、准确回执及派发不确定时不重发。Node重入保留明确CITIZENSDK_PACKAGE，额外环境仍隔离；缺少包不从邻仓、旧目录或其它来源补件。路径存在检查不代替非空Workflow或真实平台验收。
 
 工具准备复用本产品既有独立配方和已声明入口；依赖准备、原锁、SDK选择、验收及现场清理均归本产品。调用方只传本仓公开参数并消费公开结果，不执行退役的资源服务协议。
 
@@ -1472,24 +1473,13 @@ Node 回归由所属 Build 或 Workflow 执行，门禁只读核对登记与源�
 
 本机编译现场由本产品领取和收尾。调度任务编号随本产品领取记录保存；本轮结果消费后，只允许匹配该编号的收尾请求。产品确认自身进程及资源工具后代全部退出后才清场；异常、编号不符或退出未确认时保留现场。控制台只创建自己的任务并调用产品入口；产品自己管理资源和收尾。
 
-软件版本计算使用本目标GitHub运行序号作为单调下界，并与本仓已成功版本比较；失败或历史清理不使版本返回源码初值。版本只在GitHub本次运行内产生，同一Run重试保持运行序号，Tag另绑定准确attempt。
-
-### 当前自动化最后处理
-
-本仓每个自动化目标仅由自身release-<平台>.yml与同名mjs执行，最后处理依赖全部前置任务。清理只接受该目标准确Workflow路径、main和手动事件，不根据已删除文件或旧入口名称猜测归属。前置失败时，本次产物撤销与旧失败清理分别尝试并汇总错误；任何一项未确认均失败。固定依赖仍由本仓声明和原锁管理，不参加自产历史结果分类。
-
-### 本仓 GitHub 自动化与塔塔门禁目录
-
-本仓 .github/ 仅保留 workflows/ 与 tatagate/。Workflow 自行执行产品自动化，tatagate.json 与 tatagate.mjs 只登记并只读核对本仓静态合同；产品测试由 Build 或对应 Workflow 执行。
-
-
 ## 塔塔鹿鹿与自动化
 
 本仓 `.github/tatalulu.yml` 只登记准确仓库身份与main分支。塔塔控制台直接保存、推送并回查GitHub main；本仓自动化由既有平台工作流显式发起。
 
 ## 配置需求公开接口
 
-本仓 `scripts/config.mjs` 声明商家端 Android 的 APP_KEY、iOS 的 IOS_KEY 和 APP_PROFILE，均为本产品独立保密签名材料；旧控制台通用 Cloudflare 账户、数据库、桶与 R2 名称没有本仓现行消费者。两条分机 Workflow 只构建并交付带准确Run/SHA摘要的未签名候选，不读取 Repository Secrets，也不在 GitHub 签名或创建正式Release。本仓 `scripts/publish.mjs` 验真候选、按声明接收控制台瞬时交付的签名材料，在本机运行本仓唯一签名脚本、回读包身份并逐件上传正式资产；历史同类Run/Artifact在最终发布成功后由本仓接口清理。实际签名、发布和密钥迁移尚未执行。
+本仓 `scripts/config.mjs` 声明商家端 Android 的 APP_KEY、iOS 的 IOS_KEY 和 APP_PROFILE，均为本产品独立保密签名材料；旧控制台通用 Cloudflare 账户、数据库、桶与 R2 名称没有本仓现行消费者。保密签名配置保持现有声明；独立发布所用的候选验真、本机发布签名、资产上传及发布后清理入口已移除。
 
 控制台任务取消信号传入本仓签名和发布接口。本机工具终止本轮进程组并等待退出，iOS 钥匙串搜索列表仍在收尾阶段恢复；上传中止后独立回查本次已确认归属的 Tag/Release，撤销并确认不存在。创建回执不明时不删除同名远端资源，准确报告未闭合失败。
 
@@ -1505,4 +1495,23 @@ Node 回归由所属 Build 或 Workflow 执行，门禁只读核对登记与源�
 
 GitHub接口使用普通参数和已授权令牌，返回本仓既有版本计划与Run回执；派发不确定不重发。各平台YAML、Run、Release、Tag规则和增量缓存由本仓保有。控制台接入绑定只在其tata/对应产品唯一文件中实现；平台、流程、动作、布局及控制台任务功能由控制台拥有，本仓不操作控制台任务宿主。产品名称由产品提供，并声明选用的控制台平台和流程。
 
-当前候选仍待运行验收；本轮只补准确业务回归，不追修新增通用自动化夹具，也不向控制台或其它产品添加跨仓准入。scripts/config.mjs及其公开配置合同保持；通过控制台保存推送仍要求本仓.github/tatalulu.yml。
+当前候选仍待运行验收；本轮只补准确业务回归，不追修新增通用自动化夹具，也不向控制台或其它产品添加跨仓准入。签名配置声明保持；流程公开入口接收inputs.sdkRun；通过控制台保存推送仍要求本仓.github/tatalulu.yml。
+
+## 外部调用入口
+
+本仓scripts/config.mjs的describeAction({flow,platform,inputs})声明流程入口。调用方交付已授权令牌与唯一inputs.sdkRun，本仓拥有平台选择、参数校验及单次GitHub派发，返回准确Run编号；读取失败或回执不确定不补发。未声明的安装或发布入口明确失败。
+
+## CitizenSDK完整交付接入
+
+CitizenSDK来源由本产品pubspec.yaml与pubspec.lock的固定Git提交共同定义，SDK的完整包回执必须对应同一SHA。调用方以CITIZENSDK_PACKAGE交付已授权取得的原ZIP、JSON和sha256三件目录，该普通输入原样通过Node重入和资源环境；本产品只调用锁定SDK的scripts/build.mjs公开consume与verifyConsumer入口。校验、解包和四宿主完整性由SDK唯一实现，应用不维护SDK依赖计划、Cargo闭包或第二编译器，不从邻仓、旧工作目录或另一个来源补件。
+
+实际Pub解析使用本轮工程中唯一.source-packages/citizen_sdk视图；构建副本的直接依赖版本读取交付包pubspec，正式Git声明及原锁保持。普通业务仍只调用包根CitizenSdk公开门面，钱包、链、签名、安全存储与认证职责不变。实际运行、链接与设备验收以所属平台真实结果为准。
+
+离线准备通过普通输入交付完整SDK，不临时访问网络、下载工具或执行SDK编译。原版本新提交与完整产物就绪前不修改依赖锁中的提交号；该输入属于本产品公开流程数据，不依赖控制台私有库存。
+
+
+本机安装统一由塔塔控制台app/source/Installer.swift执行。本产品scripts/build.mjs的compile PLATFORM仅准备依赖、编译并输出TATA_COMPILE公开产物回执，持有本轮现场直到调用方关闭stdin后按原规则清场；产品不再实现开发签名Keychain、ADB或devicectl安装。GitHub流程仍称塔塔自动化。
+
+固定根回归子进程显式保留本轮测试身份和会话，不进入生产target/test；收尾回归在自身作用域导入fs，旧release脚本专属测试只在确有残留时删除。Git工具仍按原公开声明交付并校验，不使用其它版本或伪造版本。
+
+固定来源工程回归验证SDK真实文件副本、准确路径、不同inode及原始字节；不要求旧符号链接。厂家编译夹具按当前平台选用准确target/build目录，CLI仍调用现有真实入口，不放宽生产校验。

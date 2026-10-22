@@ -61,9 +61,10 @@ void main() {
   });
 
   test('formal CitizenSDK mode remains pinned to a fixed Git revision', () {
-    final contract = bookingAppFile('sdk-dependencies.json').readAsStringSync();
-
-    expect(contract, contains('"ref": "be75a90b866eaec9fd67c2aa8fd375ff654dead7"'));
+    final manifest=bookingAppFile('pubspec.yaml').readAsStringSync();
+    final lock=bookingAppFile('pubspec.lock').readAsStringSync();
+    final sha=RegExp(r'ref: ([a-f0-9]{40})').firstMatch(manifest)!.group(1)!;
+    expect(lock,contains('resolved-ref: '+sha));
   });
 
   test('iOS uses standard Flutter plugin registration and SDK-owned framework input', () {
@@ -79,7 +80,7 @@ void main() {
       ),
     );
     final builder = bookingBuildSource('shell', 'client');
-    expect(builder, contains('build.mjs" module sdk prepare'));
+    expect(builder, contains('project.mjs" native'));
     expect(builder, contains('Contents/Frameworks/CitizenSDK.framework'));
   });
 }

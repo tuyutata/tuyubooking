@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -11,29 +10,26 @@ void main() {
   test('CitizenSDK全部构建场景统一锁定Git来源', () {
     final pubspec = bookingAppFile('pubspec.yaml').readAsStringSync();
     final lock = bookingAppFile('pubspec.lock').readAsStringSync();
-    final contract = jsonDecode(bookingAppFile('sdk-dependencies.json').readAsStringSync()) as Map<String, dynamic>;
-    const sha = '52b83f8f33a9424f3a92161da4f183678263ab7c';
-    const url = 'https://github.com/crcfrcn/citizensdk.git';
-    expect(contract['source'], {'url': url, 'path': '.', 'ref': sha});
+    const url='https://github.com/crcfrcn/citizensdk.git';
+    final sha=RegExp(r'ref: ([a-f0-9]{40})').firstMatch(pubspec)!.group(1)!;
     for (final value in [pubspec, lock]) {
       expect(value, contains(url));
       expect(value, contains(sha));
     }
-    expect(contract.containsKey('modes'), isFalse);
     final project = bookingAppFile('scripts/project.mjs').readAsStringSync();
     expect(project, contains('resolveFirstPartyDependencies'));
-    expect(project, contains('assertFlutterSourceView'));
+    expect(project, contains('api.consume'));
+    expect(project, contains('CITIZENSDK_PACKAGE'));
+    expect(project, isNot(contains('localSdkMode')));
     expect(project, contains('prepareNativeProject'));
-    final preparer = bookingBuildSource('module', 'sdk');
-    expect(preparer, contains("command !== 'prepare'"));
-    expect(preparer, isNot(contains("mode === 'local'")));
   });
 
   test('全部分机自动化独立消费锁定SDK来源', () {
     for (final platform in ['ios', 'android', 'macos', 'windows']) {
       final script = bookingSourceFile(
-        '.github/workflows/release-client-$platform.mjs',
+        '.github/workflows/client$platform.yml',
       ).readAsStringSync();
+      expect(script.trim(),isNotEmpty,reason:'声明平台必须有真实自动化工作流');
       expect(script, contains('--enforce-lockfile'));
       expect(script, isNot(contains('scripts/build.mjs')));
       expect(script, isNot(contains('scripts/publish.mjs')));

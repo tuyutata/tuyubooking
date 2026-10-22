@@ -151,9 +151,8 @@ void main() {
     expect(package, isNot(contains('shell materialize')));
     expect(package, isNot(contains('cargo build')));
     expect(package, contains('test ! -e'));
-    expect(package, contains('module sdk prepare'));
     expect(package, contains('project.mjs" native'));
-    expect(package.indexOf('module sdk prepare'), lessThan(package.indexOf('xcodebuild')));
+    expect(package.indexOf('project.mjs" native'), lessThan(package.indexOf('xcodebuild')));
     expect(
       package,
       contains('ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS=NO'),

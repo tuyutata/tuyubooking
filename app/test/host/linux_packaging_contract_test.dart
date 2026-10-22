@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -11,9 +12,7 @@ void main() {
     const requiredFiles = <String>[
       'app/linux/CMakeLists.txt',
       'app/linux/runner/my_application.cc',
-      '.github/workflows/release-host-linux-arm.mjs',
-      '.github/workflows/release-host-linux-arm.mjs',
-      '.github/workflows/release-host-linux-arm.mjs',
+      '.github/workflows/hostlinuxarm.yml',
       'host/database/postgresql-linux-arm.lock.json',
       'scripts/build.mjs',
       'modules/runtime.lock.json',
@@ -28,15 +27,23 @@ void main() {
         reason: '$relativePath must be part of the LinuxARM contract',
       );
     }
+    // 保留真实平台门槛：空Workflow不得作为已实现Linux流程通过。
+    final workflow = File(
+      '${repository.path}/.github/workflows/hostlinuxarm.yml',
+    ).readAsStringSync();
+    expect(workflow.trim(), isNotEmpty);
+    final declaration = jsonDecode(
+      File('${repository.path}/host/database/postgresql-linux-arm.lock.json')
+          .readAsStringSync(),
+    ) as Map<String, dynamic>;
+    expect(declaration['architecture'], 'linux-arm');
   });
 
   test('LinuxAMD Workflow contract is present', () {
     const requiredFiles = <String>[
       'app/linux/CMakeLists.txt',
       'app/linux/runner/my_application.cc',
-      '.github/workflows/release-host-linux-amd.mjs',
-      '.github/workflows/release-host-linux-amd.mjs',
-      '.github/workflows/release-host-linux-amd.mjs',
+      '.github/workflows/hostlinuxamd.yml',
       'host/database/postgresql-linux-amd.lock.json',
       'scripts/build.mjs',
       'modules/runtime.lock.json',
@@ -48,6 +55,16 @@ void main() {
         reason: '$relativePath must be part of the LinuxAMD contract',
       );
     }
+    // 保留真实平台门槛：空Workflow不得作为已实现Linux流程通过。
+    final workflow = File(
+      '${repository.path}/.github/workflows/hostlinuxamd.yml',
+    ).readAsStringSync();
+    expect(workflow.trim(), isNotEmpty);
+    final declaration = jsonDecode(
+      File('${repository.path}/host/database/postgresql-linux-amd.lock.json')
+          .readAsStringSync(),
+    ) as Map<String, dynamic>;
+    expect(declaration['architecture'], 'linux-amd');
   });
 
   test('Linux loads the native library from its own application bundle', () {
