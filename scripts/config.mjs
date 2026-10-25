@@ -7,9 +7,27 @@ export const manifest=Object.freeze({
     "kind": "tuyu",
     "title": "途遇商家端配置",
     "items": [
-      {"environment":"tuyubooking-release","name":"APP_KEY","title":"APP_KEY","description":"商家端 Android 正式签名材料","revealable":false,"accessLevel":"protected","kind":"android-signing"},
-      {"environment":"tuyubooking-release","name":"IOS_KEY","title":"IOS_KEY","description":"商家端 iOS 正式签名证书","revealable":false,"accessLevel":"protected","kind":"ios-signing"},
-      {"environment":"tuyubooking-release","name":"APP_PROFILE","title":"APP_PROFILE","description":"商家端 iOS 正式描述文件","revealable":false,"accessLevel":"protected","kind":"ios-signing"}
+      {
+        "name": "APP_KEY",
+        "description": "安卓应用正式签名材料",
+        "accessLevel": "protected",
+        "kind": "android-signing",
+        "format": "不适用"
+      },
+      {
+        "name": "IOS_KEY",
+        "description": "苹果移动应用正式签名证书",
+        "accessLevel": "protected",
+        "kind": "ios-signing",
+        "format": "不适用"
+      },
+      {
+        "name": "TUYUBOOKING_PROFILE",
+        "description": "途遇商家描述文件",
+        "accessLevel": "protected",
+        "kind": "ios-signing",
+        "format": "ios_profile:com.tuyulove.tuyubooking.client"
+      }
     ]
   }
 });
