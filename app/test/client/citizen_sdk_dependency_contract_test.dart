@@ -24,21 +24,53 @@ void main() {
     expect(project, contains('prepareNativeProject'));
   });
 
-  test('全部分机自动化独立消费锁定SDK来源', () {
+  test('全部分机自动化经唯一本仓Build消费锁定SDK', () {
     for (final platform in ['ios', 'android', 'macos', 'windows']) {
-      final script = bookingSourceFile('.github/workflows/client$platform.yml')
-          .readAsStringSync();
-      expect(script.trim(), isNotEmpty, reason: '声明平台必须有真实自动化工作流');
-      expect(script, contains('--enforce-lockfile'));
-      expect(script, isNot(contains('scripts/build.mjs')));
-      expect(script, isNot(contains('scripts/publish.mjs')));
+      final workflow = bookingWorkflow('client-$platform');
+      expect(workflow['on'], {
+        'workflow_dispatch': {
+          'inputs': {
+            'version': {
+              'description': '本次编译版本，须与app/pubspec.yaml一致',
+              'required': true,
+              'type': 'string',
+            },
+            'sdk_package': {
+              'description': '现有执行器上的完整CitizenSDK交付目录绝对路径',
+              'required': true,
+              'type': 'string',
+            },
+          },
+        },
+      });
+      final job = (workflow['jobs'] as Map)['build'] as Map;
+      expect(job['runs-on'], 'xcode-27');
+      expect(workflow['run-name'], endsWith(r'·v${{ inputs.version }}'));
+      expect(job['name'], workflow['run-name']);
+      final steps = job['steps'] as List;
+      final version = steps[steps.length - 2] as Map;
+      expect(version['env'], {'PRODUCT_VERSION': r'${{ inputs.version }}'});
+      expect(version['run'], contains('version!==process.env.PRODUCT_VERSION'));
+      final build = steps.last as Map;
+      expect(build['env'], {
+        'CITIZENSDK_PACKAGE': r'${{ inputs.sdk_package }}',
+      });
+      expect(
+        build['run'],
+        'node scripts/build.mjs execute client-$platform --work "\$GITHUB_WORKSPACE/target/build/client-$platform"',
+      );
+      expect(workflow.toString(), isNot(contains('scripts/publish.mjs')));
     }
+    // 原始锁约束只归实际依赖准备器，Workflow不复制另一条pub get路径。
+    expect(
+      bookingSourceFile('scripts/build.mjs').readAsStringSync(),
+      contains("['pub', 'get', '--enforce-lockfile', '--no-precompile'"),
+    );
   });
 
   test('mobile hosts satisfy CitizenSDK platform requirements', () {
-    final androidHost = bookingAppFile(
-      'android/app/src/main/kotlin/com/tuyulove/tuyubooking/MainActivity.kt',
-    ).readAsStringSync();
+    final androidHost = bookingAppFile('android/app/src/main/MainActivity.kt')
+        .readAsStringSync();
     final androidBuild = bookingAppFile('android/app/build.gradle.kts')
         .readAsStringSync();
     final iosProject = bookingAppFile('ios/Runner.pbxproj').readAsStringSync();
@@ -104,5 +136,10 @@ void sourcePathRegressions() {
       throwsStateError,
     );
     expect(() => bookingSourceFile('../outside'), throwsArgumentError);
+    expect(() => bookingWorkflow('../outside'), throwsArgumentError);
+    expect(
+      () => bookingWorkflow('release-host-linux-arm'),
+      throwsArgumentError,
+    );
   });
 }

@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+
 import 'package:yaml/yaml.dart';
 
 /// 合同输入读取原始产品源码；源码外测试工程通过 TUYUBOOKING_ROOT 明确来源。
@@ -14,11 +15,14 @@ Directory resolveBookingSource({
   final Directory product;
   if (configured != null) {
     if (configured.isEmpty || !Directory(configured).isAbsolute) {
-      throw StateError('TUYUBOOKING_ROOT must identify the absolute original TuyuBooking product');
+      throw StateError(
+        'TUYUBOOKING_ROOT must identify the absolute original TuyuBooking product',
+      );
     }
     product = Directory(configured);
   } else {
-    if (current.uri.pathSegments.where((part) => part.isNotEmpty).last != 'app') {
+    if (current.uri.pathSegments.where((part) => part.isNotEmpty).last !=
+        'app') {
       throw StateError('Contract tests require the original TUYUBOOKING_ROOT');
     }
     product = current.parent;
@@ -37,9 +41,14 @@ Directory get bookingSource => resolveBookingSource();
 Directory get bookingAppSource => Directory('${bookingSource.path}/app');
 
 File bookingSourceFile(String relative) {
-  if (relative.isEmpty || File(relative).isAbsolute ||
+  if (relative.isEmpty ||
+      File(relative).isAbsolute ||
       relative.split(RegExp(r'[/\\]')).any((part) => part == '..')) {
-    throw ArgumentError.value(relative, 'relative', 'Must stay inside the product');
+    throw ArgumentError.value(
+      relative,
+      'relative',
+      'Must stay inside the product',
+    );
   }
   return File('${bookingSource.path}/$relative');
 }
@@ -48,7 +57,7 @@ File bookingAppFile(String relative) => bookingSourceFile('app/$relative');
 Directory bookingAppDirectory(String relative) =>
     Directory(bookingAppFile(relative).path);
 
-/// 从唯一 Build 或所属 Workflow 的源码读取实际拥有的内嵌执行正文。
+/// 从唯一Build源码读取实际拥有的内嵌执行正文。
 String bookingBuildSource(String kind, String name) {
   final text = bookingSourceFile('scripts/build.mjs').readAsStringSync();
   final marker = switch (kind) {
@@ -57,9 +66,8 @@ String bookingBuildSource(String kind, String name) {
     'python' => 'BUILD_PYTHON_SOURCES',
     _ => throw ArgumentError.value(kind, 'kind'),
   };
-  final match = RegExp(
-    'const $marker=Object\\.freeze\\((\\{[^\\n]*\\})\\);',
-  ).firstMatch(text);
+  final match = RegExp('const $marker=Object\\.freeze\\((\\{[^\\n]*\\})\\);')
+      .firstMatch(text);
   if (match == null) throw StateError('Build正文未登记：$marker');
   final sources = jsonDecode(match.group(1)!) as Map<String, dynamic>;
   final source = sources[name];
@@ -67,18 +75,18 @@ String bookingBuildSource(String kind, String name) {
   return source;
 }
 
-String bookingWorkflowSource(String platform, String action) {
-  final text = bookingSourceFile(
-    '.github/workflows/release-$platform.mjs',
-  ).readAsStringSync();
-  final match = RegExp(
-    r'const actions = Object\.freeze\((\{.*?\})\);\s*const shaPattern',
-    dotAll: true,
-  ).firstMatch(text);
-  if (match == null) throw StateError('自动化动作未登记：$platform');
-  final actions = jsonDecode(match.group(1)!) as Map<String, dynamic>;
-  final entry = actions[action] as Map<String, dynamic>?;
-  final source = entry?['source'];
-  if (source is! String) throw StateError('自动化正文未登记：$platform/$action');
-  return source;
+/// 自动化只读取现有YAML，不恢复已删除的release脚本或复制Build正文。
+Map bookingWorkflow(String platform) {
+  final name = platform.replaceAll('-', '');
+  if (!RegExp(r'^(host|client)(macos|windows|linuxarm|linuxamd|ios|android)$')
+      .hasMatch(name)) {
+    throw ArgumentError.value(platform, 'platform');
+  }
+  final value = loadYaml(
+    bookingSourceFile('.github/workflows/$name.yml').readAsStringSync(),
+  );
+  if (value is! Map || value['jobs'] is! Map) {
+    throw StateError('平台自动化缺少真实工作流：$platform');
+  }
+  return value;
 }

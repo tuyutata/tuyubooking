@@ -1,0 +1,44 @@
+# 仅手动执行本仓完整编译和回归；不发布、不安装，不另建依赖准备或打包实现。
+name: 途遇商家端·分机iOS
+run-name: 途遇商家端·分机iOS·v${{ inputs.version }}
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 本次编译版本，须与app/pubspec.yaml一致
+        required: true
+        type: string
+      sdk_package:
+        description: 现有执行器上的完整CitizenSDK交付目录绝对路径
+        required: true
+        type: string
+permissions:
+  contents: read
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  build:
+    name: 途遇商家端·分机iOS·v${{ inputs.version }}
+    # 已有Xcode27执行器；平台工具及原始锁仍归本产品公开Build入口。
+    runs-on: xcode-27
+    timeout-minutes: 360
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444
+        with:
+          node-version: 25.2.1
+      - name: 核对本仓版本
+        env:
+          PRODUCT_VERSION: ${{ inputs.version }}
+        run: >-
+          node --input-type=module -e 'import {readFileSync} from "node:fs";
+          const version=/^version:\s*(\d+\.\d+\.\d+)(?:\+[^\s]+)?$/m.exec(readFileSync("app/pubspec.yaml","utf8"))?.[1];
+          if(!version||version!==process.env.PRODUCT_VERSION)throw Error("编译版本与本仓声明不一致");'
+      - name: 完整回归与编译
+        env:
+          CITIZENSDK_PACKAGE: ${{ inputs.sdk_package }}
+        run: node scripts/build.mjs execute client-ios --work "$GITHUB_WORKSPACE/target/build/client-ios"

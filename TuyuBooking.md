@@ -2,6 +2,13 @@
 
 > 当前塔塔鹿鹿：每仓 `.github/tatalulu.yml` 只登记仓库身份；控制台 `.github/tatalulu.mjs` 保存并推送后，以 GitHub `main` 回查结果收口。本文早期推送触发检查记录仅供历史追溯。
 
+
+## 当前回归合同与自动化入口
+
+平台静态合同读取正式扁平源码：`app/macos/Runner/MainMenu.xib`与`app/android/app/src/main/MainActivity.kt`；工具标准目录只由`app/scripts/project.mjs`在任务视图装配。SDK原生准备顺序以`project.mjs native`与显式`XCODEBUILD`调用为准。Voyant使用官方`node_middleware`产物，由`modules/tuyu_voyant_https.mjs`在回环地址创建TLS服务；迁移产物、生产入口及源码外输出检查保持。
+
+现有8份`.github/workflows/*.yml`只通过手动触发调用同一本仓`scripts/build.mjs execute <平台> --work <本仓target/build/平台>`，不恢复`release-*.mjs`，不复制依赖解析或发布实现，不随推送启动。每次Run及Job使用“产品·平台·vX.Y.Z”，`version`须与本仓`app/pubspec.yaml`版本一致，否则在编译前拒绝。`sdk_package`必须显式指向现有Xcode27执行器上的完整CitizenSDK交付目录，由锁定SDK的公开consume接口校验，缺件直接失败。Linux主机、Windows主机及分机沿用现有compile-only合同，不代表已经生成可安装平台包；远端运行结果单独验收。
+
 ## 平台编译现场
 
 本产品编译任务使用本仓 `target/build/<平台>` 独立临时目录，平台键为 `host-macos`、`host-windows`、`host-linux-arm`、`host-linux-amd`、`client-ios`、`client-android`、`client-macos`、`client-windows`。不同平台同时领取并执行；同平台已有活跃任务时立即拒绝再次领取。资源准备、工程副本、缓存和编译输出只写本平台现场；确认进程及后代退出、结果被调用方消费后，删除整个平台目录。`target/build` 仅是父目录，`target/test` 仍用于独立测试。独立执行和控制台调度调用同一本仓编译入口与清理接口。

@@ -14,14 +14,18 @@ void main() {
     final package = bookingBuildSource('shell', 'host');
     final podfile = source('app/macos/Podfile');
     expect(package, contains('app/scripts/project.mjs'));
-    expect(package.indexOf('project.mjs" native'), lessThan(package.indexOf('xcodebuild')));
+    final prepare = package.indexOf('project.mjs" native');
+    final compile = package.indexOf(r'"${XCODEBUILD:?缺少已验真Xcode}"');
+    expect(prepare, greaterThanOrEqualTo(0));
+    expect(compile, greaterThan(prepare));
     expect(package, contains('Contents/Frameworks/CitizenSDK.framework'));
     expect(podfile, contains('flutter_install_all_macos_pods'));
     expect(podfile, isNot(contains('File.symlink')));
     expect(podfile, isNot(contains('FileUtils.cp')));
   });
 
-  final work = Platform.environment['TUYUBOOKING_TEST_WORK_DIR'] ??
+  final work =
+      Platform.environment['TUYUBOOKING_TEST_WORK_DIR'] ??
       Directory.systemTemp.path;
 
   // 执行真实 Python 验收入口，但用最小应用夹具代替业务运行时。
@@ -106,11 +110,7 @@ with patch.object(smoke.Path, "home", return_value=home), patch.object(
         stage.path,
         scenario,
       ]);
-      expect(
-        result.exitCode,
-        0,
-        reason: '${result.stdout}\n${result.stderr}',
-      );
+      expect(result.exitCode, 0, reason: '${result.stdout}\n${result.stderr}');
     }, skip: !Platform.isMacOS);
   }
 
@@ -152,10 +152,7 @@ with patch.object(smoke.Path, "home", return_value=home), patch.object(
       expect(verifier, contains("-o -name '*.node'"));
       expect(verifier, contains('bench/apps/ury/LICENSE'));
       expect(verifier, isNot(contains('bench/apps/ury/license.txt')));
-      expect(
-        materialize,
-        contains('shell relocate'),
-      );
+      expect(materialize, contains('shell relocate'));
       expect(materialize, contains('DESTINATION/php/pecl'));
       expect(
         materialize,
@@ -193,7 +190,7 @@ with patch.object(smoke.Path, "home", return_value=home), patch.object(
     },
   );
 
-  test('macOS package uses the Voyant Nitro production entry', () {
+  test('macOS package uses the Voyant Nitro HTTPS middleware entry', () {
     final materialize = bookingBuildSource('shell', 'materialize');
     final nativeTour = source('host/src/runtime/tour.rs');
     final voyantVite = source(
@@ -218,8 +215,14 @@ with patch.object(smoke.Path, "home", return_value=home), patch.object(
       voyantNitro,
       contains('output: { dir: path.resolve(configuredOutput!) }'),
     );
-    expect(voyantBuilder, contains('"build", "--preset=node-server"'));
+    expect(voyantBuilder, contains('"build", "--preset=node_middleware"'));
     expect(voyantBuilder, contains('"--builder=vite"'));
+    expect(voyantNitro, contains('preset: "node_middleware"'));
+    final https = source('modules/tuyu_voyant_https.mjs');
+    expect(https, contains('createServer(tls, runtime.middleware)'));
+    expect(https, contains("minVersion: 'TLSv1.2'"));
+    expect(https, contains("typeof runtime.middleware !== 'function'"));
+    expect(https, contains("server.listen(Number(rawPort), '127.0.0.1')"));
     expect(voyantBuilder, contains('path.join(outputDir, "migration")'));
     expect(
       voyantBuilder,
@@ -229,10 +232,19 @@ with patch.object(smoke.Path, "home", return_value=home), patch.object(
     expect(voyantBuilder, isNot(contains('outDir: ".output')));
     expect(
       businessBuilder,
-      contains('VOYANT_OUTPUT="\$TUYU_VOYANT_OUTPUT_DIR"'),
+      contains(
+        r'VOYANT_OUTPUT="${TUYU_VOYANT_OUTPUT_DIR:-$BUILD_ROOT/voyant-output}"',
+      ),
+    );
+    expect(
+      businessBuilder,
+      contains(r'TUYU_VOYANT_OUTPUT_DIR="$VOYANT_OUTPUT"'),
     );
     expect(businessBuilder, contains('VOYANT_PNPM_STORE'));
-    expect(businessBuilder, contains(r'"$VOYANT_PNPM" install --frozen-lockfile'));
+    expect(
+      businessBuilder,
+      contains(r'"$VOYANT_PNPM" install --frozen-lockfile'),
+    );
     expect(businessBuilder, contains('VOYANT_BUILD_SOURCE'));
     expect(businessBuilder, contains(r'--store-dir "$VOYANT_PNPM_STORE"'));
     expect(businessBuilder, isNot(contains('clean_voyant_source_residue')));
@@ -275,9 +287,8 @@ with patch.object(smoke.Path, "home", return_value=home), patch.object(
     );
     expect(runtimeConfiguration, isNot(contains('FlutterSecureStorage')));
     expect(
-      File(
-        '${repository.path}/app/lib/host/authentication/session_store.dart',
-      ).existsSync(),
+      File('${repository.path}/app/lib/host/authentication/session_store.dart')
+          .existsSync(),
       isFalse,
       reason: 'Administrator login sessions remain only in Native memory',
     );
@@ -307,13 +318,9 @@ with patch.object(smoke.Path, "home", return_value=home), patch.object(
     expect(packagedSmoke, isNot(contains(r'modules=[$details]')));
     final bundleSmoke = source('host/tests/smoke_bundle.py');
     expect(bundleSmoke, contains('prefix="tuyubooking cold start-"'));
-    final frappeRuntime = source(
-      'modules/tuyu_frappe_runtime.py',
-    );
+    final frappeRuntime = source('modules/tuyu_frappe_runtime.py');
     expect(frappeRuntime, contains('str(path.resolve())'));
-    final hiEventsRuntime = source(
-      'modules/tuyu_hi_events_runtime.py',
-    );
+    final hiEventsRuntime = source('modules/tuyu_hi_events_runtime.py');
     expect(hiEventsRuntime, contains('access_log "'));
     expect(hiEventsRuntime, contains('error_log "'));
     expect(runtimeLock, contains('"network_install_allowed": false'));
@@ -349,11 +356,20 @@ with patch.object(smoke.Path, "home", return_value=home), patch.object(
     expect(builder, contains('ac_cv_func_pipe2=no'));
     expect(builder, isNot(contains('ensure_formula python@3.14')));
     expect(builder, contains('MariaDB-only Frappe dependencies'));
-    expect(builder, contains('PIP_CACHE_DIR="\$DEPENDENCY_WORK_DIR/package-managers/pip"'));
+    expect(
+      builder,
+      contains('PIP_CACHE_DIR="\$DEPENDENCY_WORK_DIR/package-managers/pip"'),
+    );
     expect(builder, isNot(contains('--no-cache-dir')));
     expect(builder, contains('unset PIP_NO_CACHE_DIR UV_NO_CACHE'));
-    expect(builder, contains(r'PIP_CACHE_DIR="$DEPENDENCY_WORK_DIR/package-managers/pip"'));
-    expect(builder, contains(r'UV_CACHE_DIR="$DEPENDENCY_WORK_DIR/package-managers/uv"'));
+    expect(
+      builder,
+      contains(r'PIP_CACHE_DIR="$DEPENDENCY_WORK_DIR/package-managers/pip"'),
+    );
+    expect(
+      builder,
+      contains(r'UV_CACHE_DIR="$DEPENDENCY_WORK_DIR/package-managers/uv"'),
+    );
     expect(builder, contains(r'--cache-dir "$PIP_CACHE_DIR"'));
     expect(builder, isNot(contains('preparePythonDependencyEnvironment')));
     expect(builder, isNot(contains('PYTHON_CONSTRAINTS')));
@@ -381,7 +397,10 @@ with patch.object(smoke.Path, "home", return_value=home), patch.object(
       ),
     );
     expect(postgresBuilder, contains("'--prefix=' + destination"));
-    expect(postgresBuilder, contains("'--datadir=' + join(destination, 'share/postgresql')"));
+    expect(
+      postgresBuilder,
+      contains("'--datadir=' + join(destination, 'share/postgresql')"),
+    );
     expect(postgresBuilder, isNot(contains('POSTGRES_SOURCE_PREFIX')));
     expect(podfile, contains("platform :osx, '26.0'"));
     expect(

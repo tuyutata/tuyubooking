@@ -15,14 +15,27 @@ void main() {
       bookingBuildSource('shell', 'host'),
       contains('--target lib/main_host.dart'),
     );
+    final build = source('scripts/build.mjs');
+    expect(build, contains("platform.startsWith('host-linux-')"));
+    expect(build, contains("'--target','lib/main_host.dart'"));
+    expect(build, contains("arm?'linux-arm64':'linux-x64'"));
     expect(
-      bookingWorkflowSource('host-linux-arm', 'assemble'),
-      contains('--target lib/main_host.dart'),
+      build,
+      contains("arm?'aarch64-unknown-linux-gnu':'x86_64-unknown-linux-gnu'"),
     );
-    expect(
-      bookingWorkflowSource('host-linux-amd', 'assemble'),
-      contains('--target lib/main_host.dart'),
-    );
+    for (final platform in [
+      'host-macos',
+      'host-windows',
+      'host-linux-arm',
+      'host-linux-amd',
+    ]) {
+      final job = (bookingWorkflow(platform)['jobs'] as Map)['build'] as Map;
+      final step = (job['steps'] as List).last as Map;
+      expect(
+        step['run'],
+        'node scripts/build.mjs execute $platform --work "\$GITHUB_WORKSPACE/target/build/$platform"',
+      );
+    }
   });
 
   test('host identities and complete runtime boundary stay explicit', () {
