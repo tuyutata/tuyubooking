@@ -11,7 +11,7 @@ fn core_schema_and_completion_marker_share_one_executor_transaction() {
         .find("batch_execute(CORE_SCHEMA.sql)")
         .expect("schema execution");
     let completion_marker = executor
-        .find("INSERT INTO tuyu_core.schema_state")
+        .find("INSERT INTO tuyu_core.baselines")
         .expect("schema completion marker");
     let commit = executor.find("batch_execute(\"COMMIT;\")").expect("COMMIT");
 

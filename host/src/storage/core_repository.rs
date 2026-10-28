@@ -30,8 +30,8 @@ impl CoreRepository {
     ) -> Result<BusinessModuleConfiguration, StorageError> {
         let rows = client
             .query(
-                "SELECT module_key, enabled
-                 FROM tuyu_core.business_module
+                "SELECT module_key, is_enabled
+                 FROM tuyu_core.modules
                  WHERE installation_id = $1
                  ORDER BY module_key",
                 &[&installation_id.into_uuid()],
@@ -39,7 +39,7 @@ impl CoreRepository {
             .await?;
         let enabled_modules = rows
             .iter()
-            .filter(|row| row.get::<_, bool>("enabled"))
+            .filter(|row| row.get::<_, bool>("is_enabled"))
             .map(|row| row.get::<_, String>("module_key"))
             .collect();
         Ok(BusinessModuleConfiguration {
@@ -48,8 +48,7 @@ impl CoreRepository {
         })
     }
 
-    /// Updates only the four module enable flags. Upstream records are never
-    /// changed by this core configuration operation.
+    /// 只更新四个模块的启用状态；上游业务记录仍由各模块拥有。
     pub async fn set_business_modules(
         client: &impl GenericClient,
         installation_id: EntityId,
@@ -58,39 +57,38 @@ impl CoreRepository {
         let enabled_modules = enabled_modules.iter().cloned().collect::<Vec<_>>();
         client
             .execute(
-                "INSERT INTO tuyu_core.business_module
-                     (installation_id, module_key, enabled)
+                "INSERT INTO tuyu_core.modules
+                     (installation_id, module_key, is_enabled)
                  SELECT $1, module_key, module_key = ANY($2)
                  FROM unnest(ARRAY['hotel', 'restaurant', 'tour', 'ticket']::text[])
                       AS module_key
                  ON CONFLICT (installation_id, module_key) DO UPDATE
-                 SET enabled = EXCLUDED.enabled",
+                 SET is_enabled = EXCLUDED.is_enabled",
                 &[&installation_id.into_uuid(), &enabled_modules],
             )
             .await?;
         Ok(())
     }
 
+    /// 幂等记录直接使用安装实例、请求作用域和请求键，不另造记录标识。
     pub async fn claim_idempotency(
         client: &impl GenericClient,
         installation_id: EntityId,
-        record_id: EntityId,
-        scope: &str,
-        key: &str,
+        request_scope: &str,
+        request_key: &str,
         request_hash: &str,
         expires_at: OffsetDateTime,
     ) -> Result<IdempotencyClaim, StorageError> {
         let inserted = client
             .execute(
-                "INSERT INTO tuyu_core.idempotency_key
-                 (id, installation_id, request_scope, request_key, request_hash, expires_at)
-                 VALUES ($1, $2, $3, $4, $5, $6)
+                "INSERT INTO tuyu_core.requests
+                 (installation_id, request_scope, request_key, request_hash, expires_at)
+                 VALUES ($1, $2, $3, $4, $5)
                  ON CONFLICT (installation_id, request_scope, request_key) DO NOTHING",
                 &[
-                    &record_id.into_uuid(),
                     &installation_id.into_uuid(),
-                    &scope,
-                    &key,
+                    &request_scope,
+                    &request_key,
                     &request_hash,
                     &expires_at,
                 ],
@@ -104,9 +102,9 @@ impl CoreRepository {
         let row = client
             .query_one(
                 "SELECT response_status, response_body
-                 FROM tuyu_core.idempotency_key
+                 FROM tuyu_core.requests
                  WHERE installation_id = $1 AND request_scope = $2 AND request_key = $3",
-                &[&installation_id.into_uuid(), &scope, &key],
+                &[&installation_id.into_uuid(), &request_scope, &request_key],
             )
             .await?;
 
@@ -124,21 +122,21 @@ impl CoreRepository {
     pub async fn complete_idempotency(
         client: &impl GenericClient,
         installation_id: EntityId,
-        scope: &str,
-        key: &str,
+        request_scope: &str,
+        request_key: &str,
         response_status: i32,
         response_body: &Value,
     ) -> Result<(), StorageError> {
         client
             .execute(
-                "UPDATE tuyu_core.idempotency_key
+                "UPDATE tuyu_core.requests
                  SET response_status = $4, response_body = $5, updated_at = CURRENT_TIMESTAMP,
-                     version = version + 1
+                     row_version = row_version + 1
                  WHERE installation_id = $1 AND request_scope = $2 AND request_key = $3",
                 &[
                     &installation_id.into_uuid(),
-                    &scope,
-                    &key,
+                    &request_scope,
+                    &request_key,
                     &response_status,
                     response_body,
                 ],
@@ -154,18 +152,18 @@ impl CoreRepository {
     ) -> Result<(), StorageError> {
         client
             .execute(
-                "INSERT INTO tuyu_core.domain_event
-                 (id, installation_id, domain, aggregate_type, aggregate_id, event_type,
-                  payload, occurred_at)
+                "INSERT INTO tuyu_core.events
+                 (event_id, installation_id, domain_name, aggregate_type, aggregate_id, event_type,
+                  event_data, occurred_at)
                  VALUES ($1, $2, $3, $4, $5, $6, $7, $8)",
                 &[
-                    &event.id.into_uuid(),
+                    &event.event_id.into_uuid(),
                     &installation_id.into_uuid(),
                     &domain_name(event),
                     &event.aggregate_type,
                     &event.aggregate_id.into_uuid(),
                     &event.event_type,
-                    &event.payload,
+                    &event.event_data,
                     &event.occurred_at,
                 ],
             )
@@ -177,30 +175,30 @@ impl CoreRepository {
         client: &(impl GenericClient + Sync),
         installation_id: EntityId,
         actor_id: Option<EntityId>,
-        domain: &str,
-        action: &str,
+        domain_name: &str,
+        audit_action: &str,
         object_type: &str,
         object_id: EntityId,
-        reason: Option<&str>,
+        audit_reason: Option<&str>,
         occurred_at: OffsetDateTime,
     ) -> Result<(), StorageError> {
         let audit_id = EntityId::new();
         let actor_uuid = actor_id.map(EntityId::into_uuid);
         client
             .execute(
-                "INSERT INTO tuyu_core.audit_log
-                 (id, installation_id, actor_id, domain, action, object_type, object_id,
-                  reason, occurred_at)
+                "INSERT INTO tuyu_core.audits
+                 (audit_id, installation_id, actor_id, domain_name, audit_action, object_type, object_id,
+                  audit_reason, occurred_at)
                  VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)",
                 &[
                     &audit_id.into_uuid(),
                     &installation_id.into_uuid(),
                     &actor_uuid,
-                    &domain,
-                    &action,
+                    &domain_name,
+                    &audit_action,
                     &object_type,
                     &object_id.into_uuid(),
-                    &reason,
+                    &audit_reason,
                     &occurred_at,
                 ],
             )
@@ -210,7 +208,7 @@ impl CoreRepository {
 }
 
 fn domain_name(event: &DomainEvent) -> &'static str {
-    match event.domain {
+    match event.domain_name {
         crate::core::Domain::Core => "core",
         crate::core::Domain::Hotel => "hotel",
         crate::core::Domain::Restaurant => "restaurant",

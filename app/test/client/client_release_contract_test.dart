@@ -15,7 +15,8 @@ void main() {
     }
   });
   test('mobile application identifiers and device families stay stable', () {
-    final androidGradle = bookingAppFile('android/app/build.gradle.kts').readAsStringSync();
+    final androidGradle = bookingAppFile('android/app/build.gradle.kts')
+        .readAsStringSync();
     final iosProject = bookingAppFile('ios/Runner.pbxproj').readAsStringSync();
 
     expect(androidGradle, contains('namespace = "com.tuyulove.tuyubooking"'));
@@ -31,7 +32,8 @@ void main() {
   });
 
   test('release source never falls back to Android debug signing', () {
-    final androidGradle = bookingAppFile('android/app/build.gradle.kts').readAsStringSync();
+    final androidGradle = bookingAppFile('android/app/build.gradle.kts')
+        .readAsStringSync();
 
     expect(androidGradle, isNot(contains('signingConfigs.getByName("debug")')));
     expect(androidGradle, contains('Release artifacts stay unsigned'));
@@ -40,7 +42,8 @@ void main() {
   test(
     'Android local builds honor the TuyuBooking product build directory',
     () {
-      final rootGradle = bookingAppFile('android/build.gradle.kts').readAsStringSync();
+      final rootGradle = bookingAppFile('android/build.gradle.kts')
+          .readAsStringSync();
 
       expect(
         rootGradle,
@@ -52,7 +55,8 @@ void main() {
   );
 
   test('mobile runtime and local network declarations stay available', () {
-    final mainSource = bookingAppFile('lib/main_client.dart').readAsStringSync();
+    final mainSource = bookingAppFile('lib/main_client.dart')
+        .readAsStringSync();
     final iosInfo = bookingAppFile('ios/Runner/Info.plist').readAsStringSync();
 
     expect(mainSource, contains('TuyuBookingClientApp'));
@@ -61,10 +65,16 @@ void main() {
   });
 
   test('formal CitizenSDK mode remains pinned to a fixed Git revision', () {
-    final manifest=bookingAppFile('pubspec.yaml').readAsStringSync();
-    final lock=bookingAppFile('pubspec.lock').readAsStringSync();
-    final sha=RegExp(r'ref: ([a-f0-9]{40})').firstMatch(manifest)!.group(1)!;
-    expect(lock,contains('resolved-ref: '+sha));
+    final manifest = bookingAppFile('pubspec.yaml').readAsStringSync();
+    final lock = bookingAppFile('pubspec.lock').readAsStringSync();
+    final sha = RegExp(r'ref: ([a-f0-9]{40})').firstMatch(manifest)!.group(1)!;
+    expect(
+      RegExp(r'resolved-ref: "?([a-f0-9]{40})"?')
+          .allMatches(lock)
+          .single
+          .group(1),
+      sha,
+    );
   });
 
   test('iOS uses standard Flutter plugin registration and SDK-owned framework input', () {

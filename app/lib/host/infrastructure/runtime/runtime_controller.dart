@@ -45,7 +45,7 @@ final class DesktopRuntimeConfiguration
       databasePassword: secrets.databasePassword,
       installationName: Platform.localHostname,
       merchantName: 'TuyuLove Merchant',
-      timezone: DateTime.now().timeZoneName,
+      timeZone: DateTime.now().timeZoneName,
       currencyCode: 'CNY',
       businessRuntimeDir: '${resourcesDir.path}/business',
       businessDataRoot: '${support.path}/business',

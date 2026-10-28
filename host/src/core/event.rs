@@ -18,37 +18,37 @@ pub enum Domain {
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct AuditActor {
     pub staff_id: EntityId,
-    pub tuyu_number: String,
+    pub tuyu_id: String,
 }
 
 /// Durable event emitted by a domain aggregate.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct DomainEvent {
-    pub id: EntityId,
-    pub domain: Domain,
+    pub event_id: EntityId,
+    pub domain_name: Domain,
     pub aggregate_type: String,
     pub aggregate_id: EntityId,
     pub event_type: String,
-    pub payload: Value,
+    pub event_data: Value,
     pub occurred_at: OffsetDateTime,
 }
 
 impl DomainEvent {
     pub fn new(
-        domain: Domain,
+        domain_name: Domain,
         aggregate_type: impl Into<String>,
         aggregate_id: EntityId,
         event_type: impl Into<String>,
-        payload: Value,
+        event_data: Value,
         occurred_at: OffsetDateTime,
     ) -> Self {
         Self {
-            id: EntityId::new(),
-            domain,
+            event_id: EntityId::new(),
+            domain_name,
             aggregate_type: aggregate_type.into(),
             aggregate_id,
             event_type: event_type.into(),
-            payload,
+            event_data,
             occurred_at,
         }
     }

@@ -8,6 +8,6 @@ hotel.property、room_type、room、room_block、rate_plan、rate_snapshot、inv
 
 - Flutter 只调用 Rust 命令和查询接口。
 - 酒店餐厅保留在 hotel Schema，因为客房挂账和住客 Folio 是其核心边界。
-- 共用顾客只引用 tuyu_core.customer_ref；酒店保留预订时住客资料快照。
+- 共用顾客只引用 tuyu_core.customers；酒店保留预订时住客资料快照。
 - Kamra 的 Frappe DocType 名称保存为迁移元数据，不直接限定新表结构。
 - Python、Frappe 和 React 运行时不进入安装包。

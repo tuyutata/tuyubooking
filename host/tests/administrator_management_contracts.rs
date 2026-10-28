@@ -67,7 +67,7 @@ async fn administrator_lifecycle_enforces_local_identity_policy() {
             installation_name: "Administrator Management Test".to_owned(),
             merchant_id: EntityId::new(),
             merchant_name: "Merchant".to_owned(),
-            timezone: "UTC".to_owned(),
+            time_zone: "UTC".to_owned(),
             currency_code: "GMB".to_owned(),
         },
     )

@@ -34,7 +34,7 @@ async fn one_verified_local_administrator_accesses_all_subsystems_and_commands_a
         installation_name: "TuyuBooking Test".to_owned(),
         merchant_id: EntityId::new(),
         merchant_name: "Merchant".to_owned(),
-        timezone: "UTC".to_owned(),
+        time_zone: "UTC".to_owned(),
         currency_code: "GMB".to_owned(),
     };
     let mut runtime = ApplicationRuntime::start(
@@ -79,7 +79,7 @@ async fn one_verified_local_administrator_accesses_all_subsystems_and_commands_a
 
     let envelope = CommandEnvelope {
         command_id: EntityId::new(),
-        idempotency_key: CommandKey::new("same-command").unwrap(),
+        request_key: CommandKey::new("same-command").unwrap(),
         session_id: EntityId::from_uuid(session.id),
         subsystem: Subsystem::Hotel,
         command_type: "hotel.quote".to_owned(),
@@ -147,7 +147,7 @@ async fn startup_failure_never_returns_a_ready_runtime() {
             installation_name: "Invalid".to_owned(),
             merchant_id: EntityId::new(),
             merchant_name: "Invalid".to_owned(),
-            timezone: "UTC".to_owned(),
+            time_zone: "UTC".to_owned(),
             currency_code: "GMB".to_owned(),
         },
     )

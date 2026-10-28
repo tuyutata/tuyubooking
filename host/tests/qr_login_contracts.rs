@@ -51,7 +51,7 @@ async fn local_qr_login_accepts_one_authorized_signature_and_rejects_replay() {
             installation_name: "QR Login Test".to_owned(),
             merchant_id: EntityId::new(),
             merchant_name: "Merchant".to_owned(),
-            timezone: "UTC".to_owned(),
+            time_zone: "UTC".to_owned(),
             currency_code: "GMB".to_owned(),
         },
     )
@@ -98,7 +98,7 @@ async fn local_qr_login_rejects_an_unregistered_public_key() {
             installation_name: "Unknown Administrator Test".to_owned(),
             merchant_id: EntityId::new(),
             merchant_name: "Merchant".to_owned(),
-            timezone: "UTC".to_owned(),
+            time_zone: "UTC".to_owned(),
             currency_code: "GMB".to_owned(),
         },
     )
@@ -144,7 +144,7 @@ async fn every_active_administrator_can_login_and_a_disabled_one_cannot() {
             installation_name: "Multiple Administrator Test".to_owned(),
             merchant_id: EntityId::new(),
             merchant_name: "Merchant".to_owned(),
-            timezone: "UTC".to_owned(),
+            time_zone: "UTC".to_owned(),
             currency_code: "GMB".to_owned(),
         },
     )
@@ -207,7 +207,7 @@ async fn altered_scope_nonce_identity_and_expiry_are_rejected() {
             installation_name: "Tampered Login Test".to_owned(),
             merchant_id: EntityId::new(),
             merchant_name: "Merchant".to_owned(),
-            timezone: "UTC".to_owned(),
+            time_zone: "UTC".to_owned(),
             currency_code: "GMB".to_owned(),
         },
     )

@@ -1158,7 +1158,7 @@ Android application 的 icon 与 roundIcon 统一引用 @drawable/app_icon。既
 
 ### 分机钱包初始化入口
 
-分机由产品 Flutter 页面显示正式途遇 Logo、产品名称、中英文辅助文字及创建/导入入口，窄屏和横屏通过可滚动的限宽页面承载。页面不显示主机/分机品牌后缀，不增加助记词或派生密码输入。创建和导入直接调用 CitizenSdk.wallet.create/importWallet，秘密输入、可选派生密码与安全操作属于 SDK；调用完成后回读 getProfile，只有钱包公开资料已经提交才进入后续业务流程。商家主机现有扫码初始化完全不变。
+分机由产品Flutter页面显示正式Logo、产品名称、中英文辅助文字及钱包入口，窄屏和横屏使用可滚动限宽页面。首屏不显示秘密输入；用户主动进入钱包操作后，App只临时承载助记词/附加密码输入与备份确认。SDK通过prepareCreation、recoveryPhrase、commit、importWallet及result完成真实操作，所有输入校验、派生和持久化仅归SDK。完成后统一读取getState，未提交、恢复/清理或回读失败不能放行业务。原管理员扫码与签名协议不变。
 
 取消和认证取消依据 CitizenSdkErrorCode 分类，留在入口而不当作操作失败。真实失败仅显示产品通用提示，不直接显示 SDK 原始异常；操作中防止重复点击，更换 SDK 后丢弃旧会话的异步结果。商家未有钱包时不提前加载业务模式；厂家未有钱包时不开放业务界面，钱包就绪后才首次启动原有主机连接。钱包不代替上游员工账户及权限。
 
@@ -1238,8 +1238,7 @@ Gradle 9.1加载受控 Flutter 插件 included-build 时，受控对象只开放
 商家端产品源码不再保留 Flutter Linux/Windows ephemeral、旧 `target/.work` 插件链接、IDE 状态、PluginRegistrant 或 `.kotlin` 状态；本机 Build 只能在本产品调用方提供的规范源码外工作目录 生成这些内容。Gradle Wrapper保留为产品工具入口；本机pubspec_overrides.yaml已取消，所有环境只消费统一Git来源。
 ## CitizenSDK统一边界复查（2026-09-15）
 
-TuyuBooking Flutter主机与分机已直接依赖同一完整CitizenSDK，并通过`CitizenSdk.open()`、`wallet.create`、
-`wallet.importWallet`等公开接口取得钱包、签名、交易和轻节点能力；没有产品侧SDK包装层，这一客户端边界正确。
+TuyuBooking主机与分机直接依赖同一完整CitizenSDK，通过公开open及getState、prepareCreation、importWallet等操作取得能力；App承担临时交互，SDK承担规则与执行，不存在产品侧SDK包装层。
 
 服务端边界仍有偏差：`host/src/public_api.rs`直接依赖`schnorrkel`验证旅客与安装实例签名；本机管理员又经
 路径依赖调用`tuyuserve/account`中的自建签名摘要和验签。TuyuBooking可以继续拥有报价、预订、安装实例、
@@ -1518,3 +1517,24 @@ CitizenSDK来源由本产品pubspec.yaml与pubspec.lock的固定Git提交共同�
 
 本产品配置项统一为name、description、accessLevel、kind、format五个必填字段；不适用规则明确填写“不适用”。name严格使用两组大写字母和一个下划线，同名共用控制台唯一值，当前页仅汇总实际声明的使用产品。操作列固定写入/更换、查看、删除；保密查看保留生物识别。现有配置消费者随声明同步改名，官方工具/API字段保持官方名称，不新增旧名兼容或配置副本。
 描述文件使用TUYUBOOKING_PROFILE，format绑定真实iOS Bundle身份；不能将其它产品描述文件冒认成本产品已配置。
+
+
+## 第一方核心结构与字段真源
+
+本机数据库和Schema归属保持：平台核心属于tuyu_core，上游业务属于其原模块。非固定表统一为baselines、modules、merchants、identities、publications、staff、roles、customers、requests、events、audits；框架registry与Voyant的migrations保留原职责。所有表均保留，不合并上游业务数据。
+
+identities直接以installation_id作为主键，云端instance_id仍是独立身份；requests使用installation_id/request_scope/request_key联合主键，保留request_hash、完成响应、有效期和并发状态，不再生成无用途记录UUID。当前身份与发布快照、事件发生时间与写入时间、当前版本与预期版本不合并。URY框架初始化仅保留一份。
+
+非固定业务列使用两个单词的snake_case，Rust字段同词根，类型UpperCamelCase；Dart属性lowerCamelCase，JSON保留snake_case。启动时区统一为time_zone/timeZone，不影响上游timezone字段。EmbeddedSchema只保留schema_name这一基线身份与schema_hash，不保存相同的第二个schema属性。初始化无有效基线时只接受空的所属结构，旧结构失败，不自动迁移或重建。
+
+installation、local_system_administrator、administrator_audit_log、administrator_assertion、upstream_administrator_session、administrator_bridge_audit六类共享账户表及全部字段维持固定合同。tuyu-account提交435e585bd59aabe5bec3d4ca21074abbae864b43、原声明、锁、签名协议及上游API保持；事件名称tuyubooking.order.v1和固定签名原文不因内部字段统一而重组。
+
+
+### 第4步既有回归阻塞收口
+
+CitizenSDK直接依赖固定0e07a360813948830e39168edcc4dff88922dd8a，工程只消费同提交完整交付包；Pub锁按该声明收敛。共享tuyu-account固定435e585bd59aabe5bec3d4ca21074abbae864b43及原签名协议保持。真实PG回归必须使用包内Perl/Tcl完整闭包。
+
+
+### 钱包交互与SDK目录唯一来源
+
+App只负责临时输入、备份展示及用户确认；密码和助记词不进入业务持久化、日志或网络。输入规则、创建/导入/追加及持久化只归固定CitizenSDK，操作等待result，创建经prepareCreation、recoveryPhrase、commit及release完整生命周期。读取仅使用getState返回的目录事实，恢复/清理未完成时不把状态当成空钱包。商家分机初始化页拥有钱包交互，状态仅来自SDK目录事实。凭据按SDK挑战临时交付，取消、SDK替换与页面销毁须结束本次真实操作并释放资源。共享账户合同及原签名协议不变。

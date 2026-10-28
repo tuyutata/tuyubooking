@@ -781,6 +781,78 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Import wallet'**
   String get clientImportWallet;
+
+  /// No description provided for @walletWords.
+  ///
+  /// In en, this message translates to:
+  /// **'Recovery word count'**
+  String get walletWords;
+
+  /// No description provided for @walletPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Additional password (optional)'**
+  String get walletPassword;
+
+  /// No description provided for @walletMnemonic.
+  ///
+  /// In en, this message translates to:
+  /// **'Recovery phrase'**
+  String get walletMnemonic;
+
+  /// No description provided for @walletBackup.
+  ///
+  /// In en, this message translates to:
+  /// **'Back up recovery phrase'**
+  String get walletBackup;
+
+  /// No description provided for @walletConfirmed.
+  ///
+  /// In en, this message translates to:
+  /// **'I have backed up the recovery phrase and additional password'**
+  String get walletConfirmed;
+
+  /// No description provided for @walletContinue.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue'**
+  String get walletContinue;
+
+  /// No description provided for @walletCommit.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm creation'**
+  String get walletCommit;
+
+  /// No description provided for @walletCancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get walletCancel;
+
+  /// No description provided for @walletPasswordInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'The additional password does not meet wallet requirements.'**
+  String get walletPasswordInvalid;
+
+  /// No description provided for @walletMnemonicInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'The recovery phrase does not match the selected word count or validation requirements.'**
+  String get walletMnemonicInvalid;
+
+  /// No description provided for @walletRecovering.
+  ///
+  /// In en, this message translates to:
+  /// **'Wallet recovery or cleanup is pending. Complete it and retry.'**
+  String get walletRecovering;
+
+  /// No description provided for @walletCredential.
+  ///
+  /// In en, this message translates to:
+  /// **'Unlock wallet'**
+  String get walletCredential;
 }
 
 class _AppLocalizationsDelegate

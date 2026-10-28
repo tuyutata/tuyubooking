@@ -92,7 +92,7 @@ struct StartRequest {
     database_password: String,
     installation_name: String,
     merchant_name: String,
-    timezone: String,
+    time_zone: String,
     currency_code: String,
     business_runtime_dir: String,
     business_data_root: String,
@@ -276,7 +276,7 @@ fn start(input: &str) -> Result<String, ApplicationError> {
         installation_name: request.installation_name,
         merchant_id: EntityId::new(),
         merchant_name: request.merchant_name,
-        timezone: request.timezone,
+        time_zone: request.time_zone,
         currency_code: request.currency_code,
     };
     let executor = tokio::runtime::Builder::new_multi_thread()

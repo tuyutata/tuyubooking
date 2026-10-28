@@ -1,3 +1,4 @@
+import 'dart:typed_data';
 import 'dart:async';
 
 import 'package:citizen_sdk/citizen_sdk.dart';
@@ -18,6 +19,7 @@ final class TuyuBookingClientApp extends StatefulWidget {
 final class _TuyuBookingClientAppState extends State<TuyuBookingClientApp> {
   late final AppLifecycleListener _lifecycle;
   CitizenSdk? _citizenSdk;
+  final _navigatorKey = GlobalKey<NavigatorState>();
   Future<void>? _citizenSdkStop;
   bool _citizenSdkStarting = false;
 
@@ -39,12 +41,20 @@ final class _TuyuBookingClientAppState extends State<TuyuBookingClientApp> {
     super.dispose();
   }
 
+  Future<Uint8List?> _requestCredential(
+    CitizenCredentialChallenge challenge,
+  ) async {
+    final context = _navigatorKey.currentContext;
+    if (!mounted || context == null) return null;
+    return requestWalletCredential(context, challenge);
+  }
+
   Future<void> _startCitizenSdk() async {
     if (_citizenSdkStarting || _citizenSdk != null) return;
     setState(() => _citizenSdkStarting = true);
     CitizenSdk? sdk;
     try {
-      sdk = await CitizenSdk.open();
+      sdk = await CitizenSdk.open(credentialProvider: _requestCredential);
       await sdk.start();
       if (!mounted) {
         await sdk.stop();
@@ -82,6 +92,7 @@ final class _TuyuBookingClientAppState extends State<TuyuBookingClientApp> {
   Widget build(BuildContext context) => Provider<CitizenSdk?>.value(
     value: _citizenSdk,
     child: MaterialApp(
+      navigatorKey: _navigatorKey,
       onGenerateTitle: (context) => AppLocalizations.of(context).appTitle,
       debugShowCheckedModeBanner: false,
       supportedLocales: TuyuLocalePolicy.supportedLocales,

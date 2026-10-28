@@ -89,12 +89,12 @@ pub fn verify_traveler<T: DeserializeOwned>(
 
 pub fn verify_instance<T: DeserializeOwned>(
     envelope: &SignedEnvelope,
-    installation_public_key: &[u8; 32],
+    instance_key: &[u8; 32],
 ) -> Result<T, PublicApiError> {
     verify_payload(
         &envelope.signed_payload,
         &envelope.signature,
-        installation_public_key,
+        instance_key,
     )
 }
 

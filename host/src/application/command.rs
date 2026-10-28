@@ -19,7 +19,7 @@ pub enum AppLocale {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct CommandEnvelope<T> {
     pub command_id: EntityId,
-    pub idempotency_key: CommandKey,
+    pub request_key: CommandKey,
     pub session_id: EntityId,
     pub subsystem: Subsystem,
     pub command_type: String,
@@ -58,9 +58,8 @@ impl CommandCoordinator {
         let claim = CoreRepository::claim_idempotency(
             &database.client,
             EntityId::from_uuid(session.installation_id),
-            EntityId::new(),
             envelope.subsystem.as_str(),
-            envelope.idempotency_key.as_str(),
+            envelope.request_key.as_str(),
             request_hash,
             envelope.client_time + Duration::minutes(10),
         )
@@ -93,7 +92,7 @@ impl CommandCoordinator {
             &database.client,
             EntityId::from_uuid(session.installation_id),
             envelope.subsystem.as_str(),
-            envelope.idempotency_key.as_str(),
+            envelope.request_key.as_str(),
             response_status,
             response_body,
         )

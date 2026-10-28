@@ -437,7 +437,7 @@ final class FakeRuntimeConfiguration implements RuntimeConfigurationProvider {
     databasePassword: 'test-only',
     installationName: 'test',
     merchantName: 'test',
-    timezone: 'UTC',
+    timeZone: 'UTC',
     currencyCode: 'CNY',
     businessRuntimeDir: '/bundle/business',
     businessDataRoot: '/data/business',

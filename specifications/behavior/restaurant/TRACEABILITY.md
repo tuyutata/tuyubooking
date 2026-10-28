@@ -9,4 +9,4 @@
 | 后厨 | ury_kot、ury_kot_items、ury_kot_error_log | restaurant.kitchen_ticket 系列 | designed |
 | 营业终端 | ury_payment_terminal、sub_pos_closing | restaurant.shift/daily_close | designed |
 | 报表 | ury_daily_p_and_l、ury_cost_of_goods | 领域查询模型 | designed |
-| 权限 | ury_user、role_permitted | tuyu_core.staff_role_assignment | designed |
+| 权限 | ury_user、role_permitted | tuyu_core.roles | designed |

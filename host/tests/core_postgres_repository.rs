@@ -57,7 +57,6 @@ async fn core_repository_persists_idempotency_claims() {
     let first = CoreRepository::claim_idempotency(
         &connection.client,
         installation_id,
-        EntityId::new(),
         "core-test",
         "same-command",
         &"a".repeat(64),
@@ -68,7 +67,6 @@ async fn core_repository_persists_idempotency_claims() {
     let duplicate = CoreRepository::claim_idempotency(
         &connection.client,
         installation_id,
-        EntityId::new(),
         "core-test",
         "same-command",
         &"a".repeat(64),
@@ -79,6 +77,45 @@ async fn core_repository_persists_idempotency_claims() {
 
     assert_eq!(first, IdempotencyClaim::Acquired);
     assert_eq!(duplicate, IdempotencyClaim::InProgress);
+
+    // 中文注释：自然主键保留完成响应，重复请求不能重新领取执行权。
+    CoreRepository::complete_idempotency(
+        &connection.client,
+        installation_id,
+        "core-test",
+        "same-command",
+        201,
+        &serde_json::json!({"request_key": "same-command", "done": true}),
+    )
+    .await
+    .unwrap();
+    let completed = CoreRepository::claim_idempotency(
+        &connection.client,
+        installation_id,
+        "core-test",
+        "same-command",
+        &"a".repeat(64),
+        now() + Duration::minutes(10),
+    )
+    .await
+    .unwrap();
+    assert_eq!(
+        completed,
+        IdempotencyClaim::Completed {
+            response_status: 201,
+            response_body: serde_json::json!({"request_key": "same-command", "done": true}),
+        }
+    );
+    let count: i64 = connection
+        .client
+        .query_one(
+            "SELECT count(*) FROM tuyu_core.requests WHERE installation_id=$1",
+            &[&installation_id.into_uuid()],
+        )
+        .await
+        .unwrap()
+        .get(0);
+    assert_eq!(count, 1);
 
     CoreRepository::set_business_modules(
         &connection.client,

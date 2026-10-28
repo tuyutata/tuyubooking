@@ -78,22 +78,30 @@ async fn real_postgresql_applies_schema_once_and_rolls_back_failures() {
     #[cfg(target_os = "macos")]
     {
         // 真正加载两种保留的过程语言；PL/Perl必须读取当前运行包的strict模块。
-        connection.client.batch_execute(
-            "CREATE EXTENSION plperl; CREATE EXTENSION pltcl;
+        connection
+            .client
+            .batch_execute(
+                "CREATE EXTENSION plperl; CREATE EXTENSION pltcl;
              CREATE FUNCTION tuyu_core.controlled_perl() RETURNS integer AS $$
                  use strict; return 42;
              $$ LANGUAGE plperl;
              CREATE FUNCTION tuyu_core.controlled_tcl() RETURNS integer AS $$
                  return 7
              $$ LANGUAGE pltcl;",
-        ).await.unwrap();
-        let values = connection.client.query_one(
-            "SELECT tuyu_core.controlled_perl(), tuyu_core.controlled_tcl()", &[],
-        ).await.unwrap();
+            )
+            .await
+            .unwrap();
+        let values = connection
+            .client
+            .query_one(
+                "SELECT tuyu_core.controlled_perl(), tuyu_core.controlled_tcl()",
+                &[],
+            )
+            .await
+            .unwrap();
         assert_eq!(values.get::<_, i32>(0), 42);
         assert_eq!(values.get::<_, i32>(1), 7);
     }
-
 
     let schema_count: i64 = connection
         .client
@@ -115,7 +123,7 @@ async fn real_postgresql_applies_schema_once_and_rolls_back_failures() {
         .await
         .unwrap()
         .get(0);
-    // 初始核心模式包含 business_module，四个业务模块的启停状态由这一张正式表持久化。
+    // 初始核心模式包含 modules，四个业务模块的启停状态由这一张正式表持久化。
     assert_eq!(table_count, 17);
 
     let failed = SchemaExecutor::execute_transactional_probe(
@@ -136,10 +144,33 @@ async fn real_postgresql_applies_schema_once_and_rolls_back_failures() {
         .get(0);
     assert!(!rollback_probe_exists);
 
+    // 中文注释：旧基线缺失时拒绝写入，不补建第二套表或改动既有数据。
+    connection
+        .client
+        .batch_execute("ALTER TABLE tuyu_core.baselines RENAME TO previous_fixture")
+        .await
+        .unwrap();
+    assert!(matches!(
+        SchemaExecutor::apply(&connection.client).await,
+        Err(StorageError::SchemaChecksumMismatch { .. })
+    ));
+    let replaced: bool = connection
+        .client
+        .query_one("SELECT to_regclass('tuyu_core.baselines') IS NOT NULL", &[])
+        .await
+        .unwrap()
+        .get(0);
+    assert!(!replaced);
+    connection
+        .client
+        .batch_execute("ALTER TABLE tuyu_core.previous_fixture RENAME TO baselines")
+        .await
+        .unwrap();
+
     connection
         .client
         .execute(
-            "UPDATE tuyu_core.schema_state SET checksum_sha256 = repeat('0', 64) WHERE schema_name = 'tuyu_core'",
+            "UPDATE tuyu_core.baselines SET schema_hash = repeat('0', 64) WHERE schema_name = 'tuyu_core'",
             &[],
         )
         .await
@@ -153,7 +184,6 @@ async fn real_postgresql_applies_schema_once_and_rolls_back_failures() {
     drop(connection);
     runtime.stop().unwrap();
 }
-
 
 #[cfg(target_os = "macos")]
 #[test]
@@ -172,8 +202,15 @@ fn missing_packaged_perl_core_fails_before_writing_initialization_password() {
     config.bin_dir = root.join("bin");
     let password_parent = config.data_dir.parent().unwrap().to_path_buf();
     let runtime = PostgresRuntime::new(config).unwrap();
-    assert!(matches!(runtime.initialize("synthetic-only"), Err(StorageError::MissingExecutable(_))));
+    assert!(matches!(
+        runtime.initialize("synthetic-only"),
+        Err(StorageError::MissingExecutable(_))
+    ));
     assert!(std::fs::read_dir(password_parent).unwrap().all(|entry| {
-        !entry.unwrap().file_name().to_string_lossy().starts_with(".tuyu-initdb-password-")
+        !entry
+            .unwrap()
+            .file_name()
+            .to_string_lossy()
+            .starts_with(".tuyu-initdb-password-")
     }));
 }

@@ -9,16 +9,14 @@ impl SchemaExecutor {
             return Ok(false);
         }
 
-        // The schema and its completion marker are one database fact. Keeping
-        // both operations in this transaction prevents a committed schema
-        // without schema_state when startup is interrupted.
+        // 中文注释：DDL与完成标记属于同一事务，初始化中断不能留下已提交的半套结构。
         let result = async {
             client.batch_execute("BEGIN;").await?;
             client.batch_execute(CORE_SCHEMA.sql).await?;
             client
                 .execute(
-                    "INSERT INTO tuyu_core.schema_state (schema_name, checksum_sha256) VALUES ($1, $2)",
-                    &[&CORE_SCHEMA.name, &CORE_SCHEMA.sha256],
+                    "INSERT INTO tuyu_core.baselines (schema_name, schema_hash) VALUES ($1, $2)",
+                    &[&CORE_SCHEMA.schema_name, &CORE_SCHEMA.schema_hash],
                 )
                 .await?;
             client.batch_execute("COMMIT;").await?;
@@ -29,7 +27,7 @@ impl SchemaExecutor {
         if let Err(error) = result {
             let _ = client.batch_execute("ROLLBACK;").await;
             return Err(StorageError::SchemaExecution {
-                schema_name: CORE_SCHEMA.name.to_owned(),
+                schema_name: CORE_SCHEMA.schema_name.to_owned(),
                 message: error.to_string(),
             });
         }
@@ -39,33 +37,42 @@ impl SchemaExecutor {
 
     async fn is_current(client: &Client, schema: &EmbeddedSchema) -> Result<bool, StorageError> {
         let state_exists: bool = client
-            .query_one(
-                "SELECT to_regclass('tuyu_core.schema_state') IS NOT NULL",
-                &[],
-            )
+            .query_one("SELECT to_regclass('tuyu_core.baselines') IS NOT NULL", &[])
             .await?
             .get(0);
 
         if !state_exists {
+            // 中文注释：没有基线只允许空的所属 Schema；旧结构不能旁建新表或自动重建。
+            let occupied: bool = client.query_one(
+                "SELECT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'tuyu_core')",
+                &[],
+            ).await?.get(0);
+            if occupied {
+                return Err(StorageError::SchemaChecksumMismatch {
+                    schema_name: schema.schema_name.to_owned(),
+                });
+            }
             return Ok(false);
         }
 
         let row = client
             .query_opt(
-                "SELECT checksum_sha256 FROM tuyu_core.schema_state WHERE schema_name = $1",
-                &[&schema.name],
+                "SELECT schema_hash FROM tuyu_core.baselines WHERE schema_name = $1",
+                &[&schema.schema_name],
             )
             .await?;
 
         match row {
-            None => Ok(false),
+            None => Err(StorageError::SchemaChecksumMismatch {
+                schema_name: schema.schema_name.to_owned(),
+            }),
             Some(row) => {
                 let stored: String = row.get(0);
-                if stored == schema.sha256 {
+                if stored == schema.schema_hash {
                     Ok(true)
                 } else {
                     Err(StorageError::SchemaChecksumMismatch {
-                        schema_name: schema.name.to_owned(),
+                        schema_name: schema.schema_name.to_owned(),
                     })
                 }
             }

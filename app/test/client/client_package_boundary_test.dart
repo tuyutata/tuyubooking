@@ -5,13 +5,20 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../shared/source_paths.dart';
+
 import 'package:tuyubooking/client/client_initialization_page.dart';
 
 void main() {
   test('Android generated names use the AGP Variant API', () {
-    final root = Platform.environment['TUYUBOOKING_ROOT'] ?? Directory.current.parent.path;
-    final script = File('$root/app/android/app/build.gradle.kts').readAsStringSync();
-    expect(script, contains('abstract class GenerateAppNameResources : DefaultTask'));
+    final root =
+        Platform.environment['TUYUBOOKING_ROOT'] ??
+        Directory.current.parent.path;
+    final script = File('$root/app/android/app/build.gradle.kts')
+        .readAsStringSync();
+    expect(
+      script,
+      contains('abstract class GenerateAppNameResources : DefaultTask'),
+    );
     expect(script, contains('generatedResources.set(appNameResources)'));
     expect(script, contains('androidComponents.onVariants'));
     expect(script, contains('addGeneratedSourceDirectory'));
@@ -21,7 +28,6 @@ void main() {
   });
 
   test('macOS final wrapping and base names precede the outer signature', () {
-    final root = Platform.environment['TUYUBOOKING_ROOT'] ?? Directory.current.parent.path;
     for (final role in ['host', 'client']) {
       final script = bookingBuildSource('shell', role);
       final display = script.indexOf('Set :CFBundleDisplayName');
@@ -41,7 +47,9 @@ void main() {
   });
 
   test('Windows system names preserve separate technical identities', () {
-    final root = Platform.environment['TUYUBOOKING_ROOT'] ?? Directory.current.parent.path;
+    final root =
+        Platform.environment['TUYUBOOKING_ROOT'] ??
+        Directory.current.parent.path;
     final runner = File('$root/app/windows/runner/main.cpp').readAsStringSync();
     expect(runner, contains('ApplicationDisplayName()'));
     expect(runner, contains('PKEY_AppUserModel_RelaunchDisplayNameResource'));
@@ -51,7 +59,10 @@ void main() {
     expect(runner, contains('::_wcsicmp(expanded, executable.c_str()) != 0'));
     expect(runner, contains('FILE_ATTRIBUTE_REPARSE_POINT'));
     expect(runner, isNot(contains('CreateShortcut')));
-    expect(File('$root/app/windows/runner/Runner.rc').readAsStringSync(), contains('#pragma code_page(65001)'));
+    expect(
+      File('$root/app/windows/runner/Runner.rc').readAsStringSync(),
+      contains('#pragma code_page(65001)'),
+    );
   });
 
   final repository = bookingSource;
@@ -60,22 +71,42 @@ void main() {
       File('${repository.path}/$relativePath').readAsStringSync();
 
   test('安装名称按系统语言解析并保留产品身份', () {
-    String source(String path) => File('${repository.path}/app/$path').readAsStringSync();
+    String source(String path) =>
+        File('${repository.path}/app/$path').readAsStringSync();
     for (final platform in ['ios', 'macos']) {
-      final catalog = jsonDecode(source('$platform/Runner/InfoPlist.xcstrings'));
+      final catalog = jsonDecode(
+        source('$platform/Runner/InfoPlist.xcstrings'),
+      );
       for (final key in ['CFBundleDisplayName', 'CFBundleName']) {
-        for (final entry in {'en': 'TuyuBooking', 'zh-Hans': '途遇商家端', 'zh-Hant': '途遇商家端'}.entries) {
-          expect(catalog['strings'][key]['localizations'][entry.key]['stringUnit']['value'], entry.value);
+        for (final entry in {
+          'en': 'TuyuBooking',
+          'zh-Hans': '途遇商家端',
+          'zh-Hant': '途遇商家端',
+        }.entries) {
+          expect(
+            catalog['strings'][key]['localizations'][entry
+                .key]['stringUnit']['value'],
+            entry.value,
+          );
         }
       }
-      expect(source('$platform/Runner.pbxproj'), contains('InfoPlist.xcstrings'));
+      expect(
+        source('$platform/Runner.pbxproj'),
+        contains('InfoPlist.xcstrings'),
+      );
     }
-    expect(source('android/app/src/main/AndroidManifest.xml'), contains('android:label="@string/app_name"'));
+    expect(
+      source('android/app/src/main/AndroidManifest.xml'),
+      contains('android:label="@string/app_name"'),
+    );
     final gradle = source('android/app/build.gradle.kts');
     expect(gradle, contains('generateAppNameResources'));
     expect(gradle, contains('app_en.arb'));
     expect(gradle, contains('app_zh.arb'));
-    expect(gradle, contains('layout.buildDirectory.dir("generated/app-name/res")'));
+    expect(
+      gradle,
+      contains('layout.buildDirectory.dir("generated/app-name/res")'),
+    );
     final windows = source('windows/runner/Runner.rc');
     expect(windows, contains('IDS_TUYU_APPLICATION_NAME "TuyuBooking"'));
     expect(windows, contains('IDS_TUYU_APPLICATION_NAME "途遇商家端"'));
@@ -89,7 +120,9 @@ void main() {
 
   // 直接编译并渲染分机入口页面，避免仅检查打包脚本文本而漏掉 Dart 导入错误。
   // SDK 由外层提供；未就绪时页面不得自行创建钱包或启动轻节点。
-  testWidgets('client initialization waits for its injected SDK', (tester) async {
+  testWidgets('client initialization waits for its injected SDK', (
+    tester,
+  ) async {
     var retries = 0;
     await tester.pumpWidget(
       MaterialApp(
@@ -109,7 +142,9 @@ void main() {
     expect(retries, 0);
   });
 
-  testWidgets('client initialization delegates SDK failure retry', (tester) async {
+  testWidgets('client initialization delegates SDK failure retry', (
+    tester,
+  ) async {
     var retries = 0;
     await tester.pumpWidget(
       MaterialApp(
@@ -152,10 +187,15 @@ void main() {
     expect(package, isNot(contains('cargo build')));
     expect(package, contains('test ! -e'));
     expect(package, contains('project.mjs" native'));
-    expect(package.indexOf('project.mjs" native'), lessThan(package.indexOf('xcodebuild')));
+    expect(
+      package.indexOf('project.mjs" native'),
+      lessThan(package.indexOf('xcodebuild')),
+    );
     expect(
       package,
-      contains('ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS=NO'),
+      contains(
+        'ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS=NO',
+      ),
     );
     expect(package, contains('Contents/Frameworks/CitizenSDK.framework'));
     expect(package, contains('== arm64'));

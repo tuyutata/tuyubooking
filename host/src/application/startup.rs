@@ -19,7 +19,7 @@ pub struct ApplicationBootstrap {
     pub installation_name: String,
     pub merchant_id: EntityId,
     pub merchant_name: String,
-    pub timezone: String,
+    pub time_zone: String,
     pub currency_code: String,
 }
 
@@ -107,29 +107,29 @@ impl ApplicationRuntime {
         let merchant_id = connection
             .client
             .query_opt(
-                "SELECT id FROM tuyu_core.merchant_profile WHERE installation_id=$1
+                "SELECT merchant_id FROM tuyu_core.merchants WHERE installation_id=$1
                  ORDER BY created_at ASC LIMIT 1",
                 &[&installation_id.into_uuid()],
             )
             .await
             .map_err(|error| startup_error(error.into()))?
-            .map(|row| EntityId::from_uuid(row.get("id")))
+            .map(|row| EntityId::from_uuid(row.get("merchant_id")))
             .unwrap_or(bootstrap.merchant_id);
         connection
             .client
             .execute(
-                "INSERT INTO tuyu_core.merchant_profile
-                 (id, installation_id, display_name, timezone, currency_code)
+                "INSERT INTO tuyu_core.merchants
+                 (merchant_id, installation_id, merchant_name, time_zone, currency_code)
                  VALUES ($1, $2, $3, $4, $5)
-                 ON CONFLICT (id) DO UPDATE SET display_name = EXCLUDED.display_name,
-                     timezone = EXCLUDED.timezone, currency_code = EXCLUDED.currency_code,
+                 ON CONFLICT (merchant_id) DO UPDATE SET merchant_name = EXCLUDED.merchant_name,
+                     time_zone = EXCLUDED.time_zone, currency_code = EXCLUDED.currency_code,
                      updated_at = CURRENT_TIMESTAMP,
-                     version = tuyu_core.merchant_profile.version + 1",
+                     row_version = tuyu_core.merchants.row_version + 1",
                 &[
                     &merchant_id.into_uuid(),
                     &installation_id.into_uuid(),
                     &bootstrap.merchant_name,
-                    &bootstrap.timezone,
+                    &bootstrap.time_zone,
                     &bootstrap.currency_code,
                 ],
             )

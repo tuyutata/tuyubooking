@@ -29,10 +29,9 @@ fn optimistic_lock_version_increments() {
 
 #[test]
 fn embedded_schema_has_fixed_identity_and_hash() {
-    assert_eq!(CORE_SCHEMA.name, "tuyu_core");
-    assert_eq!(CORE_SCHEMA.schema, "tuyu_core");
-    assert_eq!(sha256_hex(CORE_SCHEMA.sql), CORE_SCHEMA.sha256);
-    assert_eq!(CORE_SCHEMA.sha256.len(), 64);
+    assert_eq!(CORE_SCHEMA.schema_name, "tuyu_core");
+    assert_eq!(sha256_hex(CORE_SCHEMA.sql), CORE_SCHEMA.schema_hash);
+    assert_eq!(CORE_SCHEMA.schema_hash.len(), 64);
     assert!(CORE_SCHEMA.sql.starts_with("-- TuyuBooking"));
     assert!(!CORE_SCHEMA.sql.contains("BEGIN;"));
     assert!(!CORE_SCHEMA.sql.contains("COMMIT;"));

@@ -8,12 +8,22 @@ import 'package:tuyubooking/host/authentication/auth_model.dart';
 import '../test_support.dart';
 
 void main() {
-  test('missing native library fails asynchronously without poisoning the queue', () async {
-    // flutter_tester 未打包商家原生库；只查询合同，不启动本地服务。
-    const gateway = FfiNativeGateway();
-    final first = gateway.contract();
-    await expectLater(first, throwsUnsupportedError);
-    await expectLater(gateway.contract(), throwsUnsupportedError);
+  test(
+    'missing native library fails asynchronously without poisoning the queue',
+    () async {
+      // flutter_tester 未打包商家原生库；只查询合同，不启动本地服务。
+      const gateway = FfiNativeGateway();
+      final first = gateway.contract();
+      await expectLater(first, throwsUnsupportedError);
+      await expectLater(gateway.contract(), throwsUnsupportedError);
+    },
+  );
+
+  test('运行请求只有time_zone字段，Dart保持timeZone属性', () async {
+    final request = await FakeRuntimeConfiguration().create();
+    expect(request.timeZone, 'UTC');
+    expect(request.toJson()['time_zone'], 'UTC');
+    expect(request.toJson(), isNot(contains('timezone')));
   });
 
   test('administrator QR response contains public evidence only', () {
@@ -25,8 +35,7 @@ void main() {
       expiresAtMilliseconds: 2000000000000,
       publicKey:
           '0x7c0f469d3bd340bae718203fa30ca071a5e37c751e891dbded837b213d45d91d',
-      signature:
-          '0x2abc1f9292ea9e9cd023fa66be59e59ada5ebbe93e483e97d7733a6a8b2c1023cb193142b795704b355f88c493fa521fdb5bea6198a75aca3f3fa17d777e6980',
+      signature: '0x2abc1f9292ea9e9cd023fa66be59e59ada5ebbe93e483e97d7733a6a8b2c1023cb193142b795704b355f88c493fa521fdb5bea6198a75aca3f3fa17d777e6980',
     );
     final encoded = jsonEncode(response.toJson()).toLowerCase();
     expect(encoded, isNot(contains('private_key')));
@@ -60,10 +69,8 @@ void main() {
       'i': 'tyc_00112233445566778899aabbccddeeff',
       'e': 2000000000000,
       'b': {
-        'u':
-            '0x7c0f469d3bd340bae718203fa30ca071a5e37c751e891dbded837b213d45d91d',
-        's':
-            '0x2abc1f9292ea9e9cd023fa66be59e59ada5ebbe93e483e97d7733a6a8b2c1023cb193142b795704b355f88c493fa521fdb5bea6198a75aca3f3fa17d777e6980',
+        'u': '0x7c0f469d3bd340bae718203fa30ca071a5e37c751e891dbded837b213d45d91d',
+        's': '0x2abc1f9292ea9e9cd023fa66be59e59ada5ebbe93e483e97d7733a6a8b2c1023cb193142b795704b355f88c493fa521fdb5bea6198a75aca3f3fa17d777e6980',
       },
     });
     expect(
@@ -78,10 +85,8 @@ void main() {
       'i': 'tyc_00112233445566778899aabbccddeeff',
       'e': 2000000000000,
       'b': {
-        'u':
-            '0x7C0F469D3BD340BAE718203FA30CA071A5E37C751E891DBDED837B213D45D91D',
-        's':
-            '0x2abc1f9292ea9e9cd023fa66be59e59ada5ebbe93e483e97d7733a6a8b2c1023cb193142b795704b355f88c493fa521fdb5bea6198a75aca3f3fa17d777e6980',
+        'u': '0x7C0F469D3BD340BAE718203FA30CA071A5E37C751E891DBDED837B213D45D91D',
+        's': '0x2abc1f9292ea9e9cd023fa66be59e59ada5ebbe93e483e97d7733a6a8b2c1023cb193142b795704b355f88c493fa521fdb5bea6198a75aca3f3fa17d777e6980',
       },
     });
     expect(

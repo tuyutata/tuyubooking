@@ -46,7 +46,7 @@ Future<int> runPackagedSmoke() async {
     databasePassword: password,
     installationName: 'Step 6 cold start',
     merchantName: 'Step 6 merchant',
-    timezone: 'UTC',
+    timeZone: 'UTC',
     currencyCode: 'CNY',
     businessRuntimeDir: '${resources.path}/business',
     businessDataRoot: '${root.path}/business',

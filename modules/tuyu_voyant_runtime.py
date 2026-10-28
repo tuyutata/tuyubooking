@@ -155,8 +155,8 @@ def apply_migrations(
         role,
         password,
         sql=(
-            f'CREATE TABLE IF NOT EXISTS "{schema}".__tuyu_migrations ('
-            "migration_name text PRIMARY KEY, sha256 text NOT NULL, "
+            f'CREATE TABLE IF NOT EXISTS "{schema}".migrations ('
+            "migration_name text PRIMARY KEY, source_hash text NOT NULL, "
             "applied_at timestamptz NOT NULL DEFAULT now());"
         ),
     )
@@ -165,7 +165,7 @@ def apply_migrations(
         digest = hashlib.sha256(source.read_bytes()).hexdigest()
         name = source.name
         query = (
-            f"SELECT sha256 FROM \"{schema}\".__tuyu_migrations "
+            f"SELECT source_hash FROM \"{schema}\".migrations "
             f"WHERE migration_name = '{name}';"
         )
         existing = run_psql(
@@ -195,8 +195,8 @@ def apply_migrations(
             role,
             password,
             sql=(
-                f"INSERT INTO \"{schema}\".__tuyu_migrations"
-                "(migration_name, sha256) "
+                f"INSERT INTO \"{schema}\".migrations"
+                "(migration_name, source_hash) "
                 f"VALUES ('{name}', '{digest}');"
             ),
         )

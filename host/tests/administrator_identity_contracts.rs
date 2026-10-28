@@ -42,7 +42,7 @@ async fn shared_account_administrator_contains_only_public_identity_and_is_audit
             installation_name: "Identity Test".to_owned(),
             merchant_id: EntityId::new(),
             merchant_name: "Merchant".to_owned(),
-            timezone: "UTC".to_owned(),
+            time_zone: "UTC".to_owned(),
             currency_code: "GMB".to_owned(),
         },
     )

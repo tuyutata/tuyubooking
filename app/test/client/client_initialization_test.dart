@@ -1,336 +1,661 @@
-import 'package:citizen_sdk/src/crypto/account_codec.dart';
-import 'dart:io';
-import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
 import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
+import 'dart:typed_data';
+
+import 'package:citizen_sdk/account_codec.dart';
 import 'package:citizen_sdk/citizen_sdk.dart';
-import 'package:citizen_sdk/src/platform/citizen_sdk_platform.dart';
+import 'package:citizen_sdk/platform/citizen_sdk_platform.dart';
+import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:tuyubooking/client/client_initialization_page.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:tuyubooking/client/client_initialization_page.dart';
+import 'package:tuyubooking/shared/localization/generated/app_localizations.dart';
 
 import '../shared/source_paths.dart';
 
 void main() {
   walletEntryWidgetTests();
-  final source = bookingAppFile('lib/client/client_initialization_page.dart').readAsStringSync();
-  final app = bookingAppFile('lib/client/client_app.dart').readAsStringSync();
-
-  test('client initialization uses CitizenSdk wallet APIs directly', () {
-    expect(source, contains('CitizenSdk? sdk'));
-    expect(source, contains('sdk.wallet.getProfile()'));
-    expect(source, contains('sdk!.wallet.create()'));
-    expect(source, contains('sdk!.wallet.importWallet()'));
-    expect(source, isNot(contains('CitizenSdkClient')));
-    expect(source, isNot(contains('CitizenSdkRuntime')));
-  });
-
-  test('wallet and business modes precede LAN discovery', () {
+  test('钱包实现只消费SDK公开操作和状态，不保留旧接口或秘密持久化', () {
+    final source = bookingAppFile('lib/client/client_initialization_page.dart')
+        .readAsStringSync();
+    expect(source, contains('sdk.wallet.getState().result'));
+    expect(source, contains('sdk.wallet.prepareCreation('));
+    expect(source, contains('_prepared!.commit()'));
+    expect(source, isNot(contains('wallet.getProfile(')));
+    expect(source, isNot(contains('wallet.create(')));
+    for (final forbidden in [
+      'writeAsString',
+      'SharedPreferences',
+      'privateKey',
+      'bytesToHex',
+    ]) {
+      expect(source, isNot(contains(forbidden)));
+    }
     expect(
-      source.indexOf('sdk.wallet.getProfile()'),
+      source.indexOf('if (!walletReady(state))'),
       lessThan(source.indexOf('BusinessModeSelection.createDefault()')),
     );
-    expect(source, contains('_ClientInitializationStatus.choosingModes'));
-    expect(source, contains('EmployeeDiscoveryPage'));
-    expect(app, contains('ClientInitializationPage'));
-    expect(app, isNot(contains('home: const EmployeeDiscoveryPage()')));
-  });
-
-  test('TuyuBooking never receives wallet secrets', () {
-    expect(source, isNot(contains('mnemonic')));
-    expect(source, isNot(contains('privateKey')));
-    expect(source, isNot(contains('walletPassword')));
-    expect(source, isNot(contains('seedPhrase')));
-  });
-
-  test('取消安全流程返回入口，真实失败保留重试且不显示原始异常', () {
-    expect(source, contains('CitizenSdkErrorCode.cancelled'));
-    expect(source, contains('CitizenSdkErrorCode.authenticationCancelled'));
-    expect(source, contains('? _ClientInitializationStatus.walletRequired'));
-    expect(source, contains(': _ClientInitializationStatus.failed'));
-    expect(source, isNot(contains('error.toString()')));
-    expect(source, contains("ValueKey('retry-wallet-check')"));
-  });
-
-  test('旧SDK结果及重复点击不能推进新页面', () {
-    expect(source, contains('if (_walletOperationRunning || sdk == null) return'));
-    expect(source, contains('check != _walletCheck'));
-    expect(source, contains('!identical(sdk, widget.sdk)'));
-    expect(source.indexOf('if (wallet == null)'),
-      lessThan(source.indexOf('BusinessModeSelection.createDefault()')));
-  });
-
-  test('入口使用正式品牌和可滚动布局，不新增秘密输入框', () {
-    expect(source, contains("Image.asset('tuyu_logo.png'"));
-    expect(source, contains('SingleChildScrollView'));
-    expect(source, contains('_copy(_zh.appTitle, _en.appTitle)'));
-    expect(source, isNot(contains('TextField(')));
-    expect(source, isNot(contains('TextFormField(')));
   });
 }
 
-// 仅替换 SDK 测试传输；实际页面与 CitizenSdk 公开门面照常执行。
+// 仅模拟公开SDK通道；合成文本不是助记词，不冒充Core密码学或设备认证。
 final class _WalletEntryPlatform implements CitizenSdkPlatform {
   final controller = StreamController<Object?>.broadcast();
-  CitizenSdkErrorCode error = CitizenSdkErrorCode.cancelled;
+  final calls = <String>[];
+  final cancelled = <String>{};
+  CitizenSdkErrorCode? failure;
   Completer<void>? pending;
-  int calls = 0;
-  int sessions = 0;
-  bool succeed = false;
-  bool commit = true;
-  bool failRead = false;
+  Completer<void>? backupPending;
+  int releaseFailures = 0;
+  bool committed = true,
+      failRead = false,
+      passwordValid = true,
+      mnemonicValid = true;
+  bool recovering = false, cleanupPending = false;
+  bool cancellable = true;
   Object? profile;
+  int sessions = 0,
+      commitCalls = 0,
+      releaseCalls = 0,
+      reads = 0,
+      validations = 0;
+  Uint8List? backupRaw;
   Object publicProfile(String origin) {
-    final id = '0x${List.filled(64, '1').join()}';
-    return [0, origin, '0', id, id,
-      [[0, id, citizenSs58FromAccountId(id), 'Test account', '0', true]]];
+    final id = '0x${'11' * 32}';
+    return [
+      0,
+      origin,
+      '0',
+      id,
+      id,
+      [
+        [0, id, citizenSs58FromAccountId(id), 'Fixture account', '0', true],
+      ],
+      'Fixture wallet',
+    ];
   }
+
+  List<Object?> state() {
+    final id = '0x${'11' * 32}';
+    return [
+      '1',
+      profile,
+      profile == null
+          ? <Object?>[]
+          : [
+              [
+                'hot',
+                0,
+                0,
+                id,
+                citizenSs58FromAccountId(id),
+                'Fixture account',
+                '0',
+                true,
+              ],
+            ],
+      recovering || cleanupPending
+          ? 2
+          : profile == null
+          ? 0
+          : 1,
+      cleanupPending,
+      profile == null ? null : 0,
+      <Object?>[],
+    ];
+  }
+
   @override
   Stream<Object?> get events => controller.stream;
   @override
-  Future<Object?> invoke(String method, List<Object?> arguments) async {
-    if (method == 'open') return [1, 'wallet-entry-${++sessions}', 0, ['created', 1]];
-    final header = [1, arguments[1], arguments[2]];
-    if (method == 'close') return [...header, ['disposed']];
-    if (method == 'getWalletProfile') {
-      if (failRead) {
-        throw CitizenSdkException(code: CitizenSdkErrorCode.storage,
-          message: 'fixture-read-error', sessionId: arguments[1]! as String,
-          requestSequence: arguments[2]! as int);
-      }
-      return [...header, [profile]];
+  Future<Object?> invoke(String method, List<Object?> values) async {
+    expect(values.first, 2);
+    calls.add(method);
+    if (method == 'open') {
+      return [
+        2,
+        'wallet-session-${++sessions}',
+        0,
+        ['created', 1],
+      ];
     }
-    if (method == 'createWallet' || method == 'importWallet') {
-      calls++;
+    final header = [2, values[1], values[2]], key = '${values[1]}:${values[2]}';
+    CitizenSdkException error(CitizenSdkErrorCode code) => CitizenSdkException(
+      code: code,
+      message: 'fixture-error-not-for-display',
+      method: method,
+      sessionId: values[1]! as String,
+      requestSequence: values[2]! as int,
+    );
+    if (method == 'close') {
+      return [
+        ...header,
+        ['disposed'],
+      ];
+    }
+    if (method == 'getWalletState') {
+      reads++;
+      if (failRead) throw error(CitizenSdkErrorCode.storage);
+      return [
+        ...header,
+        [state()],
+      ];
+    }
+    if (method == 'validateWalletPassword') {
+      return [
+        ...header,
+        [passwordValid ? 0 : 5, null],
+      ];
+    }
+    if (method == 'validateWalletMnemonic') {
+      validations++;
+      return [
+        ...header,
+        [mnemonicValid ? 0 : 2, null],
+      ];
+    }
+    if (method == 'cancelOperation') {
+      if (!cancellable) {
+        return [
+          ...header,
+          [false],
+        ];
+      }
+      cancelled.add('${values[1]}:${values[3]}');
+      if (pending != null && !pending!.isCompleted) pending!.complete();
+      return [
+        ...header,
+        [true],
+      ];
+    }
+    if (method == 'releasePreparedWallet') {
+      releaseCalls++;
+      if (releaseFailures > 0) {
+        releaseFailures--;
+        throw error(CitizenSdkErrorCode.busy);
+      }
+      return [...header, <Object?>[]];
+    }
+    if (method == 'copyRecoveryPhrase') {
+      await backupPending?.future;
+      backupRaw = Uint8List.fromList(utf8.encode('synthetic backup only'));
+      return [
+        ...header,
+        [backupRaw],
+      ];
+    }
+    if ([
+      'prepareWalletCreation',
+      'importWallet',
+      'addNextWalletAccount',
+      'commitWalletCreation',
+    ].contains(method)) {
       await pending?.future;
-      if (succeed) {
-        final result = publicProfile(method == 'importWallet' ? 'imported' : 'created');
-        if (commit) profile = result;
-        return [...header, [result]];
+      if (cancelled.contains(key)) throw error(CitizenSdkErrorCode.cancelled);
+      if (failure != null) throw error(failure!);
+      if (method == 'prepareWalletCreation') {
+        return [
+          ...header,
+          ['prepared-${values[1]}'],
+        ];
       }
-      // SDK 要求错误精确关联当前请求，测试也遵守同一传输合同。
-      throw CitizenSdkException(code: error, message: 'fixture-error-not-for-display',
-        sessionId: arguments[1]! as String, requestSequence: arguments[2]! as int);
+      if (method == 'commitWalletCreation') commitCalls++;
+      final result = publicProfile(
+        method == 'importWallet' ? 'imported' : 'created',
+      );
+      if (committed) profile = result;
+      return [
+        ...header,
+        [result],
+      ];
     }
-    throw StateError('Unexpected SDK test method: $method');
+    throw StateError('Unconfigured SDK fixture method: $method');
   }
 }
 
 void walletEntryWidgetTests() {
   late _WalletEntryPlatform platform;
   late CitizenSdk sdk;
-  int walletReady = 0;
-  int retries = 0;
+  final opened = <CitizenSdk>[];
   late Directory support;
   late PathProviderPlatform originalPaths;
-  
   setUp(() async {
-    walletReady = 0;
-    retries = 0;
-    final work = Platform.environment['TUYUBOOKING_TEST_WORK_DIR'] ??
-        Directory.systemTemp.path;
-    support = await Directory(work).createTemp('wallet-profile-');
-    originalPaths = PathProviderPlatform.instance;
-    PathProviderPlatform.instance = _WalletEntryPaths(support.path);
     platform = _WalletEntryPlatform();
     CitizenSdkPlatform.instance = platform;
     sdk = await CitizenSdk.open();
-    
+    opened.add(sdk);
+    support = await Directory(
+      Platform.environment['TUYUBOOKING_TEST_WORK_DIR'] ??
+          Directory.systemTemp.path,
+    ).createTemp('wallet-profile-');
+    originalPaths = PathProviderPlatform.instance;
+    PathProviderPlatform.instance = _WalletEntryPaths(support.path);
   });
   tearDown(() async {
-    
-    await sdk.close();
+    if (platform.pending != null && !platform.pending!.isCompleted) {
+      platform.pending!.complete();
+    }
+    if (platform.backupPending != null &&
+        !platform.backupPending!.isCompleted) {
+      platform.backupPending!.complete();
+    }
+    for (final sdk in opened.reversed) {
+      await sdk.close();
+    }
+    opened.clear();
+    CitizenSdkPlatform.instance = null;
     PathProviderPlatform.instance = originalPaths;
     await support.delete(recursive: true);
-    CitizenSdkPlatform.instance = null;
     await platform.controller.close();
   });
-  Widget page(String language, {bool starting = false, bool unavailable = false}) => MaterialApp(
-    locale: Locale(language), supportedLocales: const [Locale('zh'), Locale('en')],
-    localizationsDelegates: GlobalMaterialLocalizations.delegates,
-    home: ClientInitializationPage(sdk: unavailable ? null : sdk, sdkStarting: starting, onRetrySdk: () { retries++; }),
+  Widget page(String language) => MaterialApp(
+    locale: Locale(language),
+    supportedLocales: AppLocalizations.supportedLocales,
+    localizationsDelegates: AppLocalizations.localizationsDelegates,
+    home: ClientInitializationPage(
+      sdk: sdk,
+      sdkStarting: false,
+      onRetrySdk: () {},
+    ),
   );
-
-  // 生产页面真实处理公开资料；仅磁盘位置和SDK传输由测试隔离。
-  Future<void> waitForReady(WidgetTester tester) async {
-    for (var i = 0; i < 100 && find.byKey(const ValueKey('save-business-modes')).evaluate().isEmpty; i++) {
-      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 10)));
-      await tester.pump();
+  // 业务选择使用真实隔离文件；在真实事件循环中等待IO，不推进虚拟时钟假装完成。
+  Future<void> settle(WidgetTester tester) async {
+    for (var i = 0; i < 200; i++) {
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 10)),
+      );
+      await tester.pump(const Duration(milliseconds: 100));
+      if (!tester.binding.hasScheduledFrame) return;
     }
-    expect(find.byKey(const ValueKey('save-business-modes')), findsOneWidget);
-    expect(tester.takeException(), isNull);
+    fail('钱包界面或隔离业务IO未结束');
   }
-  for(final operation in ['create-wallet', 'import-wallet']) {
-    testWidgets('wallet entry success $operation', (tester) async {
-      platform.succeed = true;
-      await tester.pumpWidget(page('zh'));
-      await tester.pumpAndSettle();
-      final action = find.byKey(ValueKey(operation));
-      await tester.ensureVisible(action);
-      await tester.tap(action);
-      await waitForReady(tester);
-      expect(platform.calls, 1);
-      expect((await sdk.wallet.getProfile())!.origin,
-        operation == 'create-wallet' ? CitizenWalletOrigin.created : CitizenWalletOrigin.imported);
-      
-      expect(find.byKey(const ValueKey('create-wallet')), findsNothing);
-      await tester.pumpWidget(const SizedBox.shrink());
-    });
+
+  Finder ready() => find.byKey(const ValueKey('save-business-modes'));
+  Future<void> openAction(WidgetTester tester, String action) async {
+    await tester.ensureVisible(find.byKey(ValueKey(action)));
+    await tester.tap(find.byKey(ValueKey(action)));
+    await settle(tester);
   }
-  testWidgets('wallet entry existing committed profile skips setup', (tester) async {
-    platform.profile = platform.publicProfile('created');
-    
-    await tester.pumpWidget(page('zh'));
-    await waitForReady(tester);
-    expect(platform.calls, 0);
-    expect(find.byKey(const ValueKey('create-wallet')), findsNothing);
-    await tester.pumpWidget(const SizedBox.shrink());
-  });
-  testWidgets('wallet entry uncommitted operation cannot enter business', (tester) async {
-    platform.succeed = true;
-    platform.commit = false;
-    await tester.pumpWidget(page('zh'));
-    await tester.pumpAndSettle();
-    final action = find.byKey(const ValueKey('create-wallet'));
-    await tester.ensureVisible(action);
-    await tester.tap(action);
-    await tester.pumpAndSettle();
-    expect(find.byKey(const ValueKey('save-business-modes')), findsNothing);
-    expect(find.byKey(const ValueKey('create-wallet')), findsOneWidget);
-    expect(walletReady, 0);
-    expect(tester.takeException(), isNull);
-    await tester.pumpWidget(const SizedBox.shrink());
-  });
-  testWidgets('wallet entry committed operation with failed read stays closed', (tester) async {
-    platform.succeed = true;
-    await tester.pumpWidget(page('zh'));
-    await tester.pumpAndSettle();
-    platform.failRead = true;
-    final action = find.byKey(const ValueKey('create-wallet'));
-    await tester.ensureVisible(action);
-    await tester.tap(action);
-    await tester.pumpAndSettle();
-    expect(find.byKey(const ValueKey('save-business-modes')), findsNothing);
-    expect(find.text('钱包操作失败，请重试。'), findsOneWidget);
-    expect(find.textContaining('fixture-read-error'), findsNothing);
-    expect(walletReady, 0);
-    await tester.pumpWidget(const SizedBox.shrink());
-  });
-  testWidgets('wallet entry SDK starting failure retry and recovery', (tester) async {
-    await tester.pumpWidget(page('zh', starting: true, unavailable: true));
+
+  Future<void> submit(WidgetTester tester, {bool restore = false}) async {
+    if (restore) {
+      await tester.enterText(
+        find.byKey(const ValueKey('wallet-mnemonic')),
+        'synthetic recovery text',
+      );
+    }
+    await tester.ensureVisible(find.byKey(const ValueKey('wallet-submit')));
+    await tester.tap(find.byKey(const ValueKey('wallet-submit')));
+    await settle(tester);
+  }
+
+  Future<void> confirm(WidgetTester tester) async {
+    await tester.tap(find.byKey(const ValueKey('wallet-confirm')));
     await tester.pump();
-    expect(find.byType(CircularProgressIndicator), findsOneWidget);
-    expect(find.byKey(const ValueKey('create-wallet')), findsNothing);
-    await tester.pumpWidget(page('zh', unavailable: true));
-    await tester.pumpAndSettle();
-    final retry = find.byKey(const ValueKey('retry-citizen-sdk'));
-    await tester.ensureVisible(retry);
-    await tester.tap(retry);
-    expect(retries, 1);
+    await submit(tester);
+  }
+
+  testWidgets('创建必须备份确认后才真实提交，随后释放准备资源', (tester) async {
     await tester.pumpWidget(page('zh'));
-    await tester.pumpAndSettle();
-    expect(find.byKey(const ValueKey('create-wallet')), findsOneWidget);
-    expect(tester.takeException(), isNull);
-    await tester.pumpWidget(const SizedBox.shrink());
+    await settle(tester);
+    expect(find.byType(TextField), findsNothing);
+    await openAction(tester, 'create-wallet');
+    await submit(tester);
+    expect(find.byKey(const ValueKey('wallet-backup')), findsOneWidget);
+    expect(platform.commitCalls, 0);
+    expect(ready(), findsNothing);
+    expect(
+      tester
+          .widget<FilledButton>(find.byKey(const ValueKey('wallet-submit')))
+          .onPressed,
+      isNull,
+    );
+    expect(platform.backupRaw, everyElement(0));
+    await confirm(tester);
+    expect(ready(), findsOneWidget);
+    expect(platform.commitCalls, 1);
+    expect(platform.releaseCalls, 1);
+    expect(
+      platform.calls.where((x) => x == 'prepareWalletCreation'),
+      hasLength(1),
+    );
   });
-  testWidgets('wallet entry disposal during operation ignores late result', (tester) async {
+  testWidgets('导入只使用SDK校验和一次真实操作，回读后放行业务', (tester) async {
+    await tester.pumpWidget(page('zh'));
+    await settle(tester);
+    await openAction(tester, 'import-wallet');
+    await submit(tester, restore: true);
+    expect(ready(), findsOneWidget);
+    expect(platform.validations, 1);
+    expect(platform.calls.where((x) => x == 'importWallet'), hasLength(1));
+    expect(
+      (await sdk.wallet.getState().result).hotProfile!.origin,
+      CitizenWalletOrigin.imported,
+    );
+  });
+  testWidgets('SDK校验失败不提交，输入不进入错误文案', (tester) async {
+    platform.mnemonicValid = false;
+    await tester.pumpWidget(page('zh'));
+    await settle(tester);
+    await openAction(tester, 'import-wallet');
+    await submit(tester, restore: true);
+    expect(platform.calls, isNot(contains('importWallet')));
+    expect(ready(), findsNothing);
+    expect(
+      find.text('synthetic recovery text'),
+      findsOneWidget,
+    ); // 仅用户自己输入框内可见。
+    expect(find.textContaining('校验要求'), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('wallet-cancel')));
+    await settle(tester);
+    expect(find.text('synthetic recovery text'), findsNothing);
+  });
+  testWidgets('附加密码由SDK校验，不合格时不准备钱包', (tester) async {
+    platform.passwordValid = false;
+    await tester.pumpWidget(page('zh'));
+    await settle(tester);
+    await openAction(tester, 'create-wallet');
+    await submit(tester);
+    expect(platform.calls, isNot(contains('prepareWalletCreation')));
+    expect(find.textContaining('附加密码不符合'), findsOneWidget);
+  });
+  testWidgets('备份界面取消只归还资源，不创建或删除钱包', (tester) async {
+    await tester.pumpWidget(page('zh'));
+    await settle(tester);
+    await openAction(tester, 'create-wallet');
+    await submit(tester);
+    await tester.tap(find.byKey(const ValueKey('wallet-cancel')));
+    await settle(tester);
+    expect(platform.releaseCalls, 1);
+    expect(platform.commitCalls, 0);
+    expect(ready(), findsNothing);
+    expect(platform.calls, isNot(contains('deleteWallet')));
+    expect(find.byKey(const ValueKey('wallet-backup')), findsNothing);
+  });
+  testWidgets('取消进行中的准备等待真实终态，不放行迟到结果', (tester) async {
     platform.pending = Completer<void>();
     await tester.pumpWidget(page('zh'));
-    await tester.pumpAndSettle();
-    tester.widget<FilledButton>(find.byKey(const ValueKey('create-wallet'))).onPressed!();
+    await settle(tester);
+    await openAction(tester, 'create-wallet');
+    await tester.tap(find.byKey(const ValueKey('wallet-submit')));
+    await tester.pump();
+    await tester.tap(find.byKey(const ValueKey('wallet-cancel')));
+    await settle(tester);
+    expect(platform.calls, contains('cancelOperation'));
+    expect(platform.commitCalls, 0);
+    expect(find.byKey(const ValueKey('wallet-backup')), findsNothing);
+    expect(ready(), findsNothing);
+  });
+  testWidgets('未提交的SDK结果不能绕过真实目录回读', (tester) async {
+    platform.committed = false;
+    await tester.pumpWidget(page('zh'));
+    await settle(tester);
+    await openAction(tester, 'create-wallet');
+    await submit(tester);
+    await confirm(tester);
+    expect(platform.commitCalls, 1);
+    expect(ready(), findsNothing);
+    expect(find.byKey(const ValueKey('create-wallet')), findsOneWidget);
+  });
+  testWidgets('真实提交后目录读取失败仍不放行业务', (tester) async {
+    await tester.pumpWidget(page('zh'));
+    await settle(tester);
+    await openAction(tester, 'create-wallet');
+    await submit(tester);
+    platform.failRead = true;
+    await confirm(tester);
+    expect(ready(), findsNothing);
+    expect(find.textContaining('fixture-read-error'), findsNothing);
+    expect(find.textContaining('fixture-error-not-for-display'), findsNothing);
+  });
+  for (final code in [
+    CitizenSdkErrorCode.cancelled,
+    CitizenSdkErrorCode.authenticationCancelled,
+  ]) {
+    testWidgets('SDK取消不显示真实失败：${code.name}', (tester) async {
+      platform.failure = code;
+      await tester.pumpWidget(page('zh'));
+      await settle(tester);
+      await openAction(tester, 'create-wallet');
+      await submit(tester);
+      expect(find.byKey(const ValueKey('wallet-submit')), findsNothing);
+      expect(find.textContaining('钱包操作失败'), findsNothing);
+      expect(ready(), findsNothing);
+    });
+  }
+  testWidgets('真实失败可重试且不回显SDK原始异常', (tester) async {
+    platform.failure = CitizenSdkErrorCode.storage;
+    await tester.pumpWidget(page('zh'));
+    await settle(tester);
+    await openAction(tester, 'create-wallet');
+    await submit(tester);
+    expect(find.textContaining('钱包操作失败'), findsOneWidget);
+    expect(find.textContaining('fixture-error-not-for-display'), findsNothing);
+    platform.failure = null;
+    await submit(tester);
+    await confirm(tester);
+    expect(ready(), findsOneWidget);
+  });
+  testWidgets('重复点击只出现一个弹窗并提交一次', (tester) async {
+    await tester.pumpWidget(page('zh'));
+    await settle(tester);
+    final button = tester.widget<FilledButton>(
+      find.byKey(const ValueKey('create-wallet')),
+    );
+    button.onPressed!();
+    button.onPressed!();
+    await settle(tester);
+    expect(find.byKey(const ValueKey('wallet-submit')), findsOneWidget);
+    await submit(tester);
+    await confirm(tester);
+    expect(platform.commitCalls, 1);
+  });
+  testWidgets('页面销毁期间真实操作被取消，禁止迟到导航', (tester) async {
+    platform.pending = Completer<void>();
+    await tester.pumpWidget(page('zh'));
+    await settle(tester);
+    await openAction(tester, 'create-wallet');
+    await tester.tap(find.byKey(const ValueKey('wallet-submit')));
     await tester.pump();
     await tester.pumpWidget(const SizedBox.shrink());
+    await settle(tester);
+    expect(platform.commitCalls, 0);
+    expect(platform.calls, contains('cancelOperation'));
+    expect(tester.takeException(), isNull);
+  });
+  testWidgets('SDK替换关闭旧备份资源，不推进新实例', (tester) async {
+    await tester.pumpWidget(page('zh'));
+    await settle(tester);
+    await openAction(tester, 'create-wallet');
+    await submit(tester);
+    sdk = await CitizenSdk.open();
+    opened.add(sdk);
+    await tester.pumpWidget(page('zh'));
+    await settle(tester);
+    expect(platform.releaseCalls, 1);
+    expect(platform.commitCalls, 0);
+    expect(find.byKey(const ValueKey('wallet-backup')), findsNothing);
+    expect(ready(), findsNothing);
+  });
+  testWidgets('现有真实钱包无需重复创建', (tester) async {
+    platform.profile = platform.publicProfile('created');
+    await tester.pumpWidget(page('zh'));
+    await settle(tester);
+    expect(ready(), findsOneWidget);
+    expect(platform.calls, isNot(contains('prepareWalletCreation')));
+  });
+  for (final pending in ['recovering', 'cleanup']) {
+    testWidgets('SDK恢复或清理状态不能冒充空钱包：$pending', (tester) async {
+      platform.recovering = pending == 'recovering';
+      platform.cleanupPending = pending == 'cleanup';
+      await tester.pumpWidget(page('zh'));
+      await settle(tester);
+      expect(find.byKey(const ValueKey('create-wallet')), findsNothing);
+      expect(ready(), findsNothing);
+    });
+  }
+
+  testWidgets('备份复制在途时取消等待资源交付并释放，不提前关闭', (tester) async {
+    platform.backupPending = Completer<void>();
+    await tester.pumpWidget(page('zh'));
+    await settle(tester);
+    await openAction(tester, 'create-wallet');
+    await tester.tap(find.byKey(const ValueKey('wallet-submit')));
+    await tester.pump();
+    await tester.tap(find.byKey(const ValueKey('wallet-cancel')));
+    await tester.pump();
+    expect(find.byKey(const ValueKey('wallet-cancel')), findsOneWidget);
+    expect(platform.releaseCalls, 0);
+    platform.backupPending!.complete();
+    await settle(tester);
+    expect(platform.releaseCalls, 1);
+    expect(platform.commitCalls, 0);
+    expect(find.byKey(const ValueKey('wallet-backup')), findsNothing);
+  });
+  testWidgets('准备资源归还失败保留所有权，重试归还后才关闭', (tester) async {
+    platform.releaseFailures = 1;
+    await tester.pumpWidget(page('zh'));
+    await settle(tester);
+    await openAction(tester, 'create-wallet');
+    await submit(tester);
+    await tester.tap(find.byKey(const ValueKey('wallet-cancel')));
+    await settle(tester);
+    expect(platform.releaseCalls, 1);
+    expect(find.byKey(const ValueKey('wallet-cancel')), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('wallet-cancel')));
+    await settle(tester);
+    expect(platform.releaseCalls, 2);
+    expect(platform.commitCalls, 0);
+    expect(find.byKey(const ValueKey('wallet-cancel')), findsNothing);
+  });
+
+  testWidgets('取消未被SDK接纳时等待真实终态，显式回读才进入业务', (tester) async {
+    await tester.pumpWidget(page('zh'));
+    await settle(tester);
+    await openAction(tester, 'create-wallet');
+    await submit(tester);
+    await tester.tap(find.byKey(const ValueKey('wallet-confirm')));
+    await tester.pump();
+    platform.pending = Completer<void>();
+    platform.cancellable = false;
+    await tester.tap(find.byKey(const ValueKey('wallet-submit')));
+    await tester.pump();
+    await tester.tap(find.byKey(const ValueKey('wallet-cancel')));
+    await tester.pump();
+    expect(find.byKey(const ValueKey('wallet-cancel')), findsOneWidget);
     platform.pending!.complete();
-    await tester.pumpAndSettle();
+    await settle(tester);
+    expect(platform.commitCalls, 1);
+    expect(ready(), findsNothing);
+    await tester.tap(find.byKey(const ValueKey('retry-wallet-check')));
+    await settle(tester);
+    expect(ready(), findsOneWidget);
+    expect(platform.commitCalls, 1);
+  });
+
+  testWidgets('凭据只临时交付，不发起钱包变更或保存输入', (tester) async {
+    final cancelled = Completer<void>();
+    Future<Uint8List?>? result;
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('zh'),
+        supportedLocales: AppLocalizations.supportedLocales,
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        home: Builder(
+          builder: (context) => Scaffold(
+            body: FilledButton(
+              onPressed: () {
+                result = requestWalletCredential(
+                  context,
+                  CitizenCredentialChallenge(
+                    hostOperationId: BigInt.one,
+                    keyPurpose: 'fixture',
+                    cancelled: cancelled.future,
+                  ),
+                );
+              },
+              child: const Text('fixture-credential'),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('fixture-credential'));
+    await settle(tester);
+    await tester.enterText(
+      find.byKey(const ValueKey('wallet-credential')),
+      'fixture-only',
+    );
+    await tester.tap(find.text('继续'));
+    await settle(tester);
+    final bytes = await result!;
+    expect(utf8.decode(bytes!), 'fixture-only');
+    bytes.fillRange(0, bytes.length, 0);
+    expect(find.byKey(const ValueKey('wallet-credential')), findsNothing);
+    expect(platform.calls, isNot(contains('prepareWalletCreation')));
+    cancelled.complete();
+    await tester.pump();
+  });
+  testWidgets('SDK撤销凭据挑战时关闭原弹窗并返回取消', (tester) async {
+    final cancelled = Completer<void>();
+    Future<Uint8List?>? result;
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('zh'),
+        supportedLocales: AppLocalizations.supportedLocales,
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        home: Builder(
+          builder: (context) => Scaffold(
+            body: FilledButton(
+              onPressed: () {
+                result = requestWalletCredential(
+                  context,
+                  CitizenCredentialChallenge(
+                    hostOperationId: BigInt.one,
+                    keyPurpose: 'fixture',
+                    cancelled: cancelled.future,
+                  ),
+                );
+              },
+              child: const Text('fixture-credential'),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('fixture-credential'));
+    await settle(tester);
+    await tester.enterText(
+      find.byKey(const ValueKey('wallet-credential')),
+      'fixture-only',
+    );
+    cancelled.complete();
+    await settle(tester);
+    expect(await result!, isNull);
+    expect(find.byKey(const ValueKey('wallet-credential')), findsNothing);
     expect(tester.takeException(), isNull);
   });
 
   for (final language in ['zh', 'en']) {
     for (final size in [const Size(320, 640), const Size(640, 320)]) {
-      testWidgets('wallet entry $language $size', (tester) async {
+      testWidgets('双语首屏及钱包输入适应手机：$language $size', (tester) async {
         tester.view.physicalSize = size;
         tester.view.devicePixelRatio = 1;
         addTearDown(tester.view.resetPhysicalSize);
         addTearDown(tester.view.resetDevicePixelRatio);
         await tester.pumpWidget(page(language));
-        await tester.pumpAndSettle();
-        expect(find.text('途遇商家端'), findsOneWidget);
-        expect(find.text('TuyuBooking'), findsOneWidget);
+        await settle(tester);
         expect(find.byType(TextField), findsNothing);
-        await tester.ensureVisible(find.byKey(const ValueKey('import-wallet')));
+        await openAction(tester, 'import-wallet');
+        expect(find.byKey(const ValueKey('wallet-mnemonic')), findsOneWidget);
         expect(tester.takeException(), isNull);
-        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.ensureVisible(find.byKey(const ValueKey('wallet-cancel')));
+        await tester.tap(find.byKey(const ValueKey('wallet-cancel')));
+        await settle(tester);
       });
     }
   }
-  for (final code in [CitizenSdkErrorCode.cancelled, CitizenSdkErrorCode.authenticationCancelled]) {
-    testWidgets('wallet entry cancellation ${code.name}', (tester) async {
-      platform.error = code;
-      await tester.pumpWidget(page('zh'));
-      await tester.pumpAndSettle();
-      final action = find.byKey(ValueKey(code == CitizenSdkErrorCode.cancelled ? 'create-wallet' : 'import-wallet'));
-      await tester.ensureVisible(action);
-      await tester.tap(action);
-      await tester.pumpAndSettle();
-      expect(platform.calls, 1);
-      expect(find.byKey(const ValueKey('create-wallet')), findsOneWidget);
-      expect(find.text('钱包操作失败，请重试。'), findsNothing);
-      expect(find.textContaining('fixture-error'), findsNothing);
-      expect(tester.takeException(), isNull);
-      await tester.pumpWidget(const SizedBox.shrink());
-    });
-  }
-  testWidgets('wallet entry failure remains retryable without raw errors', (tester) async {
-    platform.error = CitizenSdkErrorCode.storage;
-    await tester.pumpWidget(page('zh'));
-    await tester.pumpAndSettle();
-    final action = find.byKey(const ValueKey('create-wallet'));
-    await tester.ensureVisible(action);
-    await tester.tap(action);
-    await tester.pumpAndSettle();
-    expect(find.text('钱包操作失败，请重试。'), findsOneWidget);
-    expect(find.textContaining('fixture-error'), findsNothing);
-    await tester.tap(find.byKey(const ValueKey('retry-wallet-check')));
-    await tester.pumpAndSettle();
-    expect(find.byKey(const ValueKey('create-wallet')), findsOneWidget);
-    expect(tester.takeException(), isNull);
-    await tester.pumpWidget(const SizedBox.shrink());
-  });
-  testWidgets('wallet entry duplicate click uses one SDK operation', (tester) async {
-    platform.pending = Completer<void>();
-    await tester.pumpWidget(page('en'));
-    await tester.pumpAndSettle();
-    final button = tester.widget<FilledButton>(find.byKey(const ValueKey('create-wallet')));
-    button.onPressed!();
-    button.onPressed!();
-    await tester.pump();
-    expect(platform.calls, 1);
-    expect(find.byType(CircularProgressIndicator), findsOneWidget);
-    platform.pending!.complete();
-    await tester.pumpAndSettle();
-    expect(find.byKey(const ValueKey('create-wallet')), findsOneWidget);
-    expect(tester.takeException(), isNull);
-    await tester.pumpWidget(const SizedBox.shrink());
-  });
-  testWidgets('wallet entry ignores late failure from replaced SDK', (tester) async {
-    platform.pending = Completer<void>();
-    platform.error = CitizenSdkErrorCode.storage;
-    await tester.pumpWidget(page('en'));
-    await tester.pumpAndSettle();
-    tester.widget<FilledButton>(find.byKey(const ValueKey('create-wallet'))).onPressed!();
-    await tester.pump();
-    final old = sdk;
-    sdk = await CitizenSdk.open();
-    await tester.pumpWidget(page('en'));
-    await tester.pump();
-    platform.pending!.complete();
-    await tester.pumpAndSettle();
-    expect(find.byKey(const ValueKey('create-wallet')), findsOneWidget);
-    expect(find.text('The wallet operation failed. Try again.'), findsNothing);
-    expect(tester.takeException(), isNull);
-    await tester.pumpWidget(const SizedBox.shrink());
-    await old.close();
-  });
 }
 
 final class _WalletEntryPaths extends PathProviderPlatform {

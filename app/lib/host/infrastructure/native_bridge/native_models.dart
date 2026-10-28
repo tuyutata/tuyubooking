@@ -18,7 +18,7 @@ final class NativeRuntimeRequest {
     required this.databasePassword,
     required this.installationName,
     required this.merchantName,
-    required this.timezone,
+    required this.timeZone,
     required this.currencyCode,
     required this.businessRuntimeDir,
     required this.businessDataRoot,
@@ -40,7 +40,7 @@ final class NativeRuntimeRequest {
   final String databasePassword;
   final String installationName;
   final String merchantName;
-  final String timezone;
+  final String timeZone;
   final String currencyCode;
   final String businessRuntimeDir;
   final String businessDataRoot;
@@ -62,7 +62,7 @@ final class NativeRuntimeRequest {
     'database_password': databasePassword,
     'installation_name': installationName,
     'merchant_name': merchantName,
-    'timezone': timezone,
+    'time_zone': timeZone,
     'currency_code': currencyCode,
     'business_runtime_dir': businessRuntimeDir,
     'business_data_root': businessDataRoot,
