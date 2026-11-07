@@ -2,7 +2,6 @@
 
 > 当前塔塔鹿鹿：每仓 `.github/tatalulu.yml` 只登记仓库身份；控制台 `.github/tatalulu.mjs` 保存并推送后，以 GitHub `main` 回查结果收口。本文早期推送触发检查记录仅供历史追溯。
 
-
 ## 当前回归合同与自动化入口
 
 平台静态合同读取正式扁平源码：`app/macos/Runner/MainMenu.xib`与`app/android/app/src/main/MainActivity.kt`；工具标准目录只由`app/scripts/project.mjs`在任务视图装配。SDK原生准备顺序以`project.mjs native`与显式`XCODEBUILD`调用为准。Voyant使用官方`node_middleware`产物，由`modules/tuyu_voyant_https.mjs`在回环地址创建TLS服务；迁移产物、生产入口及源码外输出检查保持。
@@ -46,13 +45,9 @@
 
 ## 聊天功能的唯一产品归属
 
-**聊天客户端的逻辑功能只能在 TataChatSDK 中实现；聊天服务端的逻辑功能只能在 CitizenServe.tatachat 中实现。公民、途遇及其他产品只依赖使用。**
+聊天客户端归公民App的chat普通本地包，随App源码构建；协议唯一源为公民App的network/proto。聊天服务端归CitizenServe的chat模块。本产品不声明独立聊天客户端产品或分发路线。
 
 TuyuBooking 涉及聊天时只作为依赖使用方；本条不代表尚未接入聊天的产品已经具备聊天能力。
-
-- 消息、会话、群组、加密、协议、传输、同步、重试、聊天存储、附件、通话及聊天界面行为，按客户端与服务端职责分别归 TataChatSDK 和 CitizenServe.tatachat；新增功能、缺陷修复和平台差异也必须在所属产品内完成。
-- 消费产品只提供产品入口、身份与业务权益结果、服务地址及授权、主题和公开接口要求的平台配置；只通过公开接口接入，禁止复制、重写、包装成另一套聊天内核或维护产品专属聊天实现。CitizenServe、TuyuServe 的产品身份与权益授权不包含聊天数据面的实现职责。
-- 本机开发直接依赖仓库路径；公民、途遇等产品的正式版本依赖塔塔聊天正式 Release；第三方市场分发使用公开市场版本。依赖使用不以公开市场发布为前置条件，也不改变实现归属。
 
 主机与分机受控缓存分别固定为 `tuyubooking/target/<host-platform|client-platform>/<build|ci|release>/`。Flutter视图、Node/Python依赖展开、业务运行时、Cargo、Xcode、临时文件、日志和候选均写所属流程目录；各流程互不清理，启动不建立缓存。
 
@@ -252,8 +247,6 @@ Kamra、URY、Voyant和Hi.Events当前均为postgresql_runtime。postgresql_runt
 - 本机主机端开发只编译 macOS，发布流程以本产品当前公开声明与实现为准。
 
 #### 10. Cloudflare边界
-
-Cloudflare不运行TuyuBooking、Fork子系统或商家数据库。员工局域网访问不经过Cloudflare。聊天逻辑功能归TataChatSDK与CitizenServe.tatachat；TuyuServe中的游记和公开服务属于其他产品边界，不得成为商家业务数据库。
 
 #### Step 3: Frappe and Kamra PostgreSQL runtime (2026-08-25)
 
@@ -1414,10 +1407,6 @@ iOS真机交互、页面验收和交易诊断必须使用XCTest，UI测试必须
 
 本产品的完整Build按原始锁自行取得、保存和复用依赖；独立运行与外部调用执行同一本仓实现。既有产品原件缓存和工具复用路径保持，任务派生文件仅在本轮现场使用并由产品收尾。旧库索引导入、供给分支及兼容导出已经移除。
 
-
-
-
-
 错来源、摘要、重复同源内容、生成状态、硬链接、内部链接越界或循环、取消及任务副本漂移均据实失败。独立与控制台调用使用同一实现；控制台只交付普通工具路径和已授权输入并跟踪原有任务，UI、功能、按钮、平台与操作顺序保持。用例源码已同步，执行留待整项实现结束后的统一测试。
 
 ### 独立入口回归验真边界
@@ -1455,7 +1444,6 @@ Node 回归由所属 Build 或 Workflow 执行，门禁只读核对登记与源�
 公开编译实现唯一归本仓scripts/build.mjs。CitizenSDK始终按本仓Pub声明与原锁选择固定Git源码，通过SDK公开consume入口消费明确交付的完整包；本机与GitHub不使用邻仓源码，不准备SDK原生依赖或执行SDK编译。
 
 ## GitHub自动化
-
 
 现有平台路径为：
 
@@ -1504,7 +1492,6 @@ GitHub接口使用普通参数和已授权令牌，返回本仓既有版本计�
 
 ## 外部调用入口
 
-
 ## CitizenSDK完整交付接入
 
 CitizenSDK来源由本产品pubspec.yaml与pubspec.lock的固定Git提交共同定义，SDK的完整包回执必须对应同一SHA。调用方以CITIZENSDK_PACKAGE交付已授权取得的原ZIP、JSON和sha256三件目录，该普通输入原样通过Node重入和资源环境；本产品只调用锁定SDK的scripts/build.mjs公开consume与verifyConsumer入口。校验、解包和四宿主完整性由SDK唯一实现，应用不维护SDK依赖计划、Cargo闭包或第二编译器，不从邻仓、旧工作目录或另一个来源补件。
@@ -1512,7 +1499,6 @@ CitizenSDK来源由本产品pubspec.yaml与pubspec.lock的固定Git提交共同�
 实际Pub解析使用本轮工程中唯一.source-packages/citizen_sdk视图；构建副本的直接依赖版本读取交付包pubspec，正式Git声明及原锁保持。普通业务仍只调用包根CitizenSdk公开门面，钱包、链、签名、安全存储与认证职责不变。实际运行、链接与设备验收以所属平台真实结果为准。
 
 离线准备通过普通输入交付完整SDK，不临时访问网络、下载工具或执行SDK编译。原版本新提交与完整产物就绪前不修改依赖锁中的提交号；该输入属于本产品公开流程数据，不依赖控制台私有库存。
-
 
 本机安装统一由塔塔控制台app/source/Installer.swift执行。本产品scripts/build.mjs的compile PLATFORM仅准备依赖、编译并输出TATA_COMPILE公开产物回执，持有本轮现场直到调用方关闭stdin后按原规则清场；产品不再实现开发签名Keychain、ADB或devicectl安装。GitHub流程仍称塔塔自动化。
 
@@ -1525,7 +1511,6 @@ CitizenSDK来源由本产品pubspec.yaml与pubspec.lock的固定Git提交共同�
 本产品配置项统一为name、description、accessLevel、kind、format五个必填字段；不适用规则明确填写“不适用”。name严格使用两组大写字母和一个下划线，同名共用控制台唯一值，当前页仅汇总实际声明的使用产品。操作列固定写入/更换、查看、删除；保密查看保留生物识别。现有配置消费者随声明同步改名，官方工具/API字段保持官方名称，不新增旧名兼容或配置副本。
 描述文件使用TUYUBOOKING_PROFILE，format绑定真实iOS Bundle身份；不能将其它产品描述文件冒认成本产品已配置。
 
-
 ## 第一方核心结构与字段真源
 
 本机数据库和Schema归属保持：平台核心属于tuyu_core，上游业务属于其原模块。非固定表统一为baselines、modules、merchants、identities、publications、staff、roles、customers、requests、events、audits；框架registry与Voyant的migrations保留原职责。所有表均保留，不合并上游业务数据。
@@ -1536,16 +1521,13 @@ identities直接以installation_id作为主键，云端instance_id仍是独立�
 
 installation、local_system_administrator、administrator_audit_log、administrator_assertion、upstream_administrator_session、administrator_bridge_audit六类共享账户表及全部字段维持固定合同。tuyu-account提交435e585bd59aabe5bec3d4ca21074abbae864b43、原声明、锁、签名协议及上游API保持；事件名称tuyubooking.order.v1和固定签名原文不因内部字段统一而重组。
 
-
 ### 第4步既有回归阻塞收口
 
 CitizenSDK直接依赖固定0e07a360813948830e39168edcc4dff88922dd8a，工程只消费同提交完整交付包；Pub锁按该声明收敛。共享tuyu-account固定435e585bd59aabe5bec3d4ca21074abbae864b43及原签名协议保持。真实PG回归必须使用包内Perl/Tcl完整闭包。
 
-
 ### 钱包交互与SDK目录唯一来源
 
 App只负责临时输入、备份展示及用户确认；密码和助记词不进入业务持久化、日志或网络。输入规则、创建/导入/追加及持久化只归固定CitizenSDK，操作等待result，创建经prepareCreation、recoveryPhrase、commit及release完整生命周期。读取仅使用getState返回的目录事实，恢复/清理未完成时不把状态当成空钱包。商家分机初始化页拥有钱包交互，状态仅来自SDK目录事实。凭据按SDK挑战临时交付，取消、SDK替换与页面销毁须结束本次真实操作并释放资源。共享账户合同及原签名协议不变。
-
 
 ## 本机编译资源与版本来源
 
